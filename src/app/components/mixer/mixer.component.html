@@ -1,0 +1,84 @@
+<div style="padding: 20px; font-family: sans-serif; background: #222; color: #fff; border-radius: 8px;">
+  <h2>🎛️ Estúdio Multicanal Automatizado (Estilo Moises)</h2>
+
+  <div class="carregador">
+    <div style="margin-bottom: 20px;">
+      <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #aaa;">📂 Selecionar JSON do Projeto:</label>
+      <input type="file" accept=".json" (change)="onConfigSelecionada($event)" />
+      <div style="margin-top: 8px; color: #ffc107; font-size: 14px;">⚡ Status: {{ audio.statusCarregamento() }}</div>
+    </div>
+    <div>
+      <button class="play-stop" (click)="audio.togglePlay()" [style.background]="audio.isPlaying() ? '#dc3545' : '#28a745'">
+        @if (audio.isPlaying()) { ⏹️ <br><br> Playing } @else { ▶️ <br><br> Stopped }
+      </button>
+    </div>
+  </div>
+
+  @if (audio.canais().length > 0) {
+    
+    <div style="margin-bottom: 20px;">
+      <h3>Selecione o Próximo Bloco (Mapeado no JSON):</h3>
+      <div style="display: flex; gap: 10px;">
+        @for (trecho of audio.markers(); track trecho.id) {
+          <button (click)="audio.agendarTrecho(trecho.id)"
+                  [style.background]="audio.trechoAtivo()?.id === trecho.id ? '#28a745' : (audio.proximoTrecho()?.id === trecho.id ? '#ffc107' : '#555')"
+                  [style.color]="(audio.trechoAtivo()?.id === trecho.id || audio.proximoTrecho()?.id === trecho.id) ? '#000' : '#fff'"
+                  style="padding: 12px 18px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+            {{ trecho.nome }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <div style="margin-bottom: 20px; background: #111; padding: 15px; border-radius: 4px;">
+      🔊 Tocando Agora: <strong>{{ audio.trechoAtivo()?.nome }}</strong> | BPM: {{ audio.bpmAtual() }} | Volta: {{ audio.loopCount() }}
+      @if (audio.proximoTrecho()) {
+        <div style="color: #ffc107; margin-top: 5px;">⏳ Agendado na Fila: {{ audio.proximoTrecho()?.nome }}</div>
+      }
+    </div>
+
+    <div style="margin-bottom: 20px; background: #2a2a2a; padding: 20px; border-radius: 6px;">
+      <h3>🎚️ Mixer Multicanal & Roteamento</h3>
+      
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; margin-top: 15px;">
+        @for (canal of audio.canais(); track canal.id) {
+          <div style="background: #1e1e1e; padding: 15px; border-radius: 6px; border-top: 4px solid #28a745; display: flex; flex-direction: column; gap: 10px;">
+            
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <strong style="font-size: 16px;">{{ canal.nome }}</strong>
+              <span style="font-size: 11px; color: #888;">{{ canal.volumeSignal() }} dB</span>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 10px; color: #666;">-40</span>
+              <input type="range" min="-40" max="6" step="1"
+                    [value]="canal.volumeSignal()"
+                    (input)="atualizarVolumeRange(canal, $event)"
+                    style="flex: 1; cursor: pointer;" />
+              <span style="font-size: 10px; color: #666;">+6</span>
+            </div>
+
+            <div style="display: flex; gap: 8px; margin-top: 5px;">
+              <button (click)="audio.alternarMute(canal)"
+                      [style.background]="canal.isMuted() ? '#dc3545' : '#444'"
+                      style="flex: 1; padding: 6px; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; font-size: 12px;">
+                {{ canal.isMuted() ? '🔇 MUTED' : '🔊 MUTE' }}
+              </button>
+
+              <select (change)="selecionarSaidaFisica(canal, $event)" 
+                      style="background: #333; color: white; border: 1px solid #555; padding: 5px; border-radius: 4px; font-size: 12px; cursor: pointer;">
+                <option value="0">🎛️ Saída L (1)</option>
+                <option value="1">🎛️ Saída R (2)</option>
+              </select>
+            </div>
+
+            <div style="font-size: 11px; color: #aaa; text-align: right;">
+              Destino: <span style="color: #ffc107; font-weight: bold;">{{ canal.saidaAtiva() }}</span>
+            </div>
+
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>
