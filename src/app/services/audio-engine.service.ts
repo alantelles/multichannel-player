@@ -28,6 +28,7 @@ export interface CanalAudio {
   player: Tone.Player;
   volumeNode: Tone.Volume;
   channelNode: Tone.Channel;
+  muted?: boolean;
   
   // Signals para atualizar a interface do Angular em tempo real
   volumeSignal: any;  // Armazena o valor em dB (-60 a +6)
@@ -82,13 +83,14 @@ export class AudioEngineService {
       // Montagem da mesa de som multicanal
       const novosCanais: CanalAudio[] = [];
 
-      projeto.canais.forEach((canal: any) => {
+      projeto.canais.forEach((canal: CanalAudio) => {
         const urlCompleta = `${AUDIO_REPO}${projeto.pastaBase}${canal.arquivo}`;
 
         // 1. Cria os nós de áudio para este canal
         const player = new Tone.Player({ url: urlCompleta, autostart: false });
         const volumeNode = new Tone.Volume(0); // 0dB = Volume original
         const channelNode = new Tone.Channel();
+        channelNode.mute = canal.muted || false;
         player.chain(volumeNode, channelNode, Tone.Destination);
 
         novosCanais.push({
@@ -99,7 +101,7 @@ export class AudioEngineService {
           volumeNode: volumeNode,
           channelNode: channelNode,
           volumeSignal: signal(0),       // Slider começa no meio (0 dB)
-          isMuted: signal(false),        // Desmutado por padrão
+          isMuted: signal(canal.muted),        // Desmutado por padrão
           isSoloed: signal(false),
           saidaAtiva: signal('Master')   // Roteamento padrão
         });

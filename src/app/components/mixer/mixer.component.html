@@ -71,7 +71,7 @@
               <button (click)="audio.alternarSolo(canal)"
                       [style.background]="canal.isSoloed() ? '#770' : '#444'"
                       class="strip-button">
-                {{ canal.isMuted() ? '❗️ SOLO' : '⚠️ SOLO' }}
+                {{ canal.isSoloed() ? '❗️ SOLO' : '⚠️ SOLO' }}
               </button>
             </div>
 
