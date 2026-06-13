@@ -12,12 +12,13 @@ export interface Marker {
 
 export interface ProjectConfig {
   nomeProjeto: string;
+  offset?: number;
   bpm: number;
   timeSignature: number; // TODO: permitir compassos compostos
   pastaBase: string;
   canais: CanalAudio[];
-  markers: Marker[];
-  useFullSongMarker: boolean;
+  markers?: Marker[];
+  fullSong?: boolean;
 }
 
 export interface CanalAudio {
@@ -50,6 +51,7 @@ export class AudioEngineService {
   
   public canais = signal<CanalAudio[]>([]);
   private loopId!: any;
+  private offset?: number;
 
   async init() {
     if (this.isReady()) return;
@@ -72,6 +74,7 @@ export class AudioEngineService {
 
       // Configurações Globais de Tempo
       this.bpmAtual.set(projeto.bpm);
+      this.offset = projeto.offset;
       Tone.Transport.bpm.value = projeto.bpm;
       Tone.Transport.timeSignature = projeto.timeSignature || 4;
 
@@ -107,30 +110,16 @@ export class AudioEngineService {
       // 🎯 AGORA SIM: Se não houver markers no JSON, calculamos dinamicamente baseados na maior pista
       const temMarkersValidos = projeto.markers && Array.isArray(projeto.markers) && projeto.markers.length > 0;
 
-      if (temMarkersValidos) {
-        this.markers.set(projeto.markers);
-      } else {
+      if (projeto.markers && temMarkersValidos) {
+        const markers = projeto.markers.map(m => m);
+        if (projeto.fullSong) {
+          markers.push(this.criarMarkerAudioCompleto());
+        }
+        this.markers.set(markers);
+      }
+      if (!temMarkersValidos) {
         // Encontra a maior duração entre todas as pistas carregadas (em segundos)
-        let maiorDuracaoSegundos = 0;
-        this.canais().forEach(canal => {
-          const duracaoPista = canal.player.buffer.duration;
-          if (duracaoPista > maiorDuracaoSegundos) {
-            maiorDuracaoSegundos = duracaoPista;
-          }
-        });
-
-        // Se por algum motivo der zero (ex: arquivo corrompido), usa 3 minutos (180s) de segurança
-        if (maiorDuracaoSegundos === 0) maiorDuracaoSegundos = 180; 
-
-        // Criamos o marcador usando o número puro (segundos) que o Tone.js aceita perfeitamente
-        const markerFull = { 
-          id: 'full-audio', 
-          nome: 'Áudio Completo (Automático)', 
-          inicio: '0m', 
-          duracao: maiorDuracaoSegundos.toString() 
-        };
-
-        this.markers.set([markerFull]);
+        this.markers.set([this.criarMarkerAudioCompleto()]);
       }
       this.trechoAtivo.set(this.markers()[0]);
       this.proximoTrecho.set(null);
@@ -144,43 +133,134 @@ export class AudioEngineService {
     }
   }
 
-  private configurarLoopDoTrecho() {
-    if (this.loopId !== undefined && this.loopId !== null) {
-      Tone.Transport.clear(this.loopId);
-    }
-    
-    const primeiroTrecho = this.trechoAtivo();
-    if (!primeiroTrecho) return;
-
-    // Agenda a repetição amarrada ao início zero do Transport
-    this.loopId = Tone.Transport.scheduleRepeat((time) => {
-      if (this.canais().length === 0) return;
-
-      const proximo = this.proximoTrecho();
-      if (proximo) {
-        this.trechoAtivo.set(proximo);
-        this.proximoTrecho.set(null); 
-        this.loopCount.set(0);
-        this.configurarLoopDoTrecho();
-        return; 
+  private criarMarkerAudioCompleto() {
+    let maiorDuracaoSegundos = 0;
+    this.canais().forEach(canal => {
+      const duracaoPista = canal.player.buffer.duration;
+      if (duracaoPista > maiorDuracaoSegundos) {
+        maiorDuracaoSegundos = duracaoPista;
       }
+    });
 
-      const atual = this.trechoAtivo();
-      if (!atual) return;
+    // Se por algum motivo der zero (ex: arquivo corrompido), usa 3 minutos (180s) de segurança
+    if (maiorDuracaoSegundos === 0) maiorDuracaoSegundos = 180;
 
-      // Dispara a reprodução síncrona de todas as pistas
-      this.canais().forEach(canal => {
-        if (canal.player.loaded) {
-          canal.player.start(time, atual.inicio, atual.duracao);
-        }
-      });
-      
-      this.loopCount.update(c => c + 1);
-    }, primeiroTrecho.duracao, 0); 
+    // Criamos o marcador usando o número puro (segundos) que o Tone.js aceita perfeitamente
+    return {
+      id: 'full-audio',
+      nome: 'Áudio Completo (Automático)',
+      inicio: '0m',
+      duracao: maiorDuracaoSegundos.toString()
+    }
   }
 
-  // 🎯 MÉTODOS DE CONTROLE DA MESA DE SOM (AÇÕES DOS SLIDERS E BOTÕES)
+  private configurarLoopDoTrecho() {
+    // 1. Limpa completamente qualquer agendamento anterior para não encavalar
+    if (this.loopId !== undefined && this.loopId !== null) {
+      Tone.Transport.clear(this.loopId);
+      this.loopId = null;
+    }
+    
+    const atual = this.trechoAtivo();
+    if (!atual) return;
 
+    // Se o motor já estiver rodando (mudança em tempo real), pega o tempo de hardware atual.
+    // Se veio do botão Play, começamos no zero absoluto do clock.
+    const tempoDisparoInicial = this.isPlaying() ? Tone.context.currentTime : Tone.context.currentTime + 0.02;
+
+    // Dispara a primeira engrenagem do carrossel
+    this.executarCicloArranjador(tempoDisparoInicial);
+  }
+
+  private executarCicloArranjador(tempoDisparoCravado: number) {
+    // 1. Verifica se o usuário pediu para mudar de bloco na virada
+    const proximo = this.proximoTrecho();
+    if (proximo) {
+      this.trechoAtivo.set(proximo);
+      this.proximoTrecho.set(null); 
+      this.loopCount.set(0); 
+    }
+
+    const atual = this.trechoAtivo();
+    if (!atual) return;
+
+    const inicioSegundos = Tone.Time(atual.inicio).toSeconds();
+    const duracaoSegundos = Tone.Time(atual.duracao).toSeconds();
+
+    // 🎯 O PULO DO GATO DO OFFSET: 
+    // Defina aqui um valor em segundos (positivo ou negativo) para testar o alinhamento.
+    // Exemplo: se o áudio está entrando atrasado um tempo (num compasso 4/4 a 120 BPM, 1 tempo = 0.5s),
+    // você pode subtrair ou somar esse valor para casar a cabeça do compasso perfeitamente.
+    const offsetAjuste = this.offset || 0; // Altere para 0.5, -0.2, etc., para calibrar o "respiro"
+    const inicioComOffset = Math.max(0, inicioSegundos + offsetAjuste);
+
+    // 2. DISPARO CRÍTICO DE ÁUDIO
+    this.canais().forEach(canal => {
+      if (canal.player.loaded) {
+        canal.player.stop(tempoDisparoCravado); 
+        // Aplicamos o início corrigido com o seu offset de teste
+        canal.player.start(tempoDisparoCravado, inicioComOffset, duracaoSegundos);
+      }
+    });
+
+    // 3. MATEMÁTICA DA PRÓXIMA VIRADA (Régua de Hardware)
+    const tempoProximaVirada = tempoDisparoCravado + duracaoSegundos;
+
+    // 🎯 CORREÇÃO DO GAP: Em vez de usar Tone.Transport.seconds (que sofre delay da UI),
+    // nós convertemos o tempo de hardware absoluto direto para o tempo do Transport.
+    const tempoMusicalTransport = Tone.Transport.getSecondsAtTime(tempoProximaVirada);
+
+    // 4. AGENDA A PRÓXIMA VOLTA
+    this.loopId = Tone.Transport.schedule((time) => {
+      
+      if (!this.proximoTrecho()) {
+        this.loopCount.update(c => c + 1);
+      }
+
+      // Passa o clock puro para manter a corrente contínua sem folga
+      this.executarCicloArranjador(time);
+
+    }, tempoMusicalTransport);
+  }
+  private agendarProximoCiclo(tempoMusicalDeDisparo: number) {
+    // 1. Vira a chave de bloco na virada exata do trecho inteiro se o usuário agendou
+    const proximo = this.proximoTrecho();
+    if (proximo) {
+      this.trechoAtivo.set(proximo);
+      this.proximoTrecho.set(null); 
+      this.loopCount.set(0); 
+    }
+
+    const atual = this.trechoAtivo();
+    if (!atual) return;
+
+    // 2. Converte as strings do seu JSON para segundos reais baseados no BPM do projeto
+    const inicioAudioSegundos = Tone.Time(atual.inicio).toSeconds();
+    const duracaoAudioSegundos = Tone.Time(atual.duracao).toSeconds();
+
+    // 3. Dispara todas as pistas sincronizadas na régua musical do Transport usando o prefixo '@'
+    this.canais().forEach(canal => {
+      if (canal.player.loaded) {
+        // Força o player a respeitar o início e o tamanho total do áudio definido no JSON
+        canal.player.start(`@${tempoMusicalDeDisparo}`, inicioAudioSegundos, duracaoAudioSegundos);
+      }
+    });
+
+    // 4. 🎯 AQUI ESTÁ A CORREÇÃO DA MÁGICA: O próximo evento só vai acontecer 
+    // após somar a duração TOTAL do trecho na linha do tempo do Transport
+    const proximaViradaMusical = tempoMusicalDeDisparo + duracaoAudioSegundos;
+
+    // 5. Agendamos um evento ÚNICO para o exato momento onde o trecho INTEIRO acaba
+    this.loopId = Tone.Transport.schedule((time) => {
+      // Se não mudou de trecho, incrementa o contador de voltas do bloco atual
+      if (!this.proximoTrecho()) {
+        this.loopCount.update(c => c + 1);
+      }
+      
+      // Chama recursivamente passando a posição correta da linha do tempo para colar o próximo
+      this.agendarProximoCiclo(proximaViradaMusical);
+    }, proximaViradaMusical);
+  }
   public alterarVolume(canal: CanalAudio, db: number) {
     canal.volumeSignal.set(db);
     // O Tone.js usa escala logarítmica para volume (dB). -60 é silêncio absoluto.
@@ -220,8 +300,9 @@ export class AudioEngineService {
   }
 
   private destruirCanaisAtuais() {
-    if (this.loopId !== undefined && this.loopId !== null) {
-      Tone.Transport.clear(this.loopId);
+    if (this.loopId) {
+      this.loopId.stop();
+      this.loopId.dispose();
       this.loopId = null;
     }
     this.canais().forEach(c => {
@@ -242,8 +323,14 @@ export class AudioEngineService {
     }
 
     if (this.isPlaying()) {
+      // 🎯 LIMPEZA COMPLETA DO AGENDADOR RECURSIVO:
+      if (this.loopId !== undefined && this.loopId !== null) {
+        Tone.Transport.clear(this.loopId);
+        this.loopId = null;
+      }
+
       Tone.Transport.stop();
-      Tone.Transport.cancel(); 
+      Tone.Transport.cancel(0); 
       
       this.canais().forEach(c => c.player.stop());
       this.isPlaying.set(false);
@@ -251,17 +338,15 @@ export class AudioEngineService {
       this.proximoTrecho.set(null);
     } else {
       Tone.Transport.stop();
-      Tone.Transport.cancel();
-      Tone.Transport.position = 0;
+      Tone.Transport.cancel(0); 
+      Tone.Transport.position = 0; // Garante que a agulha comece no segundo zero do Transport
       
-      // Armamos o loop fixo segundos antes da partida do motor
-      this.configurarLoopDoTrecho();
+      this.loopCount.set(0);
+      Tone.Transport.start();
+      this.isPlaying.set(true);
 
-      // Microdelay de estabilização do relógio de hardware
-      setTimeout(() => {
-        Tone.Transport.start();
-        this.isPlaying.set(true);
-      }, 10);
+      // Armas a automação baseada na linha do tempo contínua
+      this.configurarLoopDoTrecho();
     }
   }
 }
