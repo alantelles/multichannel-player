@@ -10,9 +10,20 @@ export interface Marker {
   duracao: string;  
 }
 
+export interface ProjectConfig {
+  nomeProjeto: string;
+  bpm: number;
+  timeSignature: number; // TODO: permitir compassos compostos
+  pastaBase: string;
+  canais: CanalAudio[];
+  markers: Marker[];
+  useFullSongMarker: boolean;
+}
+
 export interface CanalAudio {
   id: string;
   nome: string;
+  arquivo: string;
   player: Tone.Player;
   volumeNode: Tone.Volume;
   channelNode: Tone.Channel;
@@ -56,7 +67,7 @@ export class AudioEngineService {
       this.statusCarregamento.set('Carregando pistas do repositório...');
       this.destruirCanaisAtuais();
 
-      const projeto = JSON.parse(jsonTexto);
+      const projeto: ProjectConfig = JSON.parse(jsonTexto) as ProjectConfig;
 
 
       // Configurações Globais de Tempo
@@ -80,6 +91,7 @@ export class AudioEngineService {
           id: canal.id,
           nome: canal.nome,
           player: player,
+          arquivo: canal.arquivo,
           volumeNode: volumeNode,
           channelNode: channelNode,
           volumeSignal: signal(0),       // Slider começa no meio (0 dB)
