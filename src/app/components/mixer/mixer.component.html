@@ -1,5 +1,5 @@
 <div style="padding: 20px; font-family: sans-serif; background: #222; color: #fff; border-radius: 8px;">
-  <h2>🎛️ Estúdio Multicanal Automatizado (Estilo Moises)</h2>
+  <h2>🎛️ Virtual Studio Web</h2>
 
   <div class="carregador">
     <div style="margin-bottom: 20px;">
@@ -68,8 +68,8 @@
                       class="strip-button">
                 {{ canal.isMuted() ? '🔇 MUTE' : '🔊 MUTE' }}
               </button>
-              <button (click)="audio.alternarMute(canal)"
-                      [style.background]="canal.isMuted() ? '#770' : '#444'"
+              <button (click)="audio.alternarSolo(canal)"
+                      [style.background]="canal.isSoloed() ? '#770' : '#444'"
                       class="strip-button">
                 {{ canal.isMuted() ? '❗️ SOLO' : '⚠️ SOLO' }}
               </button>

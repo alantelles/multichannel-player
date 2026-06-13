@@ -32,6 +32,7 @@ export interface CanalAudio {
   // Signals para atualizar a interface do Angular em tempo real
   volumeSignal: any;  // Armazena o valor em dB (-60 a +6)
   isMuted: any;       // Booleano para o botão de Mute
+  isSoloed: any;
   saidaAtiva: any;    // String ou número indicando o canal de saída física
 }
 
@@ -99,6 +100,7 @@ export class AudioEngineService {
           channelNode: channelNode,
           volumeSignal: signal(0),       // Slider começa no meio (0 dB)
           isMuted: signal(false),        // Desmutado por padrão
+          isSoloed: signal(false),
           saidaAtiva: signal('Master')   // Roteamento padrão
         });
       });
@@ -266,7 +268,16 @@ export class AudioEngineService {
     // O Tone.js usa escala logarítmica para volume (dB). -60 é silêncio absoluto.
     canal.volumeNode.volume.rampTo(db, 0.05); // Suaviza em 50ms para não dar estalo (pop)
   }
-
+  public alternarSolo(canal: CanalAudio) {
+    const novoEstadoSolo = !canal.isSoloed();
+    
+    // 1. Atualiza o signal para refletir a cor ativa no botão da interface do Angular
+    canal.isSoloed.set(novoEstadoSolo);
+    
+    // 2. 🎯 A MÁGICA DO TONE.JS: Ativa ou desativa o solo nativo no nó de áudio.
+    // O Tone.js vai gerenciar o silêncio dos outros canais de forma cirúrgica.
+    canal.channelNode.solo = novoEstadoSolo;
+  }
   public alternarMute(canal: CanalAudio) {
     const novoEstado = !canal.isMuted();
     canal.isMuted.set(novoEstado);
