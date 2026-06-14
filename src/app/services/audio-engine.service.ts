@@ -7,7 +7,10 @@ export interface Marker {
   id: string;
   nome: string;
   inicio: string;   
-  duracao: string;  
+  duracao: string;
+  maxPlays?: number;
+  nextMarker?: string;
+  loopStart?: string;
 }
 
 export interface ProjectConfig {
@@ -160,6 +163,7 @@ export class AudioEngineService {
       id: 'full-audio',
       nome: 'Áudio Completo (Automático)',
       inicio: '0m',
+      maxPlays: 1,
       duracao: maiorDuracaoSegundos.toString()
     }
   }
@@ -183,6 +187,21 @@ export class AudioEngineService {
   }
 
   private executarCicloArranjador(tempoDisparoCravado: number) {
+
+    
+    const atualAntesVirada = this.trechoAtivo();
+    if (atualAntesVirada && atualAntesVirada.maxPlays) {
+      if (atualAntesVirada.maxPlays - 1 < this.loopCount()) {        
+        if (!this.proximoTrecho()) {
+          if (atualAntesVirada.nextMarker) {
+            this.agendarTrecho(atualAntesVirada.nextMarker);
+          } else {
+            this.togglePlay();
+            return;
+          }
+        }
+      }
+    }
     // 1. Verifica se o usuário pediu para mudar de bloco na virada
     const proximo = this.proximoTrecho();
     if (proximo) {
@@ -193,9 +212,25 @@ export class AudioEngineService {
 
     const atual = this.trechoAtivo();
     if (!atual) return;
-
-    const inicioSegundos = Tone.Time(atual.inicio).toSeconds();
-    const duracaoSegundos = Tone.Time(atual.duracao).toSeconds();
+    // 1. RESOLUÇÃO DOS PONTOS DE TEMPO
+    const inicioAbsoluto = Tone.Time(atual.inicio).toSeconds();
+    const duracaoDoLoopReal = Tone.Time(atual.duracao).toSeconds();
+    
+    let inicioSegundos = inicioAbsoluto;
+    let duracaoSegundos = duracaoDoLoopReal;
+    let inicioReal = Tone.Time(atual.inicio).toSeconds();
+    // Se já passou da primeira execução e existe um ponto específico de loop
+    if (this.loopCount() > 0 && atual.loopStart) {
+      inicioSegundos = Tone.Time(atual.loopStart).toSeconds(); // 🎯 Correção da sintaxe (=+)
+      duracaoSegundos = duracaoDoLoopReal; // Usa a duração exata especificada para o loop
+    } else if (atual.loopStart) {
+      // 🎯 PRIMEIRA VOLTA: O áudio precisa tocar o trecho inteiro (Crash + Miolo)
+      const loopStartSegundos = Tone.Time(atual.loopStart).toSeconds();
+      const tamanhoDoPrefixo = loopStartSegundos - inicioAbsoluto;
+      
+      // A duração total da primeira vez será o tamanho do prefixo/crash + a duração do loop real
+      duracaoSegundos = tamanhoDoPrefixo + duracaoDoLoopReal;
+    }
 
     // 🎯 O PULO DO GATO DO OFFSET: 
     // Defina aqui um valor em segundos (positivo ou negativo) para testar o alinhamento.
@@ -232,45 +267,7 @@ export class AudioEngineService {
 
     }, tempoMusicalTransport);
   }
-  private agendarProximoCiclo(tempoMusicalDeDisparo: number) {
-    // 1. Vira a chave de bloco na virada exata do trecho inteiro se o usuário agendou
-    const proximo = this.proximoTrecho();
-    if (proximo) {
-      this.trechoAtivo.set(proximo);
-      this.proximoTrecho.set(null); 
-      this.loopCount.set(0); 
-    }
 
-    const atual = this.trechoAtivo();
-    if (!atual) return;
-
-    // 2. Converte as strings do seu JSON para segundos reais baseados no BPM do projeto
-    const inicioAudioSegundos = Tone.Time(atual.inicio).toSeconds();
-    const duracaoAudioSegundos = Tone.Time(atual.duracao).toSeconds();
-
-    // 3. Dispara todas as pistas sincronizadas na régua musical do Transport usando o prefixo '@'
-    this.canais().forEach(canal => {
-      if (canal.player.loaded) {
-        // Força o player a respeitar o início e o tamanho total do áudio definido no JSON
-        canal.player.start(`@${tempoMusicalDeDisparo}`, inicioAudioSegundos, duracaoAudioSegundos);
-      }
-    });
-
-    // 4. 🎯 AQUI ESTÁ A CORREÇÃO DA MÁGICA: O próximo evento só vai acontecer 
-    // após somar a duração TOTAL do trecho na linha do tempo do Transport
-    const proximaViradaMusical = tempoMusicalDeDisparo + duracaoAudioSegundos;
-
-    // 5. Agendamos um evento ÚNICO para o exato momento onde o trecho INTEIRO acaba
-    this.loopId = Tone.Transport.schedule((time) => {
-      // Se não mudou de trecho, incrementa o contador de voltas do bloco atual
-      if (!this.proximoTrecho()) {
-        this.loopCount.update(c => c + 1);
-      }
-      
-      // Chama recursivamente passando a posição correta da linha do tempo para colar o próximo
-      this.agendarProximoCiclo(proximaViradaMusical);
-    }, proximaViradaMusical);
-  }
   public alterarVolume(canal: CanalAudio, db: number) {
     canal.volumeSignal.set(db);
     // O Tone.js usa escala logarítmica para volume (dB). -60 é silêncio absoluto.
