@@ -59,6 +59,16 @@ export class AudioEngineService {
   public canais = signal<CanalAudio[]>([]);
   private loopId!: any;
   private offset?: number;
+  
+  // 1. O Signal que seu componente Angular vai ler no HTML
+  public tempoMusicalAtual = signal<string>('0:0:0');
+  private animacaoId!: number;
+  private tempoInicioCicloTransport: number = 0;
+
+  // Signals que a UI do Angular vai escutar em tempo real
+  public segundosDecorridosNoBloco = signal<number>(0);
+  public compassoAtualNoBloco = signal<number>(0);
+
 
   async init() {
     if (this.isReady()) return;
@@ -67,7 +77,45 @@ export class AudioEngineService {
     Tone.Transport.bpm.value = this.bpmAtual();
     this.isReady.set(true);
   }
+// 🎯 CHAME ESTE MÉTODO no 'else' do seu togglePlay(), logo após o Tone.Transport.start()
+  private iniciarRelogioUI() {
+    const renderizarFrame = () => {
+      if (!this.isPlaying()) return;
 
+      // 1. Calcula os segundos decorridos usando a abordagem 2
+      const tempoDecorrido = Tone.Transport.seconds - this.tempoInicioCicloTransport;
+      const segundosPuros = Math.max(0, tempoDecorrido);
+      this.segundosDecorridosNoBloco.set(segundosPuros);
+
+      // 2. Converte para compassos puros (matemática baseada no BPM e Fórmula de Compasso)
+      const bps = this.bpmAtual() / 60; // Batidas por segundo
+      const batidasTotais = segundosPuros * bps;
+      const compassoCalculado = Math.floor(batidasTotais / (Tone.Transport.timeSignature as number)) + 1;
+      let ajusteTrecho = 0;
+      if (this.trechoAtivo()) {
+        const refInicioTrecho = parseInt((this.trechoAtivo()?.inicio || '0m').replaceAll('\D*', ''));
+        const refInicioLoop = parseInt((this.trechoAtivo()?.loopStart || '0m').replaceAll('\D*', ''));
+        const compCalcInicio = compassoCalculado + refInicioTrecho;
+        ajusteTrecho = compCalcInicio;
+      }
+      // Somamos +1 para a contagem ficar humana (Compasso 1, Compasso 2...) em vez de indexada em 0
+      this.compassoAtualNoBloco.set(compassoCalculado + ajusteTrecho);
+
+      // Continua o laço no próximo frame da tela
+      this.animacaoId = requestAnimationFrame(renderizarFrame);
+    };
+
+    requestAnimationFrame(renderizarFrame);
+  }
+
+  // 🎯 CHAME ESTE MÉTODO no 'if (this.isPlaying())' do seu togglePlay() para limpar tudo
+  private pararRelogioUI() {
+    if (this.animacaoId) {
+      cancelAnimationFrame(this.animacaoId);
+    }
+    this.segundosDecorridosNoBloco.set(0);
+    this.compassoAtualNoBloco.set(0);
+  }
   public async carregarProjetoPorJSON(jsonTexto: string) {
     if (!this.isReady()) await this.init();
     if (this.isPlaying()) this.togglePlay();
@@ -187,8 +235,6 @@ export class AudioEngineService {
   }
 
   private executarCicloArranjador(tempoDisparoCravado: number) {
-
-    
     const atualAntesVirada = this.trechoAtivo();
     if (atualAntesVirada && atualAntesVirada.maxPlays) {
       if (atualAntesVirada.maxPlays - 1 < this.loopCount()) {        
@@ -218,7 +264,6 @@ export class AudioEngineService {
     
     let inicioSegundos = inicioAbsoluto;
     let duracaoSegundos = duracaoDoLoopReal;
-    let inicioReal = Tone.Time(atual.inicio).toSeconds();
     // Se já passou da primeira execução e existe um ponto específico de loop
     if (this.loopCount() > 0 && atual.loopStart) {
       inicioSegundos = Tone.Time(atual.loopStart).toSeconds(); // 🎯 Correção da sintaxe (=+)
@@ -238,7 +283,7 @@ export class AudioEngineService {
     // você pode subtrair ou somar esse valor para casar a cabeça do compasso perfeitamente.
     const offsetAjuste = this.offset || 0; // Altere para 0.5, -0.2, etc., para calibrar o "respiro"
     const inicioComOffset = Math.max(0, inicioSegundos + offsetAjuste);
-
+    this.tempoInicioCicloTransport = Tone.Transport.getSecondsAtTime(tempoDisparoCravado);
     // 2. DISPARO CRÍTICO DE ÁUDIO
     this.canais().forEach(canal => {
       if (canal.player.loaded) {
@@ -266,6 +311,14 @@ export class AudioEngineService {
       this.executarCicloArranjador(time);
 
     }, tempoMusicalTransport);
+  }
+  public obterProgressoEmSegundos(): number {
+    if (!this.isPlaying()) return 0;
+    
+    // O tempo atual da agulha menos o segundo onde o ciclo começou
+    const tempoDecorridoNoBloco = Tone.Transport.seconds - this.tempoInicioCicloTransport;
+    
+    return Math.max(0, tempoDecorridoNoBloco);
   }
 
   public alterarVolume(canal: CanalAudio, db: number) {
@@ -352,6 +405,7 @@ export class AudioEngineService {
       this.isPlaying.set(false);
       this.loopCount.set(0);
       this.proximoTrecho.set(null);
+      this.pararRelogioUI();
     } else {
       Tone.Transport.stop();
       Tone.Transport.cancel(0); 
@@ -360,7 +414,7 @@ export class AudioEngineService {
       this.loopCount.set(0);
       Tone.Transport.start();
       this.isPlaying.set(true);
-
+      this.iniciarRelogioUI();
       // Armas a automação baseada na linha do tempo contínua
       this.configurarLoopDoTrecho();
     }

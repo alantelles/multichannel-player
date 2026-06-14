@@ -8,6 +8,23 @@
       <div style="margin-top: 8px; color: #ffc107; font-size: 14px;">⚡ Status: {{ audio.statusCarregamento() }}</div>
     </div>
     <div>
+    <div class="painel-arranjador">
+      <h2>Seção Ativa: {{ audio.trechoAtivo()?.nome }}</h2>
+
+      <div class="visor-digital">
+        <div class="dado">
+          <span class="label">COMPASSO: </span>
+          <span class="valor">{{ audio.compassoAtualNoBloco() }}</span>
+        </div>
+
+        <div class="dado">
+          <span class="label">TEMPO SEÇÃO: </span>
+          <span class="valor">{{ audio.segundosDecorridosNoBloco().toFixed(1) }}s</span>
+        </div>
+      </div>
+    </div>
+    </div>
+    <div>
       <button class="play-stop"
         [disabled]="!audio.isFullyLoaded()"
         (click)="audio.togglePlay()"
