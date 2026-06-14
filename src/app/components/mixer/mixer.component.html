@@ -8,7 +8,11 @@
       <div style="margin-top: 8px; color: #ffc107; font-size: 14px;">⚡ Status: {{ audio.statusCarregamento() }}</div>
     </div>
     <div>
-      <button class="play-stop" (click)="audio.togglePlay()" [style.background]="audio.isPlaying() ? '#dc3545' : '#28a745'">
+      <button class="play-stop"
+        [disabled]="!audio.isFullyLoaded()"
+        (click)="audio.togglePlay()"
+        [title]="!audio.isFullyLoaded() ? 'Carregue um projeto primeiro' : ''"
+        [style.background]="backgroundColorPlayButton()">
         @if (audio.isPlaying()) { ⏹️ <br><br> Playing } @else { ▶️ <br><br> Stopped }
       </button>
     </div>

@@ -28,6 +28,13 @@ export class MixerComponent {
     }
   }
 
+  backgroundColorPlayButton(): string {
+    if (this.audio.isFullyLoaded()) {
+      return this.audio.isPlaying() ? '#dc3545' : '#28a745'
+    }
+    return '#818181'
+  }
+
   // Inicializa o motor de áudio no primeiro clique/interação por segurança do browser
   async ligarMesa() {
     await this.audio.init();

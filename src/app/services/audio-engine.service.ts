@@ -44,8 +44,9 @@ export interface CanalAudio {
 export class AudioEngineService {
   public isReady = signal<boolean>(false);
   public isPlaying = signal<boolean>(false);
+  public isFullyLoaded = signal<boolean>(false);
   public loopCount = signal<number>(0);
-  public statusCarregamento = signal<string>('Aguardando projeto JSON...');
+  public statusCarregamento = signal<string>('Aguardando projeto...');
   
   public bpmAtual = signal<number>(120);
   public markers = signal<Marker[]>([]);
@@ -69,6 +70,7 @@ export class AudioEngineService {
     if (this.isPlaying()) this.togglePlay();
 
     try {
+      this.isFullyLoaded.set(false);
       this.statusCarregamento.set('Carregando pistas do repositório...');
       this.destruirCanaisAtuais();
 
@@ -83,10 +85,9 @@ export class AudioEngineService {
 
       // Montagem da mesa de som multicanal
       const novosCanais: CanalAudio[] = [];
-
+      let canaisCarregados = 0;
       projeto.canais.forEach((canal: CanalAudio) => {
         const urlCompleta = `${AUDIO_REPO}${projeto.pastaBase}${canal.arquivo}`;
-
         // 1. Cria os nós de áudio para este canal
         const player = new Tone.Player({ url: urlCompleta, autostart: false });
         const volumeNode = new Tone.Volume(0); // 0dB = Volume original
@@ -94,7 +95,7 @@ export class AudioEngineService {
         channelNode.mute = canal.muted || false;
         volumeNode.volume.rampTo(canal.volume || 0, 0.05);
         player.chain(volumeNode, channelNode, Tone.Destination);
-
+        
         novosCanais.push({
           id: canal.id,
           nome: canal.nome,
@@ -112,6 +113,8 @@ export class AudioEngineService {
       this.canais.set(novosCanais);
 
       // Aguarda o download e decodificação em lote dos MP3s na RAM
+
+      this.statusCarregamento.set(`Baixando arquivos de áudio`);
       await Tone.loaded();
       // 🎯 AGORA SIM: Se não houver markers no JSON, calculamos dinamicamente baseados na maior pista
       const temMarkersValidos = projeto.markers && Array.isArray(projeto.markers) && projeto.markers.length > 0;
@@ -130,6 +133,7 @@ export class AudioEngineService {
       this.trechoAtivo.set(this.markers()[0]);
       this.proximoTrecho.set(null);
       this.loopCount.set(0);
+      this.isFullyLoaded.set(true);
       this.statusCarregamento.set(`Projeto "${projeto.nomeProjeto}" pronto!`);
 
     } catch (erro) {
