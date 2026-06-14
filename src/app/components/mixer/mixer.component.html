@@ -50,12 +50,12 @@
 
             <div class="fader-indicators">
               <div class="limits">              
-                <span>+6</span>
+                <span>+9</span>
                 <span class="fader-level">{{ canal.volumeSignal() }}</span>
                 <span>-40</span>
               </div>
               <div class="fader">
-                <input type="range" min="-40" max="6" step="1"
+                <input type="range" min="-40" max="9" step="1"
                     [value]="canal.volumeSignal()"
                     (input)="atualizarVolumeRange(canal, $event)"
                     class="strip-slider" />

@@ -29,6 +29,7 @@ export interface CanalAudio {
   volumeNode: Tone.Volume;
   channelNode: Tone.Channel;
   muted?: boolean;
+  volume?: number;
   
   // Signals para atualizar a interface do Angular em tempo real
   volumeSignal: any;  // Armazena o valor em dB (-60 a +6)
@@ -91,6 +92,7 @@ export class AudioEngineService {
         const volumeNode = new Tone.Volume(0); // 0dB = Volume original
         const channelNode = new Tone.Channel();
         channelNode.mute = canal.muted || false;
+        volumeNode.volume.rampTo(canal.volume || 0, 0.05);
         player.chain(volumeNode, channelNode, Tone.Destination);
 
         novosCanais.push({
@@ -100,7 +102,7 @@ export class AudioEngineService {
           arquivo: canal.arquivo,
           volumeNode: volumeNode,
           channelNode: channelNode,
-          volumeSignal: signal(0),       // Slider começa no meio (0 dB)
+          volumeSignal: signal(canal.volume || 0),       // Slider começa no meio (0 dB)
           isMuted: signal(canal.muted),        // Desmutado por padrão
           isSoloed: signal(false),
           saidaAtiva: signal('Master')   // Roteamento padrão
