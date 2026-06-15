@@ -1,8 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import * as Tone from 'tone';
 
-export const AUDIO_REPO = 'http://localhost/static/audios/';
-
 export interface Marker {
   id: string;
   nome: string;
@@ -45,7 +43,7 @@ export interface CanalAudio {
   providedIn: 'root'
 })
 export class AudioEngineService {
-  public audioRepository = signal<string>('http://localhost:4200/audios/');
+  public audioRepository = signal<string>('audios/');
   public isReady = signal<boolean>(false);
   public isPlaying = signal<boolean>(false);
   public isFullyLoaded = signal<boolean>(false);

@@ -31,7 +31,7 @@ export class MixerComponent implements OnInit {
 
   ngOnInit() {
     const savedAudioRepository = localStorage.getItem('audioRepository');
-    this.audio.audioRepository.set(savedAudioRepository || 'http://localhost:4200/audios/');
+    this.audio.audioRepository.set(savedAudioRepository || 'audios/');
   }
 
   setAudioRepository(novaUrl: string) {
