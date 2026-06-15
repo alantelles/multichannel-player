@@ -1,0 +1,81 @@
+{
+    "nomeProjeto": "I Couldn't Love You More",
+    "pastaBase": "i-couldnt-love-you-more/",
+    "fullSong": true,
+    "bpm": 93,
+    "offset": 0.15,
+    "markers": [
+      {
+        "id": "intro-fill",
+        "nome": "Intro Fill",
+        "inicio": "0m",
+        "duracao": "1m",
+        "maxPlays": 1,
+        "nextMarker": "intro"
+      },
+      {
+        "id": "intro",
+        "nome": "Intro",
+        "inicio": "1m",
+        "loopStart": "3m",
+        "duracao": "2m",
+        "maxPlays": 91,
+        "nextMarker": "verse"
+      },
+      {
+        "id": "verse",
+        "nome": "Verse",
+        "inicio": "9m",
+        "duracao": "8m",
+        "maxPlays": 1,
+        "nextMarker": "pre-chorus"
+      },
+      {
+        "id": "pre-chorus",
+        "nome": "Pre Chorus",
+        "inicio": "17m",
+        "duracao": "8m",
+        "maxPlays": 1,
+        "nextMarker": "chorus"
+      },
+      {
+        "id": "chorus",
+        "nome": "Chorus",
+        "inicio": "25m",
+        "duracao": "8m"
+      }
+    ],
+    "canais": [
+        {
+            "nome": "Vocal",
+            "arquivo": "vocals.mp3",
+            "id": "vocals"
+        },
+        {
+            "nome": "Piano",
+            "arquivo": "piano.mp3",
+            "id": "piano"
+        },
+        {
+            "nome": "Bateria",
+            "arquivo": "drums.mp3",
+            "id": "drums"
+        },
+        {
+            "nome": "Baixo",
+            "arquivo": "bass.mp3",
+            "id": "bass"
+        },
+        {
+            "nome": "Metrônomo",
+            "arquivo": "metronome.mp3",
+            "id": "metronome",
+            "muted": true
+        },
+        {
+            "nome": "Outros",
+            "arquivo": "other.mp3",
+            "id": "other"
+        }
+    ]
+}

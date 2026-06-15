@@ -1,0 +1,56 @@
+{
+    "nomeProjeto": "I Couldn't Love You More",
+    "pastaBase": "i-couldnt-love-you-more/",
+    "bpm": 93,
+    "offset": 0.15,
+    "markers": [
+      {
+        "id": "intro-fill",
+        "nome": "Intro Fill",
+        "inicio": "0m",
+        "duracao": "1m",
+        "maxPlays": 1,
+        "nextMarker": "intro"
+      },
+      {
+        "id": "intro",
+        "nome": "Intro",
+        "inicio": "1m",
+        "loopStart": "5m",
+        "duracao": "4m"
+      },
+      {
+        "id": "verse",
+        "nome": "Verse",
+        "inicio": "9m",
+        "loopStart": "13m",
+        "duracao": "2m"
+      },
+      {
+        "id": "verse-fill",
+        "nome": "Verse fill",
+        "inicio": "15m",
+        "maxPlays": 1,
+        "duracao": "2m"
+      },
+      {
+        "id": "pre-chorus",
+        "nome": "Pre Chorus",
+        "inicio": "17m",
+        "duracao": "8m"
+      },
+      {
+        "id": "chorus",
+        "nome": "Chorus",
+        "inicio": "25m",
+        "duracao": "8m"
+      }
+    ],
+    "canais": [        
+        {
+            "nome": "Bateria",
+            "arquivo": "drums.mp3",
+            "id": "drums"
+        }
+    ]
+}
