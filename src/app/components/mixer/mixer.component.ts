@@ -1,14 +1,15 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { AudioEngineService } from '../../services/audio-engine.service'; // Ajuste o caminho se o seu arquivo tiver .service no nome
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-mixer',
   standalone: true,
-  imports: [],
+  imports: [FormsModule],
   templateUrl: './mixer.component.html', // ou mixer.component.html dependendo de como foi gerado
   styleUrl: './mixer.component.scss'     // ou mixer.component.scss
 })
-export class MixerComponent {
+export class MixerComponent implements OnInit {
   // Injeta o serviço corrigido usando a sintaxe moderna inject()
   protected audio = inject(AudioEngineService);
 
@@ -26,6 +27,16 @@ export class MixerComponent {
 
       reader.readAsText(arquivoConfig);
     }
+  }
+
+  ngOnInit() {
+    const savedAudioRepository = localStorage.getItem('audioRepository');
+    this.audio.audioRepository.set(savedAudioRepository || 'http://localhost:4200/audios/');
+  }
+
+  setAudioRepository(novaUrl: string) {
+    this.audio.audioRepository.set(novaUrl);
+    localStorage.setItem('audioRepository', novaUrl);
   }
 
   backgroundColorPlayButton(): string {

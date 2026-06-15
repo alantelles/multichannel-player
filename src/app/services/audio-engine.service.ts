@@ -45,6 +45,7 @@ export interface CanalAudio {
   providedIn: 'root'
 })
 export class AudioEngineService {
+  public audioRepository = signal<string>('http://localhost:4200/audios/');
   public isReady = signal<boolean>(false);
   public isPlaying = signal<boolean>(false);
   public isFullyLoaded = signal<boolean>(false);
@@ -68,6 +69,8 @@ export class AudioEngineService {
   // Signals que a UI do Angular vai escutar em tempo real
   public segundosDecorridosNoBloco = signal<number>(0);
   public compassoAtualNoBloco = signal<number>(0);
+  public beatAtualNoBloco = signal<number>(0);
+  public subdivisaoAtualNoBloco = signal<number>(0);
 
 
   async init() {
@@ -90,16 +93,16 @@ export class AudioEngineService {
       // 2. Converte para compassos puros (matemática baseada no BPM e Fórmula de Compasso)
       const bps = this.bpmAtual() / 60; // Batidas por segundo
       const batidasTotais = segundosPuros * bps;
-      const compassoCalculado = Math.floor(batidasTotais / (Tone.Transport.timeSignature as number)) + 1;
-      let ajusteTrecho = 0;
-      if (this.trechoAtivo()) {
-        const refInicioTrecho = parseInt((this.trechoAtivo()?.inicio || '0m').replaceAll('\D*', ''));
-        const refInicioLoop = parseInt((this.trechoAtivo()?.loopStart || '0m').replaceAll('\D*', ''));
-        const compCalcInicio = compassoCalculado + refInicioTrecho;
-        ajusteTrecho = compCalcInicio;
-      }
+      const beat = Math.floor(batidasTotais) % (Tone.Transport.timeSignature as number); // Batida dentro do compasso
+      this.beatAtualNoBloco.set(beat + 1);
+      const subdivisao = Math.floor((batidasTotais * 4) % 4); // Subdivisão em semicolcheias (4 por batida)
+      this.subdivisaoAtualNoBloco.set(subdivisao + 1);
+
+      const compassoCalculado = Math.floor(batidasTotais / (Tone.Transport.timeSignature as number));
+      let ajusteTrechoStr = this.loopCount() > 0 ? (this.trechoAtivo()?.loopStart || this.trechoAtivo()?.inicio) : this.trechoAtivo()?.inicio;
+      const ajusteTrecho = parseInt((ajusteTrechoStr || '0m').replaceAll('\D*', ''));
       // Somamos +1 para a contagem ficar humana (Compasso 1, Compasso 2...) em vez de indexada em 0
-      this.compassoAtualNoBloco.set(compassoCalculado + ajusteTrecho);
+      this.compassoAtualNoBloco.set(compassoCalculado + ajusteTrecho + 1);
 
       // Continua o laço no próximo frame da tela
       this.animacaoId = requestAnimationFrame(renderizarFrame);
@@ -115,6 +118,8 @@ export class AudioEngineService {
     }
     this.segundosDecorridosNoBloco.set(0);
     this.compassoAtualNoBloco.set(0);
+    this.beatAtualNoBloco.set(0);
+    this.subdivisaoAtualNoBloco.set(0);
   }
   public async carregarProjetoPorJSON(jsonTexto: string) {
     if (!this.isReady()) await this.init();
@@ -138,7 +143,7 @@ export class AudioEngineService {
       const novosCanais: CanalAudio[] = [];
       let canaisCarregados = 0;
       projeto.canais.forEach((canal: CanalAudio) => {
-        const urlCompleta = `${AUDIO_REPO}${projeto.pastaBase}${canal.arquivo}`;
+        const urlCompleta = `${this.audioRepository()}${projeto.pastaBase}${canal.arquivo}`;
         // 1. Cria os nós de áudio para este canal
         const player = new Tone.Player({ url: urlCompleta, autostart: false });
         const volumeNode = new Tone.Volume(0); // 0dB = Volume original

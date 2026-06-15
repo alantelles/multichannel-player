@@ -2,29 +2,35 @@
   <h2>🎛️ Virtual Studio Web</h2>
 
   <div class="carregador">
-    <div style="margin-bottom: 20px;">
+    <div class="painel-configuracao">
+      <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #aaa;">📁 Repositório áudios:</label>
+      <input type="text" class="ordinary-text-input" [(ngModel)]="audio.audioRepository" (ngModelChange)="setAudioRepository($event)" placeholder="URL do repositório de áudios" />
       <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #aaa;">📂 Selecionar projeto:</label>
       <input type="file" accept=".json" (change)="onConfigSelecionada($event)" />
       <div style="margin-top: 8px; color: #ffc107; font-size: 14px;">⚡ Status: {{ audio.statusCarregamento() }}</div>
     </div>
-    <div>
     <div class="painel-arranjador">
-      <h2>Seção Ativa: {{ audio.trechoAtivo()?.nome }}</h2>
-
+      <h2>🔊 Tocando Agora: <strong>{{ audio.trechoAtivo()?.nome }}</strong></h2>
+      <h4>Próximo trecho: <span [style.color]="audio.proximoTrecho()?.nome ? '#ffc107' : ''">{{ audio.proximoTrecho()?.nome || '[nenhum]' }}</span></h4>
+      <h4>Loops completos: {{ audio.loopCount()}}</h4>
+      <div class="visual-click">
+        <div id="b1" [class.active-head]="audio.beatAtualNoBloco() === 1"></div>
+        <div id="b2" [class.active]="audio.beatAtualNoBloco() === 2"></div>
+        <div id="b3" [class.active]="audio.beatAtualNoBloco() === 3"></div>
+        <div id="b4" [class.active]="audio.beatAtualNoBloco() === 4"></div>
+      </div>
       <div class="visor-digital">
         <div class="dado">
-          <span class="label">COMPASSO: </span>
-          <span class="valor">{{ audio.compassoAtualNoBloco() }}</span>
+          <span class="valor-menor">POS: </span>
+          <span class="valor"><strong style="font-size: 23px;">{{ audio.compassoAtualNoBloco() }} | </strong>{{ audio.beatAtualNoBloco() }} : {{ audio.subdivisaoAtualNoBloco() }}</span>
         </div>
-
         <div class="dado">
-          <span class="label">TEMPO SEÇÃO: </span>
-          <span class="valor">{{ audio.segundosDecorridosNoBloco().toFixed(1) }}s</span>
+          <span class="valor-menor">BPM: </span>
+          <span class="valor">{{ audio.bpmAtual() }}</span>
         </div>
       </div>
     </div>
-    </div>
-    <div>
+    <div style="margin-left: auto">
       <button class="play-stop"
         [disabled]="!audio.isFullyLoaded()"
         (click)="audio.togglePlay()"
@@ -49,13 +55,6 @@
           </button>
         }
       </div>
-    </div>
-
-    <div style="margin-bottom: 20px; background: #111; padding: 15px; border-radius: 4px;">
-      🔊 Tocando Agora: <strong>{{ audio.trechoAtivo()?.nome }}</strong> | BPM: {{ audio.bpmAtual() }} | Volta: {{ audio.loopCount() }}
-      @if (audio.proximoTrecho()) {
-        <div style="color: #ffc107; margin-top: 5px;">⏳ Agendado na Fila: {{ audio.proximoTrecho()?.nome }}</div>
-      }
     </div>
 
     <div style="margin-bottom: 20px; background: #2a2a2a; padding: 20px; border-radius: 6px;">
