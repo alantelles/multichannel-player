@@ -1,0 +1,56 @@
+<div class="dialog-overlay">
+  <div class="dialog-container">
+    <div class="dialog-header">
+      <h2>Enviar Áudios do Projeto</h2>
+      <p class="dialog-description">Configure a pasta base e selecione as pistas de áudio correspondentes.</p>
+    </div>
+
+    <form (ngSubmit)="confirmarUpload()" #projetoForm="ngForm" class="dialog-form">
+      <div class="form-group">
+        <label for="pastaBase">Nome do Projeto (Pasta Base):</label>
+        <input type="text" id="pastaBase" name="pastaBase" [(ngModel)]="pastaBaseNome" required
+          pattern="^[A-Za-z0-9-_]+$" #pastaBaseInput="ngModel" placeholder="Ex: i-couldnt-love-you-more"
+          class="form-control"
+          [class.input-invalido]="pastaBaseInput.invalid && (pastaBaseInput.dirty || pastaBaseInput.touched)" />
+
+        @if (pastaBaseInput.invalid && (pastaBaseInput.dirty || pastaBaseInput.touched)) {
+        <div class="validation-error">
+          @if (pastaBaseInput.errors?.['required']) {
+          <span>O nome do projeto é obrigatório.</span>
+          }
+          @if (pastaBaseInput.errors?.['pattern']) {
+          <span>Use apenas letras, números, hifens (-) ou underlines (_). Sem espaços ou acentos.</span>
+          }
+        </div>
+        } @else {
+        <small class="help-text">Esse nome deve ser idêntico ao campo 'pastaBase' do seu arquivo JSON.</small>
+        }
+      </div>
+      <div class="form-group">
+        <label for="arquivosAudio">Arquivos de Áudio (Pistas/Tracks):</label>
+        <input type="file" id="arquivosAudio" multiple (change)="aoSelecionarArquivos($event)"
+          accept="audio/mpeg, audio/mp3, audio/wav, audio/wave, audio/x-wav, audio/ogg, audio/aac, audio/x-m4a, audio/flac, audio/webm"
+          class="file-control" />
+
+        @if (arquivosSelecionados.length > 0) {
+        <div class="file-feedback success">
+          ✓ {{ arquivosSelecionados.length }} arquivo(s) de áudio detectado(s).
+        </div>
+        } @else {
+        <div class="file-feedback info">
+          Formatos aceitos: MP3, WAV, OGG, M4A, AAC, FLAC.
+        </div>
+        }
+      </div>
+      <div class="dialog-actions">
+        <button type="button" class="btn-cancelar" (click)="cancelar()">
+          Cancelar
+        </button>
+        <button type="submit" class="btn-confirmar"
+          [disabled]="projetoForm.invalid || arquivosSelecionados.length === 0">
+          Confirmar e Salvar Localmente
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

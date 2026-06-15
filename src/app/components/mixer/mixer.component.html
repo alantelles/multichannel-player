@@ -3,9 +3,10 @@
 
   <div class="carregador">
     <div class="painel-configuracao">
-      <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #aaa;">📁 Repositório áudios:</label>
+      <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #aaa;">📁 Repositório áudios online:</label>
       <input type="text" class="ordinary-text-input" [(ngModel)]="audio.audioRepository" (ngModelChange)="setAudioRepository($event)" placeholder="URL do repositório de áudios" />
-      <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #aaa;">📂 Selecionar projeto:</label>
+      <button class="botao-basico" (click)="adicionarArquivosLocal()">Adicionar áudios ao repositório local</button>
+      <label style="display: block; margin-top: 5px; margin-bottom: 5px; font-weight: bold; color: #aaa;">📂 Selecionar projeto:</label>
       <input type="file" accept=".json" (change)="onConfigSelecionada($event)" />
       <div style="margin-top: 8px; color: #ffc107; font-size: 14px;">⚡ Status: {{ audio.statusCarregamento() }}</div>
     </div>
@@ -50,7 +51,7 @@
           <button (click)="audio.agendarTrecho(trecho.id)"
                   [style.background]="audio.trechoAtivo()?.id === trecho.id ? '#28a745' : (audio.proximoTrecho()?.id === trecho.id ? '#ffc107' : '#555')"
                   [style.color]="(audio.trechoAtivo()?.id === trecho.id || audio.proximoTrecho()?.id === trecho.id) ? '#000' : '#fff'"
-                  style="padding: 12px 18px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                  class="botao-basico">
             {{ trecho.nome }}
           </button>
         }

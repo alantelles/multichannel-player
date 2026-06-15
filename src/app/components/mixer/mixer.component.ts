@@ -1,18 +1,20 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { AudioEngineService } from '../../services/audio-engine.service'; // Ajuste o caminho se o seu arquivo tiver .service no nome
 import { FormsModule } from '@angular/forms';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { AdicionarArquivosProjetoComponent } from '../adicionar-arquivos-projeto/adicionar-arquivos-projeto.component';
 
 @Component({
   selector: 'app-mixer',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, MatDialogModule],
   templateUrl: './mixer.component.html', // ou mixer.component.html dependendo de como foi gerado
   styleUrl: './mixer.component.scss'     // ou mixer.component.scss
 })
 export class MixerComponent implements OnInit {
   // Injeta o serviço corrigido usando a sintaxe moderna inject()
   protected audio = inject(AudioEngineService);
-
+  private dialog = inject(MatDialog);
   // 🎯 NOVO: Lê o arquivo JSON de configuração mapeado pelo usuário
   onConfigSelecionada(event: Event) {
     const input = event.target as HTMLInputElement;
@@ -32,6 +34,20 @@ export class MixerComponent implements OnInit {
   ngOnInit() {
     const savedAudioRepository = localStorage.getItem('audioRepository');
     this.audio.audioRepository.set(savedAudioRepository || 'audios/');
+  }
+
+  adicionarArquivosLocal() {
+    const dialogRef = this.dialog.open(AdicionarArquivosProjetoComponent, {
+      width: '500px', disableClose: true
+    });
+    dialogRef.componentInstance.aoFechar.subscribe(() => dialogRef.close());
+    
+    dialogRef.componentInstance.aoConfirmar.subscribe(dados => {
+      console.log('Dados recebidos no Mixer:', dados);
+      // Aqui você vai conectar com seu futuro serviço de IndexedDB
+      // this.cacheService.salvar(dados.pastaBase, dados.arquivos);
+      dialogRef.close();
+    });
   }
 
   setAudioRepository(novaUrl: string) {
