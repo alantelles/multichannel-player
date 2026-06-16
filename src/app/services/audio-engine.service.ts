@@ -27,12 +27,13 @@ export interface CanalAudio {
   id: string;
   nome: string;
   arquivo: string;
-  player: Tone.Player;
-  volumeNode: Tone.Volume;
-  channelNode: Tone.Channel;
   muted?: boolean;
   volume?: number;
   
+
+  player: Tone.Player;
+  volumeNode: Tone.Volume;
+  channelNode: Tone.Channel;
   // Signals para atualizar a interface do Angular em tempo real
   volumeSignal: any;  // Armazena o valor em dB (-60 a +6)
   isMuted: any;       // Booleano para o botão de Mute
@@ -98,6 +99,11 @@ export class AudioEngineService {
 
       const compassoCalculado = Math.floor(batidasTotais / (Tone.Transport.timeSignature as number));
       let ajusteTrechoStr = this.loopCount() > 0 ? (this.trechoAtivo()?.loopStart || this.trechoAtivo()?.inicio) : this.trechoAtivo()?.inicio;
+      if (ajusteTrechoStr?.includes('m')) {
+        ajusteTrechoStr = ajusteTrechoStr?.replace('m', ''); // Remove o 'm' para parseInt funcionar
+      } else { // assume contagem completa de compassos, sem 'm'
+        ajusteTrechoStr = ajusteTrechoStr && ajusteTrechoStr[0]; // Pega apenas o primeiro caractere, que é o compasso, despreza sub por enquanto
+      }
       const ajusteTrecho = parseInt((ajusteTrechoStr || '0m').replaceAll('\D*', ''));
       // Somamos +1 para a contagem ficar humana (Compasso 1, Compasso 2...) em vez de indexada em 0
       this.compassoAtualNoBloco.set(compassoCalculado + ajusteTrecho + 1);

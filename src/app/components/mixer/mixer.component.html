@@ -7,6 +7,7 @@
       <input type="text" class="ordinary-text-input" [(ngModel)]="fileRepository.onlineRepositoryUrl" (ngModelChange)="setAudioRepository($event)" placeholder="URL do repositório de áudios" />
       <button class="botao-basico" (click)="adicionarArquivosLocal()">Adicionar áudios ao repositório local</button>
       <label style="display: block; margin-top: 5px; margin-bottom: 5px; font-weight: bold; color: #aaa;">📂 Selecionar projeto:</label>
+      <button routerLink="/criar-projeto" class="botao-basico">Criar projeto</button>
       <input type="file" accept=".json" (change)="onConfigSelecionada($event)" />
       <div style="margin-top: 8px; color: #ffc107; font-size: 14px;">⚡ Status: {{ audio.statusCarregamento() }}</div>
     </div>

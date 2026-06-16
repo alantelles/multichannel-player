@@ -1,0 +1,164 @@
+<div class="criador-container">
+  <header class="header-acoes">
+    <button routerLink="/" class="btn-voltar">← Voltar para o Mixer</button>
+    <h2>Bancada de Mapeamento de Projeto</h2>
+    
+    <div class="import-container">
+      <label for="input-json-import" class="btn-importar-label">📂 Carregar JSON de Projeto</label>
+      <input id="input-json-import" type="file" (change)="importarJsonProjeto($event)" accept="application/json" style="display: none;">
+    </div>
+  </header>
+
+  <div class="grid-criador">
+    <section class="card-painel">
+      <h3>1. Metadados Globais</h3>
+      
+      <div class="form-group">
+        <label>Nome do Projeto:</label>
+        <input type="text" [(ngModel)]="nomeProjeto" placeholder="Ex: I Couldn't Love You More">
+      </div>
+
+      <div class="form-group">
+        <label>Pasta Base (ID de Busca):</label>
+        <input type="text" [(ngModel)]="pastaBase" placeholder="Ex: i-couldnt-love-you-more">
+      </div>
+
+      <div class="form-group">
+        <label>BPM da Música:</label>
+        <input type="number" [(ngModel)]="bpm">
+      </div>
+
+      <div class="form-group-row" style="display: flex; gap: 10px;">
+        <div style="flex: 1;">
+          <label>Fórmula Compasso:</label>
+          <input type="number" [(ngModel)]="timeSignature" style="width: 100%; padding: 10px; background: #121214; border: 1px solid #333; color: #fff; border-radius: 4px;">
+        </div>
+        <div style="flex: 1;">
+          <label>Offset (Segundos):</label>
+          <input type="number" [(ngModel)]="offset" style="width: 100%; padding: 10px; background: #121214; border: 1px solid #333; color: #fff; border-radius: 4px;">
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top: 15px;">
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: #ccc;">
+          <input type="checkbox" [(ngModel)]="fullSong"> Música Contínua (Full Song)
+        </label>
+      </div>
+
+      <hr class="divisor">
+
+      <h3>2. Áudio Guia da Mesa</h3>
+      <div class="upload-guia">
+        <input type="file" (change)="onAudioGuiaSelecionado($event)" accept="audio/*">
+      </div>
+
+      <div class="player-guia-control" *ngIf="arquivoSelecionado()">
+        <div class="display-compasso">
+          <span class="label">COMPASSO ATUAL</span>
+          <span class="numero">{{ compassoAbsoluto() }}</span>
+          <span class="timestamp">Métrica: {{ posicaoAtual() }}</span>
+        </div>
+
+        <div class="controles-timeline">
+          <button (click)="mudarPosicao(-4)" class="btn-step">« -4</button>
+          <button (click)="mudarPosicao(-1)" class="btn-step">‹ -1</button>
+          <button (click)="togglePlay()" class="btn-play" [class.playing]="isPlaying()">
+            {{ isPlaying() ? 'PAUSAR' : 'TOCAR GUIA' }}
+          </button>
+          <button (click)="mudarPosicao(1)" class="btn-step">+1 ›</button>
+          <button (click)="mudarPosicao(4)" class="btn-step">+4 »</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card-painel">
+      
+      <div class="header-secao-trechos">
+        <h3>3. Configuração de Canais (Mesa de Som)</h3>
+        <button (click)="adicionarCanalEmBranco()" class="btn-adicionar">+ Novo Canal</button>
+      </div>
+
+      <div class="lista-trechos" style="max-height: 350px; overflow-y: auto; margin-bottom: 25px;">
+        <div *ngIf="canais().length === 0" class="sem-trechos">
+          Nenhum canal adicionado à mesa. Clique em "+ Novo Canal" para criar as tracks.
+        </div>
+        <div *ngIf="carregandoCanais()" class="loading-status" style="color: #ffca28; padding: 5px;">💾 Gravando áudio no banco local...</div>
+
+        <div class="item-trecho border-canal" *ngFor="let canal of canais(); let idx = index">
+          <div class="topo-trecho">
+            <span class="badge-index channel-badge">CH #{{ idx + 1 }}</span>
+            <input type="text" [(ngModel)]="canal.nome" class="input-inline-nome" placeholder="Nome do Canal (Ex: Bateria)">
+            <button (click)="removerCanal(idx)" class="btn-remover">Remover</button>
+          </div>
+
+          <div class="campos-trecho-grid grid-canais">
+            <div>
+              <label>ID Canal:</label>
+              <input type="text" [(ngModel)]="canal.id" placeholder="Ex: click">
+            </div>
+            <div>
+              <label>Volume Inicial (dB):</label>
+              <input type="number" [(ngModel)]="canal.volume">
+            </div>
+            <div class="file-upload-cell" style="grid-column: span 2;">
+              <label>Arquivo Físico de Áudio:</label>
+              <div style="display: flex; gap: 5px; align-items: center;">
+                <!-- TODO: disponibilizar num select os arquivos disponíveis na pasta base-->
+                <input type="number" [(ngModel)]="canal.volume">
+                <input type="text" [(ngModel)]="canal.arquivo" placeholder="Nenhum arquivo vinculado" readonly style="flex: 1; text-overflow: ellipsis;">
+                <label [attr.for]="'file-ch-' + idx" class="btn-file-select">Selecionar</label>
+                <input [id]="'file-ch-' + idx" type="file" (change)="uploadAudioCanal($event, idx)" accept="audio/*" style="display: none;">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="divisor">
+
+      <div class="header-secao-trechos">
+        <h3>4. Estrutura de Linha de Tempo (Markers)</h3>
+        <button (click)="adicionarTrecho()" class="btn-adicionar">+ Adicionar Marker</button>
+      </div>
+
+      <div class="lista-trechos" style="max-height: 350px; overflow-y: auto;">
+        <div *ngIf="trechosForm().length === 0" class="sem-trechos">
+          Nenhum marcador adicionado. Use o player guia para capturar as seções.
+        </div>
+
+        <div class="item-trecho" *ngFor="let trecho of trechosForm(); let i = index">
+          <div class="topo-trecho">
+            <span class="badge-index">#{{ i + 1 }}</span>
+            <input type="text" [(ngModel)]="trecho.nome" class="input-inline-nome">
+            <button (click)="removerTrecho(i)" class="btn-remover">Remover</button>
+          </div>
+
+          <div class="campos-trecho-grid">
+            <div>
+              <label>Comp. Início:</label>
+              <input type="number" [(ngModel)]="trecho.compassoInicio">
+            </div>
+            <div>
+              <label>Duração (Comp.):</label>
+              <input type="number" [(ngModel)]="trecho.compassosDuracao">
+            </div>
+            <div>
+              <label>Max Plays (Loop):</label>
+              <input type="number" [(ngModel)]="trecho.maxPlays">
+            </div>
+            <div>
+              <label>ID Próximo Marker:</label>
+              <input type="text" [(ngModel)]="trecho.nextMarker" placeholder="Ex: refrao-1">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer class="rodape-exportar" *ngIf="trechosForm().length > 0 || canais().length > 0">
+        <button (click)="baixarJsonProjeto()" class="btn-exportar">
+          💾 Baixar Arquivo JSON Configuração
+        </button>
+      </footer>
+    </section>
+  </div>
+</div>

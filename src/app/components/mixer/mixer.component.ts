@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { AdicionarArquivosProjetoComponent } from '../adicionar-arquivos-projeto/adicionar-arquivos-projeto.component';
 import { FileRepositoryService } from '../../services/file-repository.service';
+import { RouterLink } from "@angular/router";
 
 @Component({
   selector: 'app-mixer',
   standalone: true,
-  imports: [FormsModule, MatDialogModule],
+  imports: [FormsModule, MatDialogModule, RouterLink],
   templateUrl: './mixer.component.html', // ou mixer.component.html dependendo de como foi gerado
   styleUrl: './mixer.component.scss'     // ou mixer.component.scss
 })
