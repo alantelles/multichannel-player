@@ -140,7 +140,7 @@ export class AudioEngineService {
       // Montagem da mesa de som multicanal
       const novosCanais: CanalAudio[] = [];
       let canaisCarregados = 0;
-      await Promise.all(projeto.canais.map(async (canal: CanalAudio) => {
+      for (const canal of projeto.canais) {
         const retrievalResult = await this.fileRepository.getFileUrl(projeto.pastaBase, canal.arquivo);
         const urlCompleta = retrievalResult.url;
         // 1. Cria os nós de áudio para este canal
@@ -152,10 +152,8 @@ export class AudioEngineService {
         player.chain(volumeNode, channelNode, Tone.Destination);
         
         novosCanais.push({
-          id: canal.id,
-          nome: canal.nome,
+          ...canal,
           player: player,
-          arquivo: canal.arquivo,
           volumeNode: volumeNode,
           channelNode: channelNode,
           volumeSignal: signal(canal.volume || 0),       // Slider começa no meio (0 dB)
@@ -163,13 +161,14 @@ export class AudioEngineService {
           isSoloed: signal(false),
           saidaAtiva: signal('Master')   // Roteamento padrão
         });
-      }));
+        ++canaisCarregados;
+        this.statusCarregamento.set(`Carregando pistas: ${canaisCarregados} / ${projeto.canais.length}`);
+      };
 
       this.canais.set(novosCanais);
 
       // Aguarda o download e decodificação em lote dos MP3s na RAM
 
-      this.statusCarregamento.set(`Baixando arquivos de áudio`);
       await Tone.loaded();
       // 🎯 AGORA SIM: Se não houver markers no JSON, calculamos dinamicamente baseados na maior pista
       const temMarkersValidos = projeto.markers && Array.isArray(projeto.markers) && projeto.markers.length > 0;
@@ -380,7 +379,14 @@ export class AudioEngineService {
     }
     this.canais().forEach(c => {
       c.player.stop();
+      const playerBuffer = c.player.buffer as any;
+      const urlAntiga = playerBuffer && playerBuffer.url ? playerBuffer.url : null;
       c.player.dispose(); 
+      if (urlAntiga && urlAntiga.startsWith('blob:')) {
+        URL.revokeObjectURL(urlAntiga);
+      }
+      c.volumeNode.dispose();
+      c.channelNode.dispose();
     });
     this.canais.set([]);
   }

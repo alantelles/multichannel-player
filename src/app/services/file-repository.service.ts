@@ -25,7 +25,7 @@ export class FileRepositoryService {
     }
   }
   async saveFile(directory: string, name: string, content: File) {
-    await this.db.files.add({
+    await this.db.files.put({
       directory, name, content
     })
   }
