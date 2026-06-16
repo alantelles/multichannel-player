@@ -19,6 +19,7 @@
     "@angular/material": "^22.0.1",
     "@angular/platform-browser": "^22.0.0",
     "@angular/router": "^22.0.0",
+    "dexie": "^4.4.3",
     "rxjs": "~7.8.0",
     "tone": "^15.1.22",
     "tslib": "^2.3.0"

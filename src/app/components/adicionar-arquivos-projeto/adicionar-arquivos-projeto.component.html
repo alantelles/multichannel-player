@@ -9,7 +9,7 @@
       <div class="form-group">
         <label for="pastaBase">Nome do Projeto (Pasta Base):</label>
         <input type="text" id="pastaBase" name="pastaBase" [(ngModel)]="pastaBaseNome" required
-          pattern="^[A-Za-z0-9-_]+$" #pastaBaseInput="ngModel" placeholder="Ex: i-couldnt-love-you-more"
+          pattern="^[A-Za-z0-9\-_]+$" #pastaBaseInput="ngModel" placeholder="Ex: i-couldnt-love-you-more"
           class="form-control"
           [class.input-invalido]="pastaBaseInput.invalid && (pastaBaseInput.dirty || pastaBaseInput.touched)" />
 

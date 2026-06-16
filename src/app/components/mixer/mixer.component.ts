@@ -3,6 +3,7 @@ import { AudioEngineService } from '../../services/audio-engine.service'; // Aju
 import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { AdicionarArquivosProjetoComponent } from '../adicionar-arquivos-projeto/adicionar-arquivos-projeto.component';
+import { FileRepositoryService } from '../../services/file-repository.service';
 
 @Component({
   selector: 'app-mixer',
@@ -15,6 +16,7 @@ export class MixerComponent implements OnInit {
   // Injeta o serviço corrigido usando a sintaxe moderna inject()
   protected audio = inject(AudioEngineService);
   private dialog = inject(MatDialog);
+  private fileRepository = inject(FileRepositoryService);
   // 🎯 NOVO: Lê o arquivo JSON de configuração mapeado pelo usuário
   onConfigSelecionada(event: Event) {
     const input = event.target as HTMLInputElement;
@@ -42,8 +44,9 @@ export class MixerComponent implements OnInit {
     });
     dialogRef.componentInstance.aoFechar.subscribe(() => dialogRef.close());
     
-    dialogRef.componentInstance.aoConfirmar.subscribe(dados => {
+    dialogRef.componentInstance.aoConfirmar.subscribe(async dados => {
       console.log('Dados recebidos no Mixer:', dados);
+      await this.fileRepository.saveFiles(dados.pastaBase, dados.arquivos);
       // Aqui você vai conectar com seu futuro serviço de IndexedDB
       // this.cacheService.salvar(dados.pastaBase, dados.arquivos);
       dialogRef.close();
