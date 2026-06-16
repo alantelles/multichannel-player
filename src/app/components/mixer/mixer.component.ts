@@ -16,7 +16,7 @@ export class MixerComponent implements OnInit {
   // Injeta o serviço corrigido usando a sintaxe moderna inject()
   protected audio = inject(AudioEngineService);
   private dialog = inject(MatDialog);
-  private fileRepository = inject(FileRepositoryService);
+  fileRepository = inject(FileRepositoryService);
   // 🎯 NOVO: Lê o arquivo JSON de configuração mapeado pelo usuário
   onConfigSelecionada(event: Event) {
     const input = event.target as HTMLInputElement;
@@ -35,7 +35,7 @@ export class MixerComponent implements OnInit {
 
   ngOnInit() {
     const savedAudioRepository = localStorage.getItem('audioRepository');
-    this.audio.audioRepository.set(savedAudioRepository || 'audios/');
+    this.fileRepository.onlineRepositoryUrl.set(savedAudioRepository || 'audios/');
   }
 
   adicionarArquivosLocal() {
@@ -47,14 +47,12 @@ export class MixerComponent implements OnInit {
     dialogRef.componentInstance.aoConfirmar.subscribe(async dados => {
       console.log('Dados recebidos no Mixer:', dados);
       await this.fileRepository.saveFiles(dados.pastaBase, dados.arquivos);
-      // Aqui você vai conectar com seu futuro serviço de IndexedDB
-      // this.cacheService.salvar(dados.pastaBase, dados.arquivos);
       dialogRef.close();
     });
   }
 
   setAudioRepository(novaUrl: string) {
-    this.audio.audioRepository.set(novaUrl);
+    this.fileRepository.onlineRepositoryUrl.set(novaUrl);
     localStorage.setItem('audioRepository', novaUrl);
   }
 

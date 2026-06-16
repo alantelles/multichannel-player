@@ -4,7 +4,7 @@
     "fullSong": true,
     "timeSignature": 4,
     "offset": 0.57,
-    "pastaBase": "soberano-deus/",
+    "pastaBase": "soberano-deus",
     "markers": [
         {
             "id": "intro-fill",

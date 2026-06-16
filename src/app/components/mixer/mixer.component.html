@@ -4,7 +4,7 @@
   <div class="carregador">
     <div class="painel-configuracao">
       <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #aaa;">📁 Repositório áudios online:</label>
-      <input type="text" class="ordinary-text-input" [(ngModel)]="audio.audioRepository" (ngModelChange)="setAudioRepository($event)" placeholder="URL do repositório de áudios" />
+      <input type="text" class="ordinary-text-input" [(ngModel)]="fileRepository.onlineRepositoryUrl" (ngModelChange)="setAudioRepository($event)" placeholder="URL do repositório de áudios" />
       <button class="botao-basico" (click)="adicionarArquivosLocal()">Adicionar áudios ao repositório local</button>
       <label style="display: block; margin-top: 5px; margin-bottom: 5px; font-weight: bold; color: #aaa;">📂 Selecionar projeto:</label>
       <input type="file" accept=".json" (change)="onConfigSelecionada($event)" />

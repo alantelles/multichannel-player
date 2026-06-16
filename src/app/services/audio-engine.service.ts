@@ -1,5 +1,6 @@
-import { Injectable, signal } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 import * as Tone from 'tone';
+import { FileRepositoryService } from './file-repository.service';
 
 export interface Marker {
   id: string;
@@ -43,7 +44,6 @@ export interface CanalAudio {
   providedIn: 'root'
 })
 export class AudioEngineService {
-  public audioRepository = signal<string>('audios/');
   public isReady = signal<boolean>(false);
   public isPlaying = signal<boolean>(false);
   public isFullyLoaded = signal<boolean>(false);
@@ -69,7 +69,7 @@ export class AudioEngineService {
   public compassoAtualNoBloco = signal<number>(0);
   public beatAtualNoBloco = signal<number>(0);
   public subdivisaoAtualNoBloco = signal<number>(0);
-
+  private fileRepository = inject(FileRepositoryService);
 
   async init() {
     if (this.isReady()) return;
@@ -140,8 +140,8 @@ export class AudioEngineService {
       // Montagem da mesa de som multicanal
       const novosCanais: CanalAudio[] = [];
       let canaisCarregados = 0;
-      projeto.canais.forEach((canal: CanalAudio) => {
-        const urlCompleta = `${this.audioRepository()}${projeto.pastaBase}${canal.arquivo}`;
+      await Promise.all(projeto.canais.map(async (canal: CanalAudio) => {
+        const urlCompleta = await this.fileRepository.getFileUrl(projeto.pastaBase, canal.arquivo);
         // 1. Cria os nós de áudio para este canal
         const player = new Tone.Player({ url: urlCompleta, autostart: false });
         const volumeNode = new Tone.Volume(0); // 0dB = Volume original
@@ -162,7 +162,7 @@ export class AudioEngineService {
           isSoloed: signal(false),
           saidaAtiva: signal('Master')   // Roteamento padrão
         });
-      });
+      }));
 
       this.canais.set(novosCanais);
 
