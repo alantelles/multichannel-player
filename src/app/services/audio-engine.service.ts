@@ -141,7 +141,8 @@ export class AudioEngineService {
       const novosCanais: CanalAudio[] = [];
       let canaisCarregados = 0;
       await Promise.all(projeto.canais.map(async (canal: CanalAudio) => {
-        const urlCompleta = await this.fileRepository.getFileUrl(projeto.pastaBase, canal.arquivo);
+        const retrievalResult = await this.fileRepository.getFileUrl(projeto.pastaBase, canal.arquivo);
+        const urlCompleta = retrievalResult.url;
         // 1. Cria os nós de áudio para este canal
         const player = new Tone.Player({ url: urlCompleta, autostart: false });
         const volumeNode = new Tone.Volume(0); // 0dB = Volume original
