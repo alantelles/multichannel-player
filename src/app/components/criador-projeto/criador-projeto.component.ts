@@ -1,4 +1,4 @@
-import { Component, signal, effect, computed, OnDestroy, inject } from '@angular/core';
+import { Component, signal, effect, computed, OnDestroy, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -49,7 +49,7 @@ interface InterfaceFormTrecho {
   templateUrl: './criador-projeto.component.html',
   styleUrls: ['./criador-projeto.component.scss']
 })
-export class CriadorProjetoComponent implements OnDestroy {
+export class CriadorProjetoComponent implements OnInit, OnDestroy {
   private fileRepository = inject(FileRepositoryService);
 
   // Dados Gerais do Projeto
@@ -72,6 +72,10 @@ export class CriadorProjetoComponent implements OnDestroy {
   
   carregandoCanais = signal<boolean>(false);
 
+  // 🎯 SINAIS DOS AUTOCOMPLETES
+  pastasDisponiveis = signal<string[]>([]);
+  arquivosDaPastaAtiva = signal<string[]>([]);
+
   compassoAbsoluto = computed(() => {
     const [bars] = this.posicaoAtual().split(':');
     return parseInt(bars, 10) + 1;
@@ -83,12 +87,48 @@ export class CriadorProjetoComponent implements OnDestroy {
       Tone.Transport.timeSignature = this.timeSignature();
     });
 
+    // 🎯 Efeito reativo: Sempre que o usuário escolher ou digitar uma Pasta Base válida,
+    // o sistema varre o IndexedDB e traz os arquivos de áudio disponíveis para o autocomplete dos canais.
+    effect(async () => {
+      const pasta = this.pastaBase();
+      if (pasta && pasta.trim() !== '') {
+        try {
+          const files = await this.fileRepository.getFiles(pasta);
+          // Mapeia extraindo apenas a propriedade string do nome do arquivo
+          this.arquivosDaPastaAtiva.set(files.map(f => f.name || (f as any).arquivo || ''));
+        } catch (error) {
+          console.error('Erro ao ler arquivos da pasta base:', error);
+          this.arquivosDaPastaAtiva.set([]);
+        }
+      } else {
+        this.arquivosDaPastaAtiva.set([]);
+      }
+    });
+
     Tone.Transport.scheduleRepeat(() => {
       this.posicaoAtual.set(Tone.Transport.position.toString());
     }, '16n');
   }
 
-  // 🎯 NOVO: Importar configuração de um arquivo JSON existente
+  // Carrega as pastas do banco ao iniciar o componente
+  async ngOnInit() {
+    try {
+      const pastas = await this.fileRepository.getDirectories();
+      this.pastasDisponiveis.set(pastas);
+    } catch (error) {
+      console.error('Erro ao carregar diretórios do IndexedDB:', error);
+    }
+  }
+
+  // Força atualização manual se o usuário selecionar a pasta pela lista suspensa do topo
+  async aoMudarPastaBase() {
+    const pasta = this.pastaBase();
+    if (pasta) {
+      const files = await this.fileRepository.getFiles(pasta);
+      this.arquivosDaPastaAtiva.set(files.map(f => f.name || (f as any).arquivo || ''));
+    }
+  }
+
   importarJsonProjeto(event: Event) {
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) return;
@@ -100,7 +140,6 @@ export class CriadorProjetoComponent implements OnDestroy {
       try {
         const config: ProjectConfig = JSON.parse(e.target?.result as string);
 
-        // Preenche os metadados do topo
         this.nomeProjeto.set(config.nomeProjeto || '');
         this.pastaBase.set(config.pastaBase || '');
         this.bpm.set(config.bpm || 120);
@@ -108,7 +147,6 @@ export class CriadorProjetoComponent implements OnDestroy {
         this.offset.set(config.offset || 0);
         this.fullSong.set(!!config.fullSong);
 
-        // Preenche os canais de áudio na nova estrutura
         if (config.canais && Array.isArray(config.canais)) {
           this.canais.set(config.canais.map(c => ({
             id: c.id,
@@ -119,7 +157,6 @@ export class CriadorProjetoComponent implements OnDestroy {
           })));
         }
 
-        // Converte e preenche os Markers (de string "Xm" para número inteiro X)
         if (config.markers && Array.isArray(config.markers)) {
           const trechosMapeados: InterfaceFormTrecho[] = config.markers.map(m => {
             const compassoInicio = parseInt(m.inicio.split(':')[0], 10) || 0;
@@ -143,7 +180,7 @@ export class CriadorProjetoComponent implements OnDestroy {
     };
 
     reader.readAsText(arquivoJson);
-    input.value = ''; // Limpa o input de carregamento
+    input.value = '';
   }
 
   async onAudioGuiaSelecionado(event: Event) {
@@ -165,7 +202,6 @@ export class CriadorProjetoComponent implements OnDestroy {
     }
   }
 
-  // 🎯 NOVO: Adiciona um bloco vazio de formulário de canal (estilo o trecho)
   adicionarCanalEmBranco() {
     this.canais.update(lista => [
       ...lista,
@@ -173,13 +209,13 @@ export class CriadorProjetoComponent implements OnDestroy {
         id: `canal-${lista.length + 1}`,
         nome: `Canal ${lista.length + 1}`,
         arquivo: '',
-        muted: false,
+        muted: false, // Garante o estado inicial mapeado
         volume: 0
       }
     ]);
   }
 
-  // 🎯 NOVO: Faz o upload do áudio físico amarrado a um bloco de canal específico
+  // Método legado mantido caso queira injetar arquivo manual na hora
   async uploadAudioCanal(event: Event, index: number) {
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) return;
@@ -194,19 +230,13 @@ export class CriadorProjetoComponent implements OnDestroy {
     this.carregandoCanais.set(true);
 
     try {
-      // Grava no IndexedDB via seu FileRepositoryService
       await this.fileRepository.saveFile(this.pastaBase(), arquivo.name, arquivo);
       
-      // Atualiza estritamente o campo 'arquivo' daquele canal no formulário
       this.canais.update(lista => {
         const novaLista = [...lista];
-        novaLista[index] = {
-          ...novaLista[index],
-          arquivo: arquivo.name
-        };
+        novaLista[index] = { ...novaLista[index], arquivo: arquivo.name };
         return novaLista;
       });
-      console.log(`Áudio ${arquivo.name} salvo com sucesso no banco.`);
     } catch (error) {
       console.error('Erro ao salvar mídia de canal:', error);
     } finally {
@@ -291,8 +321,6 @@ export class CriadorProjetoComponent implements OnDestroy {
       canais: this.canais(), 
       markers: markersFormatados
     };
-
-    this.fileRepository.saveFiles(this.pastaBase(), this.canais().map(c => new File([], c.arquivo))); // Salva os arquivos de áudio associados
 
     const blob = new Blob([JSON.stringify(configResultado, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);

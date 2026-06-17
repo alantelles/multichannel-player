@@ -206,3 +206,54 @@
     color: #fff;
   }
 }
+// Alinhamento do grid de canais para acomodar melhor os campos
+.grid-canais-atualizado {
+  display: grid;
+  grid-template-columns: 0.8fr 0.8fr 2.4fr !important; // Mantém proporção limpa na linha
+  gap: 10px;
+}
+
+// Estilo do Checkbox de Mute rápido no topo do card do canal
+.checkbox-muted-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #aaa;
+  cursor: pointer;
+  user-select: none;
+  background: #2a2a32;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid #3d3d48;
+  
+  &:hover {
+    color: #f44336;
+    border-color: #f44336;
+  }
+  
+  input {
+    cursor: pointer;
+  }
+}
+
+// 🎯 Cores de sinalização para o estado Bloqueado por falta de Pasta Base
+.campo-bloqueado {
+  background-color: #1a1515 !important; // Fundo avermelhado bem escuro
+  border-color: #5a2424 !important;     // Borda em tom de alerta escuro
+  color: #777 !important;                // Texto apagado
+  cursor: not-allowed;
+  
+  &::placeholder {
+    color: #6a4a4a;
+  }
+}
+
+// Botão de upload desativado visualmente
+.btn-file-select.btn-disabled {
+  background: #222 !important;
+  color: #555 !important;
+  border-color: #333 !important;
+  cursor: not-allowed;
+  opacity: 0.6;
+}

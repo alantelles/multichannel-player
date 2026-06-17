@@ -37,6 +37,13 @@ export class FileRepositoryService {
       .toArray();
   }
 
+  async getDirectories(): Promise<string[]> {
+    const directories = await this.db.files
+      .orderBy('directory')
+      .uniqueKeys();
+    return directories.map(dir => dir.toString());
+  }
+
   async getFileUrl(directory: string, name: string): Promise<FileRetrievalResult> {
     const item = await this.db.files
       .where('[directory+name]')

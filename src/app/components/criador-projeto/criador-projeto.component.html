@@ -19,8 +19,11 @@
       </div>
 
       <div class="form-group">
-        <label>Pasta Base (ID de Busca):</label>
-        <input type="text" [(ngModel)]="pastaBase" placeholder="Ex: i-couldnt-love-you-more">
+        <label>Pasta Base (Diretório no Banco Local):</label>
+        <input type="text" [(ngModel)]="pastaBase" (change)="aoMudarPastaBase()" list="lista-pastas" placeholder="Digite ou selecione uma pasta...">
+        <datalist id="lista-pastas">
+          <option *ngFor="let pasta of pastasDisponiveis()" [value]="pasta"></option>
+        </datalist>
       </div>
 
       <div class="form-group">
@@ -82,36 +85,59 @@
         <div *ngIf="canais().length === 0" class="sem-trechos">
           Nenhum canal adicionado à mesa. Clique em "+ Novo Canal" para criar as tracks.
         </div>
-        <div *ngIf="carregandoCanais()" class="loading-status" style="color: #ffca28; padding: 5px;">💾 Gravando áudio no banco local...</div>
+        <div *ngIf="carregandoCanais()" class="loading-status" style="color: #ffca28; padding: 5px;">💾 Processando dados...</div>
 
-        <div class="item-trecho border-canal" *ngFor="let canal of canais(); let idx = index">
-          <div class="topo-trecho">
-            <span class="badge-index channel-badge">CH #{{ idx + 1 }}</span>
-            <input type="text" [(ngModel)]="canal.nome" class="input-inline-nome" placeholder="Nome do Canal (Ex: Bateria)">
-            <button (click)="removerCanal(idx)" class="btn-remover">Remover</button>
-          </div>
+<div class="item-trecho border-canal" *ngFor="let canal of canais(); let idx = index">
+  <div class="topo-trecho">
+    <span class="badge-index channel-badge">CH #{{ idx + 1 }}</span>
+    <input type="text" [(ngModel)]="canal.nome" class="input-inline-nome" placeholder="Nome do Canal (Ex: Bateria)">
+    
+    <label class="checkbox-muted-top">
+      <input type="checkbox" [(ngModel)]="canal.muted"> 🔇 Mudar Mute Inicial
+    </label>
 
-          <div class="campos-trecho-grid grid-canais">
-            <div>
-              <label>ID Canal:</label>
-              <input type="text" [(ngModel)]="canal.id" placeholder="Ex: click">
-            </div>
-            <div>
-              <label>Volume Inicial (dB):</label>
-              <input type="number" [(ngModel)]="canal.volume">
-            </div>
-            <div class="file-upload-cell" style="grid-column: span 2;">
-              <label>Arquivo Físico de Áudio:</label>
-              <div style="display: flex; gap: 5px; align-items: center;">
-                <!-- TODO: disponibilizar num select os arquivos disponíveis na pasta base-->
-                <input type="number" [(ngModel)]="canal.volume">
-                <input type="text" [(ngModel)]="canal.arquivo" placeholder="Nenhum arquivo vinculado" readonly style="flex: 1; text-overflow: ellipsis;">
-                <label [attr.for]="'file-ch-' + idx" class="btn-file-select">Selecionar</label>
-                <input [id]="'file-ch-' + idx" type="file" (change)="uploadAudioCanal($event, idx)" accept="audio/*" style="display: none;">
-              </div>
-            </div>
-          </div>
-        </div>
+    <button (click)="removerCanal(idx)" class="btn-remover">Remover</button>
+  </div>
+
+  <div class="campos-trecho-grid grid-canais-atualizado">
+    <div>
+      <label>ID Canal:</label>
+      <input type="text" [(ngModel)]="canal.id" placeholder="Ex: click">
+    </div>
+    <div>
+      <label>Volume Inicial (dB):</label>
+      <input type="number" [(ngModel)]="canal.volume">
+    </div>
+    
+    <div class="file-upload-cell" style="grid-column: span 2;">
+      <label [style.color]="!pastaBase() ? '#ea5455' : '#888'">
+        {{ !pastaBase() ? '⚠️ Defina a Pasta Base Primeiro:' : 'Arquivo de Áudio Vinculado:' }}
+      </label>
+      <div style="display: flex; gap: 5px; align-items: center;">
+        <input type="text" 
+               [(ngModel)]="canal.arquivo" 
+               [attr.list]="'lista-arquivos-' + idx" 
+               [disabled]="!pastaBase()"
+               [class.campo-bloqueado]="!pastaBase()"
+               placeholder="{{ !pastaBase() ? 'Bloqueado: sem pasta base' : 'Selecione a track...' }}" 
+               style="flex: 1; padding: 6px; border: 1px solid #333; color: #fff; border-radius: 4px; transition: all 0.2s;">
+        
+        <datalist [id]="'lista-arquivos-' + idx">
+          <option *ngFor="let arquivo of arquivosDaPastaAtiva()" [value]="arquivo"></option>
+        </datalist>
+
+        <label [attr.for]="pastaBase() ? 'file-ch-' + idx : null" 
+               class="btn-file-select" 
+               [class.btn-disabled]="!pastaBase()"
+               title="Subir arquivo de fora para o banco">Upload</label>
+        <input *ngIf="pastaBase()" [id]="'file-ch-' + idx" type="file" (change)="uploadAudioCanal($event, idx)" accept="audio/*" style="display: none;">
+      </div>
+      <small *ngIf="arquivosDaPastaAtiva().length === 0 && pastaBase()" style="color: #666; font-size: 10px; margin-top: 2px; display: block;">
+        * Nenhuma track encontrada fisicamente na pasta base "{{ pastaBase() }}".
+      </small>
+    </div>
+  </div>
+</div>
       </div>
 
       <hr class="divisor">
