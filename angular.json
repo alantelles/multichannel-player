@@ -80,7 +80,10 @@
           "builder": "@angular/build:unit-test"
         },
         "deploy": {
-          "builder": "angular-cli-ghpages:deploy"
+          "builder": "angular-cli-ghpages:deploy",
+          "options": {
+            "outputPath": "dist/multichannel-player/browser"
+          }
         }
       }
     }
