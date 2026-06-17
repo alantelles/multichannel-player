@@ -7,10 +7,14 @@ import { provideServiceWorker } from '@angular/service-worker';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideRouter(routes),
+    provideRouter(routes, withHashLocationStrategy()),
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000',
     }),
   ],
 };
+function withHashLocationStrategy(): import("@angular/router").RouterFeatures {
+  throw new Error('Function not implemented.');
+}
+
