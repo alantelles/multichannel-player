@@ -1,4 +1,4 @@
-<div style="padding: 20px; font-family: sans-serif; background: #222; color: #fff; border-radius: 8px;">
+<div class="studio-container">
   <h2>🎛️ Virtual Studio Web</h2>
 
   <div class="carregador">
@@ -32,7 +32,7 @@
         </div>
       </div>
     </div>
-    <div style="margin-left: auto">
+    <div class="painel-controles">
       <button class="play-stop"
         [disabled]="!audio.isFullyLoaded()"
         (click)="audio.togglePlay()"
