@@ -9,7 +9,10 @@
   font-family: sans-serif;
   background: #222;
   color: #fff;
-  border-radius: 8px;
+
+  @include mobile-vertical {
+    padding: 10px;
+  }
 }
 
 .carregador {
@@ -32,6 +35,7 @@
   @include mobile-vertical {
     flex-direction: column;
     align-items: center;
+
     .painel-controles {
       margin-left: 0;
       margin-top: 15px;
@@ -48,7 +52,9 @@
   border-radius: 4px;
   cursor: pointer;
   font-weight: bold;
-
+  @include mobile-vertical {
+    padding: 10px;
+  }
 }
 
 .painel-configuracao {
@@ -57,13 +63,13 @@
   width: 300px;
   padding-right: 10px;
   border-right: 2px solid #dadada;
+
   @include mobile-vertical {
     width: 100%;
     padding-right: 0;
-    padding-bottom: 10px; 
+    padding-bottom: 10px;
     border-right: none;
     border-bottom: 2px solid #dadada;
-    margin-bottom: 15px;
   }
 }
 
@@ -86,9 +92,22 @@
   height: 120px;
   font-size: 16px;
   font-weight: bold;
+
   @include mobile-vertical {
     width: 100%;
     height: auto;
+  }
+}
+
+.mixer-container {
+  margin-bottom: 20px;
+  background: #2a2a2a;
+  padding: 20px;
+  border-radius: 6px;
+
+  @include mobile-vertical {
+    width: calc(100% - 20px);
+    padding: 10px;
   }
 }
 
@@ -96,6 +115,10 @@
   display: flex;
   flex-direction: row;
   margin-top: 15px;
+
+  @include mobile-vertical {
+    flex-direction: column;
+  }
 }
 
 .channel-strip {
@@ -108,6 +131,50 @@
   flex-direction: column;
   gap: 10px;
   width: 80px;
+
+  @include mobile-vertical {
+    width: calc(100% - 9px);
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 5px;
+    gap: 3px;
+    margin-bottom: 5px;
+  }
+}
+
+.trechos {
+  display: flex;
+  width: 100%;
+  gap: 10px;
+  @include mobile-vertical {    
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* Divide o espaço em exatamente 3 colunas iguais */
+    gap: 10px; /* Espaçamento entre os botões */
+  }
+}
+
+.botao-trecho {
+  padding: 20px 30px;
+  @include mobile-vertical {
+    padding: 5px;
+    font-size: 16px;
+    text-align: left;
+    display: flex;
+    align-items: flex-start; /* Posiciona o texto no topo */
+    justify-content: left; /* Alinha o texto à esquerda */
+    height: 100px;
+    width: 100%;
+  }
+}
+
+.fader-functions {
+  @include mobile-vertical {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    width: 100%;
+  }
 }
 
 .visual-click {
@@ -137,7 +204,14 @@
   cursor: pointer;
   writing-mode: vertical-rl;
   direction: rtl;
-  height: 150px;
+  height: 100%;
+
+  @include mobile-vertical {
+    writing-mode: horizontal-tb;
+    direction: ltr;
+    height: auto;
+    width: 100%;
+  }
 }
 
 .visor-digital {
@@ -174,6 +248,23 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+
+  @include mobile-vertical {
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 5px;
+  }
+}
+
+.below-buttons {
+  font-size: 11px;
+  color: #aaa;
+  text-align: right;
+
+  @include mobile-vertical {
+    display: none;
+  }
 }
 
 .strip-button-group {
@@ -181,6 +272,12 @@
   flex-direction: column;
   gap: 8px;
   margin-top: 5px;
+
+  @include mobile-vertical {
+    flex-direction: row;
+    justify-content: space-between;
+    width: 100%;
+  }
 }
 
 .strip-channel-name {
@@ -189,6 +286,23 @@
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 13px;
+
+  @include mobile-vertical {
+    font-size: 16px;
+  }
+}
+
+.fader-level-vertical {
+  display: none;
+
+  @include mobile-vertical {
+    display: block;
+    font-size: 11px;
+    color: #d3ffa1;
+    font-weight: bold;
+    margin-left: 5px;
+    width: 25px !important;
+  }
 }
 
 .strip-button {
@@ -202,33 +316,61 @@
   font-size: 10px;
 }
 
+.fader {
+  width: 100%;
+  height: 100%;
+
+  @include mobile-vertical {
+    margin-bottom: 10px;
+  }
+}
+
 .fader-indicators {
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  height: 200px;
+
+  @include mobile-vertical {
+    width: 100%;
+    flex-direction: column;
+    height: auto;
+  }
 
   .limits {
     display: flex;
     flex-direction: column;
     height: 100%;
-    width: 35px;
     justify-content: space-between;
+
+    @include mobile-vertical {
+      display: none;
+      flex-direction: row;
+      width: 100%;
+    }
 
     span {
       font-size: 11px;
       color: #d3ffa1;
       font-weight: bold;
     }
-
-    .fader-level {
-      background-color: #d3ffa1;
-      color: #0f3b19;
-      font-size: 13px;
-      padding: 6px;
-      border-radius: 6px;
-    }
   }
 
+}
+
+
+.fader-level {
+  background-color: #bada97;
+  color: #0b3614 !important;
+  font-size: 13px;
+  padding: 6px;
+  border-radius: 6px;
+  width: 20px;
+  border: 2px inset #276134;
+
+  @include mobile-vertical {
+    text-align: center;
+  }
 }

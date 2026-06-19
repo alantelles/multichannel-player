@@ -47,19 +47,21 @@
     
     <div style="margin-bottom: 20px;">
       <h3>Selecione o Próximo Bloco:</h3>
-      <div style="display: flex; gap: 10px;">
+      <div class="trechos">
         @for (trecho of audio.markers(); track trecho.id) {
-          <button (click)="audio.agendarTrecho(trecho.id)"
-                  [style.background]="audio.trechoAtivo()?.id === trecho.id ? '#28a745' : (audio.proximoTrecho()?.id === trecho.id ? '#ffc107' : '#555')"
-                  [style.color]="(audio.trechoAtivo()?.id === trecho.id || audio.proximoTrecho()?.id === trecho.id) ? '#000' : '#fff'"
-                  class="botao-basico">
-            {{ trecho.nome }}
-          </button>
+          <div class="trecho-trigger">
+            <button (click)="audio.agendarTrecho(trecho.id)"
+                    [style.background]="audio.trechoAtivo()?.id === trecho.id ? '#28a745' : (audio.proximoTrecho()?.id === trecho.id ? '#ffc107' : '#555')"
+                    [style.color]="(audio.trechoAtivo()?.id === trecho.id || audio.proximoTrecho()?.id === trecho.id) ? '#000' : '#fff'"
+                    class="botao-basico botao-trecho">
+              {{ trecho.nome }}
+            </button>
+          </div>
         }
       </div>
     </div>
 
-    <div style="margin-bottom: 20px; background: #2a2a2a; padding: 20px; border-radius: 6px;">
+    <div class="mixer-container">
       <h3>🎚️ Mixer</h3>
       
       <div class="strips-container">
@@ -67,20 +69,23 @@
           <div class="channel-strip">
             
             <div class="strip-channel-name-container">
-              <strong [title]="canal.nome" class="strip-channel-name">{{ canal.nome }}</strong>              
+              <strong [title]="canal.nome" class="strip-channel-name">{{ canal.nome }}</strong>
+              <span class="fader-level fader-level-vertical">{{ canal.volumeSignal() }}</span>
             </div>
 
-            <div class="fader-indicators">
-              <div class="limits">              
-                <span>+9</span>
-                <span class="fader-level">{{ canal.volumeSignal() }}</span>
-                <span>-40</span>
-              </div>
-              <div class="fader">
-                <input type="range" min="-40" max="9" step="1"
-                    [value]="canal.volumeSignal()"
-                    (input)="atualizarVolumeRange(canal, $event)"
-                    class="strip-slider" />
+            <div class="fader-functions">
+              <div class="fader-indicators">
+                <div class="limits">              
+                  <span>+9</span>
+                  <span class="fader-level">{{ canal.volumeSignal() }}</span>
+                  <span>-40</span>
+                </div>
+                <div class="fader">
+                  <input type="range" min="-40" max="9" step="1"
+                      [value]="canal.volumeSignal()"
+                      (input)="atualizarVolumeRange(canal, $event)"
+                      class="strip-slider" />
+                </div>
               </div>
             </div>
 
@@ -97,7 +102,7 @@
               </button>
             </div>
 
-            <div style="font-size: 11px; color: #aaa; text-align: right;">
+            <div class="below-buttons">
               Destino: <span style="color: #ffc107; font-weight: bold;">{{ canal.saidaAtiva() }}</span>
             </div>
 

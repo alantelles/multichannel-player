@@ -218,7 +218,7 @@ export class AudioEngineService {
     // Criamos o marcador usando o número puro (segundos) que o Tone.js aceita perfeitamente
     return {
       id: 'full-audio',
-      nome: 'Áudio Completo (Automático)',
+      nome: 'Áudio Completo',
       inicio: '0m',
       maxPlays: 1,
       duracao: maiorDuracaoSegundos.toString()
