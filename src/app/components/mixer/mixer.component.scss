@@ -14,7 +14,26 @@
     padding: 10px;
   }
 }
+.now-playing-caption {
+    color: #a2ca96;
+    margin-bottom: 5px;
+    font-size: 13px;
+    display: block; /* Garante que fique em uma linha separada */
+    @include mobile-vertical {    
+      font-size: 14px;
+    }
+}
+.painel-arranjador {
+  background: #1e1e1e;
+  padding: 20px;
+  border-radius: 6px;
 
+  @include mobile-vertical {
+    width: calc(100% - 20px);
+    padding: 10px;
+    margin-top: 10px;
+  }
+}
 .carregador {
   display: flex;
   flex-direction: row;
@@ -24,6 +43,12 @@
 
   div {
     margin-right: 10px;
+    @include mobile-vertical {
+      margin-right: 0;
+    }
+  }
+  div:last-child {
+    margin-right: 0;
   }
 
   .painel-controles {
@@ -35,6 +60,7 @@
   @include mobile-vertical {
     flex-direction: column;
     align-items: center;
+    width: calc(100% - 30px);
 
     .painel-controles {
       margin-left: 0;
@@ -185,7 +211,7 @@
   margin-bottom: 10px;
 
   div {
-    width: 66px;
+    width: 100%;
     height: 10px;
     background: #646464;
 
@@ -196,6 +222,10 @@
     &.active {
       background: #f0df80;
     }
+  }
+  @include mobile-vertical {
+    width: 100%;
+    justify-content: space-around;
   }
 }
 

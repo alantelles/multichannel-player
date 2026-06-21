@@ -12,7 +12,7 @@
       <div style="margin-top: 8px; color: #ffc107; font-size: 14px;">⚡ Status: {{ audio.statusCarregamento() }}</div>
     </div>
     <div class="painel-arranjador">
-      <h2>🔊 Tocando Agora: <strong>{{ audio.trechoAtivo()?.nome }}</strong></h2>
+      <h2><span class="now-playing-caption">🔊 Tocando Agora:</span><strong>{{ audio.trechoAtivo()?.nome }}</strong></h2>
       <h4>Próximo trecho: <span [style.color]="audio.proximoTrecho()?.nome ? '#ffc107' : ''">{{ audio.proximoTrecho()?.nome || '[nenhum]' }}</span></h4>
       <h4>Loops completos: {{ audio.loopCount()}}</h4>
       <div class="visual-click">
