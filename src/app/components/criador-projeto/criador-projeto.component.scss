@@ -1,3 +1,8 @@
+@mixin mobile-vertical {
+  @media screen and (max-width: 1200px) and (orientation: portrait) {
+    @content;
+  }
+}
 .criador-container {
   padding: 20px;
   background-color: #121214;
@@ -24,10 +29,10 @@
 }
 
 .grid-criador {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   grid-template-columns: 1fr 1.5fr;
   gap: 20px;
-  align-items: start;
 }
 
 .card-painel {
@@ -41,6 +46,11 @@
   margin-bottom: 15px;
   label { display: block; margin-bottom: 5px; color: #aaa; font-size: 14px; }
   input { width: 100%; padding: 10px; background: #121214; border: 1px solid #333; color: #fff; border-radius: 4px; box-sizing: border-box; }
+}
+.form-group-row {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
 }
 
 .divisor { border: 0; border-top: 1px solid #2d2d35; margin: 20px 0; }
@@ -93,15 +103,25 @@
     
     .input-inline-nome { background: transparent; border: none; border-bottom: 1px solid #444; color: #fff; font-size: 16px; font-weight: bold; width: 60%; }
     .btn-remover { background: transparent; border: none; color: #f44336; cursor: pointer; margin-left: auto; }
+    @include mobile-vertical {
+      flex-direction: column;
+      align-items: flex-start;
+      .input-inline-nome { width: 100%; }
+      .btn-remover { margin-left: 0; margin-top: 10px; }
+    }
   }
 }
 
 .campos-trecho-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
+  flex-direction: row;
   gap: 10px;
   label { font-size: 11px; color: #888; display: block; margin-bottom: 3px; }
   input { width: 100%; background: #1e1e24; border: 1px solid #333; color: #fff; padding: 6px; border-radius: 4px; box-sizing: border-box; }
+  width: 100%;
+  @include mobile-vertical {
+    grid-template-columns: 1fr;
+  }
 }
 
 .btn-exportar {
@@ -211,6 +231,9 @@
   display: grid;
   grid-template-columns: 0.8fr 0.8fr 2.4fr !important; // Mantém proporção limpa na linha
   gap: 10px;
+  @include mobile-vertical {
+    grid-template-columns: 1fr !important; // Stacks em mobile
+  }
 }
 
 // Estilo do Checkbox de Mute rápido no topo do card do canal

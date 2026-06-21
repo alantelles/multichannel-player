@@ -1,10 +1,10 @@
 <div class="criador-container">
   <header class="header-acoes">
     <button routerLink="/" class="btn-voltar">← Voltar para o Mixer</button>
-    <h2>Bancada de Mapeamento de Projeto</h2>
+    <h2>Criar/Editar Projeto</h2>
     
     <div class="import-container">
-      <label for="input-json-import" class="btn-importar-label">📂 Carregar JSON de Projeto</label>
+      <label for="input-json-import" class="btn-importar-label">📂 Carregar projeto</label>
       <input id="input-json-import" type="file" (change)="importarJsonProjeto($event)" accept="application/json" style="display: none;">
     </div>
   </header>
@@ -31,14 +31,14 @@
         <input type="number" [(ngModel)]="bpm">
       </div>
 
-      <div class="form-group-row" style="display: flex; gap: 10px;">
-        <div style="flex: 1;">
+      <div class="form-group-row">
+        <div>
           <label>Fórmula Compasso:</label>
-          <input type="number" [(ngModel)]="timeSignature" style="width: 100%; padding: 10px; background: #121214; border: 1px solid #333; color: #fff; border-radius: 4px;">
+          <input type="number" [(ngModel)]="timeSignature" style="padding: 10px; background: #121214; border: 1px solid #333; color: #fff; border-radius: 4px;">
         </div>
-        <div style="flex: 1;">
+        <div>
           <label>Offset (Segundos):</label>
-          <input type="number" [(ngModel)]="offset" style="width: 100%; padding: 10px; background: #121214; border: 1px solid #333; color: #fff; border-radius: 4px;">
+          <input type="number" [(ngModel)]="offset" style="padding: 10px; background: #121214; border: 1px solid #333; color: #fff; border-radius: 4px;">
         </div>
       </div>
 
