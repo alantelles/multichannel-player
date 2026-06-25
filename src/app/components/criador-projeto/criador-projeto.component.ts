@@ -314,9 +314,9 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
     const configResultado: ProjectConfig = {
       nomeProjeto: this.nomeProjeto(),
       bpm: this.bpm(),
-      timeSignature: this.timeSignature(),
+      timeSignature: parseInt(this.timeSignature().toString(), 10) || 4,
       pastaBase: this.pastaBase(),
-      offset: this.offset(),
+      offset: this.offset() / 1000,
       fullSong: this.fullSong(),
       canais: this.canais(), 
       markers: markersFormatados

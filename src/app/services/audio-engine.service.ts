@@ -55,6 +55,7 @@ export class AudioEngineService {
   public markers = signal<Marker[]>([]);
   public trechoAtivo = signal<Marker | null>(null);
   public proximoTrecho = signal<Marker | null>(null);
+  public timeSignature = signal<number>(4); // 4/4 por padrão
   
   public canais = signal<CanalAudio[]>([]);
   private loopId!: any;
@@ -69,7 +70,6 @@ export class AudioEngineService {
   public segundosDecorridosNoBloco = signal<number>(0);
   public compassoAtualNoBloco = signal<number>(0);
   public beatAtualNoBloco = signal<number>(0);
-  public subdivisaoAtualNoBloco = signal<number>(0);
   private fileRepository = inject(FileRepositoryService);
 
   async init() {
@@ -94,8 +94,6 @@ export class AudioEngineService {
       const batidasTotais = segundosPuros * bps;
       const beat = Math.floor(batidasTotais) % (Tone.Transport.timeSignature as number); // Batida dentro do compasso
       this.beatAtualNoBloco.set(beat + 1);
-      const subdivisao = Math.floor((batidasTotais * 4) % 4); // Subdivisão em semicolcheias (4 por batida)
-      this.subdivisaoAtualNoBloco.set(subdivisao + 1);
 
       const compassoCalculado = Math.floor(batidasTotais / (Tone.Transport.timeSignature as number));
       let ajusteTrechoStr = this.loopCount() > 0 ? (this.trechoAtivo()?.loopStart || this.trechoAtivo()?.inicio) : this.trechoAtivo()?.inicio;
@@ -123,7 +121,6 @@ export class AudioEngineService {
     this.segundosDecorridosNoBloco.set(0);
     this.compassoAtualNoBloco.set(0);
     this.beatAtualNoBloco.set(0);
-    this.subdivisaoAtualNoBloco.set(0);
   }
   public async carregarProjetoPorJSON(jsonTexto: string) {
     if (!this.isReady()) await this.init();
@@ -141,7 +138,8 @@ export class AudioEngineService {
       this.bpmAtual.set(projeto.bpm);
       this.offset = projeto.offset;
       Tone.Transport.bpm.value = projeto.bpm;
-      Tone.Transport.timeSignature = projeto.timeSignature || 4;
+      this.timeSignature.set(projeto.timeSignature || 4);
+      Tone.Transport.timeSignature = this.timeSignature();
 
       // Montagem da mesa de som multicanal
       const novosCanais: CanalAudio[] = [];

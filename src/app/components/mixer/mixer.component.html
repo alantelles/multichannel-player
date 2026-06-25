@@ -19,12 +19,12 @@
         <div id="b1" [class.active-head]="audio.beatAtualNoBloco() === 1"></div>
         <div id="b2" [class.active]="audio.beatAtualNoBloco() === 2"></div>
         <div id="b3" [class.active]="audio.beatAtualNoBloco() === 3"></div>
-        <div id="b4" [class.active]="audio.beatAtualNoBloco() === 4"></div>
+        <div *ngIf="audio.timeSignature() === 4" id="b4" [class.active]="audio.beatAtualNoBloco() === 4"></div>
       </div>
       <div class="visor-digital">
         <div class="dado">
           <span class="valor-menor">POS: </span>
-          <span class="valor"><strong style="font-size: 23px;">{{ audio.compassoAtualNoBloco() }} | </strong>{{ audio.beatAtualNoBloco() }} : {{ audio.subdivisaoAtualNoBloco() }}</span>
+          <span class="valor"><strong style="font-size: 23px;">{{ audio.compassoAtualNoBloco() }} | </strong>{{ audio.beatAtualNoBloco() }}</span>
         </div>
         <div class="dado">
           <span class="valor-menor">BPM: </span>

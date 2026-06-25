@@ -33,11 +33,15 @@
 
       <div class="form-group-row">
         <div>
-          <label>Fórmula Compasso:</label>
-          <input type="number" [(ngModel)]="timeSignature" style="padding: 10px; background: #121214; border: 1px solid #333; color: #fff; border-radius: 4px;">
+          <label>Compasso:</label>
+
+          <select [(ngModel)]="timeSignature" style="width: 100%; padding: 10px; background: #121214; border: 1px solid #333; color: #fff; border-radius: 4px;">
+            <option [value]="4">4/4</option>
+            <option [value]="3">6/8</option>
+          </select>
         </div>
         <div>
-          <label>Offset (Segundos):</label>
+          <label>Offset (milissegundos):</label>
           <input type="number" [(ngModel)]="offset" style="padding: 10px; background: #121214; border: 1px solid #333; color: #fff; border-radius: 4px;">
         </div>
       </div>
