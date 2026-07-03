@@ -36,21 +36,33 @@
 }
 
 .card-painel {
+  display: flex;
+  flex-direction: column;
   background: #1e1e24;
   border: 1px solid #2d2d35;
   border-radius: 6px;
   padding: 20px;
+  align-items: flex-start;
 }
 
 .form-group {
   margin-bottom: 15px;
+  width: 100%;
   label { display: block; margin-bottom: 5px; color: #aaa; font-size: 14px; }
   input { width: 100%; padding: 10px; background: #121214; border: 1px solid #333; color: #fff; border-radius: 4px; box-sizing: border-box; }
 }
 .form-group-row {
   display: flex;
   flex-direction: row;
+  @include mobile-vertical {
+    justify-content: space-between;
+  }
   gap: 20px;
+  input { width: calc(100% - 20px); margin-top: 5px; }
+  div {
+    display: flex;
+    flex-direction: column;
+  }
 }
 
 .divisor { border: 0; border-top: 1px solid #2d2d35; margin: 20px 0; }

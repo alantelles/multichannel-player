@@ -78,7 +78,7 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
 
   compassoAbsoluto = computed(() => {
     const [bars] = this.posicaoAtual().split(':');
-    return parseInt(bars, 10) + 1;
+    return parseInt(bars, 10);
   });
 
   constructor() {
@@ -267,9 +267,17 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
   }
 
   mudarPosicao(quantidadeCompassos: number) {
+    const tempoAtualNaCabeca = Tone.Time(Tone.Transport.seconds).quantize('1m');
+
+    // 2. Calcula o valor de um compasso em segundos
     const segundosPorCompasso = Tone.Time('1m').toSeconds();
     const deslocamentoSegundos = quantidadeCompassos * segundosPorCompasso;
-    let novoTempoEmSegundos = Math.max(0, Tone.Transport.seconds + deslocamentoSegundos);
+
+    // 3. Soma o deslocamento a partir da cabeça do compasso encontrada
+    let novoTempoEmSegundos = Math.max(0, tempoAtualNaCabeca + deslocamentoSegundos);
+
+    // 4. Aplica ao Transport
+    Tone.Transport.seconds = novoTempoEmSegundos;
     
     Tone.Transport.seconds = novoTempoEmSegundos;
     this.posicaoAtual.set(Tone.Transport.position.toString());

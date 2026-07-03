@@ -1,6 +1,6 @@
 <div class="criador-container">
   <header class="header-acoes">
-    <button routerLink="/" class="btn-voltar">← Voltar para o Mixer</button>
+    <button routerLink="/" class="btn-voltar">← Mixer</button>
     <h2>Criar/Editar Projeto</h2>
     
     <div class="import-container">
@@ -41,18 +41,15 @@
           </select>
         </div>
         <div>
-          <label>Offset (milissegundos):</label>
+          <label>Offset (ms):</label>
           <input type="number" [(ngModel)]="offset" style="padding: 10px; background: #121214; border: 1px solid #333; color: #fff; border-radius: 4px;">
         </div>
+        <div>
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: #ccc;">
+            <input type="checkbox" [(ngModel)]="fullSong"> Música Contínua (Full Song)
+          </label>
+        </div>
       </div>
-
-      <div class="form-group" style="margin-top: 15px;">
-        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: #ccc;">
-          <input type="checkbox" [(ngModel)]="fullSong"> Música Contínua (Full Song)
-        </label>
-      </div>
-
-      <hr class="divisor">
 
       <h3>2. Áudio Guia da Mesa</h3>
       <div class="upload-guia">
@@ -97,7 +94,7 @@
     <input type="text" [(ngModel)]="canal.nome" class="input-inline-nome" placeholder="Nome do Canal (Ex: Bateria)">
     
     <label class="checkbox-muted-top">
-      <input type="checkbox" [(ngModel)]="canal.muted"> 🔇 Mudar Mute Inicial
+      <input type="checkbox" [(ngModel)]="canal.muted"> 🔇 Mutado
     </label>
 
     <button (click)="removerCanal(idx)" class="btn-remover">Remover</button>
