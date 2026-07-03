@@ -206,13 +206,14 @@
 .visual-click {
   display: flex;
   flex-direction: row;
-  width: 265px;
+  width: 100%;
   justify-content: space-between;
   margin-bottom: 10px;
 
   div {
     width: 100%;
     height: 10px;
+    margin-right: 5px;
     background: #646464;
 
     &.active-head {
@@ -225,7 +226,10 @@
   }
   @include mobile-vertical {
     width: 100%;
-    justify-content: space-around;
+    justify-content: space-between;
+    div {
+      height: 15px;
+    }
   }
 }
 
@@ -304,9 +308,11 @@
   margin-top: 5px;
 
   @include mobile-vertical {
+    margin-top: 20px;
     flex-direction: row;
     justify-content: space-between;
     width: 100%;
+    height: 40px;
   }
 }
 
@@ -343,7 +349,7 @@
   color: white;
   font-weight: bold;
   cursor: pointer;
-  font-size: 10px;
+  font-size: 14px;
 }
 
 .fader {
