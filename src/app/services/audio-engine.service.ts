@@ -72,6 +72,10 @@ export class AudioEngineService {
   public beatAtualNoBloco = signal<number>(0);
   private fileRepository = inject(FileRepositoryService);
 
+  constructor() {
+    this.configurarLatenciaParaPalco();
+  }
+
   async init() {
     if (this.isReady()) return;
 
@@ -121,6 +125,19 @@ export class AudioEngineService {
     this.segundosDecorridosNoBloco.set(0);
     this.compassoAtualNoBloco.set(0);
     this.beatAtualNoBloco.set(0);
+  }
+  private configurarLatenciaParaPalco() {
+    try {
+      // Dá ao navegador uma janela maior (100ms) para processar os agendamentos de áudio
+      Tone.getContext().lookAhead = 0.1; 
+      
+      // Abre mão do clique instantâneo em troca de estabilidade total na reprodução
+      Tone.getContext().latencyHint = 'playback'; 
+      
+      console.log('🛡️ Tone.js configurado para modo de alta estabilidade (Playback).');
+    } catch (error) {
+      console.error('Erro ao configurar contexto do Tone.js:', error);
+    }
   }
   public async carregarProjetoPorJSON(jsonTexto: string) {
     if (!this.isReady()) await this.init();
