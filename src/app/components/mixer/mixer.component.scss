@@ -170,7 +170,8 @@
 }
 
 .trechos {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
   width: 100%;
   gap: 10px;
   @include mobile-vertical {    
@@ -181,16 +182,16 @@
 }
 
 .botao-trecho {
-  padding: 20px 30px;
+  padding: 5px;
+  font-size: 14px;
+  text-align: left;
+  height: 100px;
+  width: 100%;
+  display: flex;
+  align-items: flex-start; /* Posiciona o texto no topo */
+  justify-content: left; /* Alinha o texto à esquerda */
   @include mobile-vertical {
-    padding: 5px;
-    font-size: 16px;
-    text-align: left;
-    display: flex;
-    align-items: flex-start; /* Posiciona o texto no topo */
-    justify-content: left; /* Alinha o texto à esquerda */
-    height: 100px;
-    width: 100%;
+    font-size: 16px;    
   }
 }
 
