@@ -83,6 +83,11 @@
         },
         "deploy": {
           "builder": "angular-cli-ghpages:deploy",
+          "configurations": {
+            "production": {
+              "buildTarget": "multichannel-player:build:production"
+            }
+          },
           "options": {
             "outputPath": "dist/multichannel-player/browser"
           }
