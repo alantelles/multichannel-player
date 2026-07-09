@@ -51,8 +51,8 @@
         @for (trecho of audio.markers(); track trecho.id) {
           <div class="trecho-trigger">
             <button (click)="audio.agendarTrecho(trecho.id)"
-                    [style.background]="audio.trechoAtivo()?.id === trecho.id ? '#28a745' : (audio.proximoTrecho()?.id === trecho.id ? '#ffc107' : '#555')"
-                    [style.color]="(audio.trechoAtivo()?.id === trecho.id || audio.proximoTrecho()?.id === trecho.id) ? '#000' : '#fff'"
+                    [style.background]="decidirCorTrecho(trecho)"
+                    [style.color]="(audio.trechoAtivo()?.id === trecho.id || audio.trechoAtivo()?.nextMarker === trecho.id || audio.proximoTrecho()?.id === trecho.id) ? '#000' : '#fff'"
                     class="botao-basico botao-trecho">
               {{ trecho.nome }}
             </button>

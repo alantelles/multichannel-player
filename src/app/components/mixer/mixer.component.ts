@@ -1,5 +1,5 @@
 import { Component, inject, OnInit } from '@angular/core';
-import { AudioEngineService } from '../../services/audio-engine.service'; // Ajuste o caminho se o seu arquivo tiver .service no nome
+import { AudioEngineService, Marker } from '../../services/audio-engine.service'; // Ajuste o caminho se o seu arquivo tiver .service no nome
 import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { AdicionarArquivosProjetoComponent } from '../adicionar-arquivos-projeto/adicionar-arquivos-projeto.component';
@@ -40,6 +40,23 @@ export class MixerComponent implements OnInit {
     this.fileRepository.onlineRepositoryUrl.set(savedAudioRepository || 'audios/');
   }
 
+  decidirCorTrecho(marker: Marker): string {
+    const trechoAtivo = this.audio.trechoAtivo();
+    const proximoTrecho = this.audio.proximoTrecho();
+    if (!trechoAtivo) {
+      return '#818181'; // Cor padrão se não houver trecho ativo
+    }
+    if (trechoAtivo.id === marker.id) {
+      return '#28a745'; // Verde para trecho ativo
+    }
+    if (proximoTrecho && proximoTrecho.id === marker.id) {
+      return '#ffc107'; // Amarelo para próximo trecho
+    }
+    if (trechoAtivo.nextMarker && trechoAtivo.nextMarker === marker.id) {
+      return '#0772ff'; // Azul para próximo trecho
+    }
+    return '#818181'; // Cor padrão para outros trechos
+  }
   adicionarArquivosLocal() {
     const dialogRef = this.dialog.open(AdicionarArquivosProjetoComponent, {
       width: '500px', disableClose: true
