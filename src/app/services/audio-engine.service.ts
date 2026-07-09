@@ -131,10 +131,6 @@ export class AudioEngineService {
       // Dá ao navegador uma janela maior (100ms) para processar os agendamentos de áudio
       Tone.getContext().lookAhead = 0.1; 
       
-      // Abre mão do clique instantâneo em troca de estabilidade total na reprodução
-      Tone.getContext().latencyHint = 'playback'; 
-      
-      console.log('🛡️ Tone.js configurado para modo de alta estabilidade (Playback).');
     } catch (error) {
       console.error('Erro ao configurar contexto do Tone.js:', error);
     }
@@ -259,9 +255,18 @@ export class AudioEngineService {
   }
 
   private executarCicloArranjador(tempoDisparoCravado: number) {
+    
+    // 1. Verifica se o usuário pediu para mudar de bloco na virada
+    const proximo = this.proximoTrecho();
+    if (proximo) {
+      this.trechoAtivo.set(proximo);
+      this.proximoTrecho.set(null); 
+      this.loopCount.set(0);
+    };
     const atualAntesVirada = this.trechoAtivo();
+    
     if (atualAntesVirada && atualAntesVirada.maxPlays) {
-      if (atualAntesVirada.maxPlays - 1 < this.loopCount()) {        
+      if (atualAntesVirada.maxPlays - 1 === this.loopCount()) {        
         if (!this.proximoTrecho()) {
           if (atualAntesVirada.nextMarker) {
             this.agendarTrecho(atualAntesVirada.nextMarker);
@@ -271,13 +276,6 @@ export class AudioEngineService {
           }
         }
       }
-    }
-    // 1. Verifica se o usuário pediu para mudar de bloco na virada
-    const proximo = this.proximoTrecho();
-    if (proximo) {
-      this.trechoAtivo.set(proximo);
-      this.proximoTrecho.set(null); 
-      this.loopCount.set(0); 
     }
 
     const atual = this.trechoAtivo();
@@ -311,8 +309,10 @@ export class AudioEngineService {
     // 2. DISPARO CRÍTICO DE ÁUDIO
     this.canais().forEach(canal => {
       if (canal.player.loaded) {
+        console.log(`Disparando canal "${canal.nome}" no tempo ${tempoDisparoCravado.toFixed(3)}s, início com offset: ${inicioComOffset.toFixed(3)}s, duração: ${duracaoSegundos.toFixed(3)}s`);
         canal.player.stop(tempoDisparoCravado); 
         // Aplicamos o início corrigido com o seu offset de teste
+        console.log("comecou tocar")
         canal.player.start(tempoDisparoCravado, inicioComOffset, duracaoSegundos);
       }
     });
@@ -326,7 +326,6 @@ export class AudioEngineService {
 
     // 4. AGENDA A PRÓXIMA VOLTA
     this.loopId = Tone.Transport.schedule((time) => {
-      
       if (!this.proximoTrecho()) {
         this.loopCount.update(c => c + 1);
       }
