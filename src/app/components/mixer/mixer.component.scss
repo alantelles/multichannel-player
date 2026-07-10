@@ -195,6 +195,9 @@
   }
 }
 
+.botao-funcao {
+  background: #d37904;
+}
 .fader-functions {
   @include mobile-vertical {
     display: flex;

@@ -381,6 +381,10 @@ export class AudioEngineService {
   }
 
   public agendarTrecho(markerId: string) {
+    if (!markerId) {
+      this.proximoTrecho.set(null);
+      return;
+    }
     const selecionado = this.markers().find(m => m.id === markerId);
     if (!selecionado) return;
 

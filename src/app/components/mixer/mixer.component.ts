@@ -40,6 +40,18 @@ export class MixerComponent implements OnInit {
     this.fileRepository.onlineRepositoryUrl.set(savedAudioRepository || 'audios/');
   }
 
+  cancelarProximoTrecho() {
+    this.audio.agendarTrecho('');
+  }
+  dispararProximoTrecho() {
+    // TODO: disparar proximo trecho instantaneamente, sem esperar o trecho atual terminar
+  }
+  irParaFim() {
+    // TODO: ir para um trecho sinalizado como fim
+  }
+
+
+
   decidirCorTrecho(marker: Marker): string {
     const trechoAtivo = this.audio.trechoAtivo();
     const proximoTrecho = this.audio.proximoTrecho();
