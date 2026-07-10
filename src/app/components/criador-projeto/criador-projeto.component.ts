@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import * as Tone from 'tone';
 import { FileRepositoryService } from '../../services/file-repository.service';
-import { ExportProjectService } from '../../services/export-project.service';
+import { BundleProjectService } from '../../services/bundle-project.service';
 
 export interface Marker {
   id: string;
@@ -52,7 +52,7 @@ interface InterfaceFormTrecho {
 })
 export class CriadorProjetoComponent implements OnInit, OnDestroy {
   private fileRepository = inject(FileRepositoryService);
-  private exportProject = inject(ExportProjectService);
+  private bundleService = inject(BundleProjectService);
   // Dados Gerais do Projeto
   nomeProjeto = signal<string>('');
   pastaBase = signal<string>('');
@@ -335,7 +335,7 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
   exportarProjetoCompleto() {
     const configResultado = this.construirProjetoConfig();
     const nomesAudios = this.canais().map(c => `${c.arquivo}`);
-    this.exportProject.exportarParaZip(configResultado, nomesAudios);
+    this.bundleService.exportarParaZip(configResultado, nomesAudios);
   }
 
   baixarJsonProjeto() {

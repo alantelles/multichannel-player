@@ -18,19 +18,22 @@ export interface ProjectConfig {
   bpm: number;
   timeSignature: number; // TODO: permitir compassos compostos
   pastaBase: string;
-  canais: CanalAudio[];
+  canais: CanalAudioConfig[];
   markers?: Marker[];
   fullSong?: boolean;
 }
-
-export interface CanalAudio {
+export interface LoadedProject extends ProjectConfig {
+  canais: CanalAudio[];
+}
+export interface CanalAudioConfig {
   id: string;
   nome: string;
   arquivo: string;
   muted?: boolean;
   volume?: number;
-  
+}
 
+export interface CanalAudio extends CanalAudioConfig {
   player: Tone.Player;
   volumeNode: Tone.Volume;
   channelNode: Tone.Channel;
@@ -144,7 +147,7 @@ export class AudioEngineService {
       this.statusCarregamento.set('Carregando pistas do repositório...');
       this.destruirCanaisAtuais();
 
-      const projeto: ProjectConfig = JSON.parse(jsonTexto) as ProjectConfig;
+      const projeto: LoadedProject = JSON.parse(jsonTexto) as LoadedProject;
 
 
       // Configurações Globais de Tempo

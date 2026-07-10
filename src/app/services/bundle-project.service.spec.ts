@@ -1,13 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 
-import { ExportProjectService } from './export-project.service';
+import { BundleProjectService } from './bundle-project.service';
 
 describe('ExportProjectService', () => {
-  let service: ExportProjectService;
+  let service: BundleProjectService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
-    service = TestBed.inject(ExportProjectService);
+    service = TestBed.inject(BundleProjectService);
   });
 
   it('should be created', () => {
