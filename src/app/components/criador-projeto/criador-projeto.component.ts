@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import * as Tone from 'tone';
 import { FileRepositoryService } from '../../services/file-repository.service';
+import { ExportProjectService } from '../../services/export-project.service';
 
 export interface Marker {
   id: string;
@@ -51,7 +52,7 @@ interface InterfaceFormTrecho {
 })
 export class CriadorProjetoComponent implements OnInit, OnDestroy {
   private fileRepository = inject(FileRepositoryService);
-
+  private exportProject = inject(ExportProjectService);
   // Dados Gerais do Projeto
   nomeProjeto = signal<string>('');
   pastaBase = signal<string>('');
@@ -306,7 +307,7 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
     this.trechosForm.update(lista => lista.filter((_, i) => i !== index));
   }
 
-  baixarJsonProjeto() {
+  construirProjetoConfig(): ProjectConfig {
     const markersFormatados: Marker[] = this.trechosForm().map((t, index) => {
       const idGerado = t.nome.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || `marker-${index}`;
       return {
@@ -319,7 +320,7 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
       };
     });
 
-    const configResultado: ProjectConfig = {
+    return {
       nomeProjeto: this.nomeProjeto(),
       bpm: this.bpm(),
       timeSignature: parseInt(this.timeSignature().toString(), 10) || 4,
@@ -329,6 +330,16 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
       canais: this.canais(), 
       markers: markersFormatados
     };
+  }
+
+  exportarProjetoCompleto() {
+    const configResultado = this.construirProjetoConfig();
+    const nomesAudios = this.canais().map(c => `${c.arquivo}`);
+    this.exportProject.exportarParaZip(configResultado, nomesAudios);
+  }
+
+  baixarJsonProjeto() {
+    const configResultado = this.construirProjetoConfig();
 
     const blob = new Blob([JSON.stringify(configResultado, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
