@@ -380,6 +380,40 @@ export class AudioEngineService {
     canal.channelNode.connect(Tone.Destination, 0, indiceSaida);
   }
 
+  dispararTrechoInstantaneamente(trechoId: string) {
+    const alvo = this.markers().find(m => m.id === trechoId);
+    if (!alvo) return;
+
+    try {
+      // 1. CANCELA O AGENDAMENTO FUTURO
+      // Limpa o evento do Tone.Transport para o loop antigo não "acordar" do nada
+      if (this.loopId !== undefined) {
+        Tone.Transport.clear(this.loopId);
+      }
+
+      // 2. CORTA O SOM ATUAL IMEDIATAMENTE
+      // Damos o stop no tempo absoluto agora (Tone.immediate())
+      const agoraHardware = Tone.immediate();
+      this.canais().forEach(canal => {
+        if (canal.player.loaded) {
+          canal.player.stop(agoraHardware);
+        }
+      });
+
+      // 3. ATUALIZA OS ESTADOS DO ANGULAR (A INTERFACE)
+      this.trechoAtivo.set(alvo);
+      this.proximoTrecho.set(null);
+      this.loopCount.set(0); // Reseta o contador para o novo trecho começar do zero
+
+      // 4. FORÇA O REINÍCIO DO MOTOR DE ÁUDIO NO TEMPO ATUAL
+      // Chamamos o seu método original passando o tempo exato de "agora"
+      this.executarCicloArranjador(agoraHardware);
+
+    } catch (error) {
+      console.error("Erro no disparo instantâneo:", error);
+    }
+  }
+
   public agendarTrecho(markerId: string) {
     if (!markerId) {
       this.proximoTrecho.set(null);

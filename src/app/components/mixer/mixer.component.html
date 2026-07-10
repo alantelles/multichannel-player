@@ -46,23 +46,15 @@
   @if (audio.canais().length > 0) {
     
     <div style="margin-bottom: 20px;">
-      <h3>Funções:</h3>
-      <div class="trechos">
-        <div class="trechos-trigger">
-          <button class="botao-basico botao-trecho botao-funcao" (click)="cancelarProximoTrecho()">Cancelar próximo</button>
-        </div>
-        <div class="trechos-trigger">
-          <button class="botao-basico botao-trecho botao-funcao" (click)="dispararProximoTrecho()">Disparar próximo</button>
-        </div>
-        <div class="trechos-trigger">
-          <button class="botao-basico botao-trecho botao-funcao" (click)="irParaFim()">Ir para fim</button>
-        </div>
-      </div>
       <h3>Selecione o Próximo Bloco:</h3>
       <div class="trechos">
         @for (trecho of audio.markers(); track trecho.id) {
           <div class="trecho-trigger">
-            <button (click)="audio.agendarTrecho(trecho.id)"
+            <button (mousedown)="iniciarPress(trecho.id)"
+                    (mouseup)="finalizarPress(trecho.id)"
+                    (mouseleave)="cancelarPress()"
+                    (touchstart)="iniciarPress(trecho.id); $event.preventDefault()"
+                    (touchend)="finalizarPress(trecho.id)"
                     [style.background]="decidirCorTrecho(trecho)"
                     [style.color]="(audio.trechoAtivo()?.id === trecho.id || audio.trechoAtivo()?.nextMarker === trecho.id || audio.proximoTrecho()?.id === trecho.id) ? '#000' : '#fff'"
                     class="botao-basico botao-trecho">

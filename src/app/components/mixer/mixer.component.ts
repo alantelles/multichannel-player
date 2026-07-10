@@ -19,6 +19,10 @@ export class MixerComponent implements OnInit {
   protected audio = inject(AudioEngineService);
   private dialog = inject(MatDialog);
   fileRepository = inject(FileRepositoryService);
+
+  private pressTimeout: any;
+  private foiDisparoInstantaneo = false;
+  trechoPressionado: Marker | null = null;
   // 🎯 NOVO: Lê o arquivo JSON de configuração mapeado pelo usuário
   onConfigSelecionada(event: Event) {
     const input = event.target as HTMLInputElement;
@@ -39,17 +43,49 @@ export class MixerComponent implements OnInit {
     const savedAudioRepository = localStorage.getItem('audioRepository');
     this.fileRepository.onlineRepositoryUrl.set(savedAudioRepository || 'audios/');
   }
+  iniciarPress(trechoId: string) {
+    if (!this.audio.isPlaying()) {
+      return; // Se não estiver tocando, não faz nada
+    }
+    this.foiDisparoInstantaneo = false;
+    this.trechoPressionado = this.audio.markers().find(marker => marker.id === trechoId) || null;
+    // Se segurar por 500ms, é um comando de emergência!
+    this.pressTimeout = setTimeout(() => {
+      this.audio.dispararTrechoInstantaneamente(trechoId);
+      this.foiDisparoInstantaneo = true; // Avisa que o braço de emergência já foi executado
+      
+      // Feedback tátil opcional para celulares Android (vibra de leve ao ativar)
+      if (navigator.vibrate) navigator.vibrate(50); 
+    }, 500); 
+  }
 
+  finalizarPress(trechoId: string) {
+    // Limpa o cronômetro para o disparo instantâneo não acontecer no futuro
+    this.cancelarPress();
+    this.trechoPressionado = null;
+    // Se o usuário soltou o botão ANTES dos 500ms, é um clique normal (Musical)
+    if (!this.foiDisparoInstantaneo) {
+      const proximo = this.audio.proximoTrecho();
+      if (proximo && proximo.id === trechoId) {
+        // Se o trecho clicado é o mesmo que já estava agendado como próximo, desagendar
+        this.cancelarProximoTrecho();
+        return;
+      }
+      this.audio.agendarTrecho(trechoId);
+    }
+  }
+
+  cancelarPress() {
+    if (this.pressTimeout) {
+      clearTimeout(this.pressTimeout);
+    }
+  }
   cancelarProximoTrecho() {
     this.audio.agendarTrecho('');
-  }
-  dispararProximoTrecho() {
-    // TODO: disparar proximo trecho instantaneamente, sem esperar o trecho atual terminar
   }
   irParaFim() {
     // TODO: ir para um trecho sinalizado como fim
   }
-
 
 
   decidirCorTrecho(marker: Marker): string {
@@ -57,6 +93,9 @@ export class MixerComponent implements OnInit {
     const proximoTrecho = this.audio.proximoTrecho();
     if (!trechoAtivo) {
       return '#818181'; // Cor padrão se não houver trecho ativo
+    }
+    if (this.trechoPressionado && this.trechoPressionado.id === marker.id) {
+      return '#fd2929'; // Vermelho para trecho pressionado
     }
     if (trechoAtivo.id === marker.id) {
       return '#28a745'; // Verde para trecho ativo
