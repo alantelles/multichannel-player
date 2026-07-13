@@ -9,6 +9,9 @@
     </div>
   </header>
 
+  <div class="status-importacao" *ngIf="statusImportacao()">
+    {{ statusImportacao() }}
+  </div>
   <div class="grid-criador">
     <section class="card-painel">
       <h3>1. Metadados Globais</h3>

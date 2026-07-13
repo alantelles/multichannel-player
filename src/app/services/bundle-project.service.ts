@@ -1,5 +1,5 @@
 import { FileRepositoryService } from './file-repository.service';
-import { inject, Injectable } from '@angular/core';
+import { inject, Injectable, WritableSignal } from '@angular/core';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver'; 
 import { ProjectConfig } from './audio-engine.service';
@@ -11,55 +11,45 @@ export interface BundleProject {
 
 @Injectable({ providedIn: 'root' })
 export class BundleProjectService {
-
+  
   fileRepository = inject(FileRepositoryService);
 
-  async importarEInstalarZip(arquivoZip: File) {
+  async importarEInstalarZip(arquivoZip: File, sinal: WritableSignal<string>) {
     const zip = new JSZip();
     const conteudo = await zip.loadAsync(arquivoZip);
-    
-    // 1. Achar e ler o JSON original do ZIP
     const arquivoJson = Object.keys(conteudo.files).find(nome => nome.endsWith('.json'));
-    if (!arquivoJson) throw new Error("JSON não encontrado no ZIP");
-    
+    if (!arquivoJson) {
+      sinal.set('Erro: JSON não encontrado no ZIP');
+      throw new Error('JSON não encontrado no ZIP');
+    };
+    sinal.set(`Importando ${arquivoJson}...`);
     const jsonTexto = await conteudo.files[arquivoJson].async('string');
-    const projetoOriginal: ProjectConfig = JSON.parse(jsonTexto);
-
-    // 2. 🔥 A MÁGICA: Criar uma pasta base única usando a data/hora atual
-    // Exemplo: "i-couldnt-love-you-more-20260713-0930"
+    const projetoOriginal: ProjectConfig = JSON.parse(jsonTexto);    
+    
     const sufixoUnico = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 12);
-    const novaPastaBase = `${projetoOriginal.pastaBase || 'projeto'}-${sufixoUnico}`;
-
-    // 3. Modificar o objeto JSON na memória com a nova rota
+    const novaPastaBase = `${projetoOriginal.pastaBase || 'projeto'}-${sufixoUnico}`;    
     const projetoModificado: ProjectConfig = {
       ...projetoOriginal,
-      pastaBase: novaPastaBase // Agora ele aponta para o diretório exclusivo
+      pastaBase: novaPastaBase 
     };
-
-    // 4. Salvar os áudios no IndexedDB usando a nova pasta base exclusiva
-    const arquivosAudio = Object.keys(conteudo.files).filter(nome => nome.startsWith('audios/') && !conteudo.files[nome].dir);
-
+    const arquivosAudio = Object.keys(conteudo.files).filter(nome => nome.startsWith('audios/') && !conteudo.files[nome].dir);    
     for (const caminhoCompleto of arquivosAudio) {
+      sinal.set(`Importando ${caminhoCompleto}...`);
       const nomeArquivo = caminhoCompleto.replace('audios/', '');
       const blob = await conteudo.files[caminhoCompleto].async('blob');
-      
-      // Converte o blob em File se o seu repositório exigir, ou salva o blob direto
-      const arquivoParaSalvar = new File([blob], nomeArquivo, { type: blob.type });
-
-      // Salva no banco vinculando à nova pastaBase única
+      const arquivoParaSalvar = new File([blob], nomeArquivo, { type: blob.type });      
       await this.fileRepository.saveFile(novaPastaBase, nomeArquivo, arquivoParaSalvar);
     }
-
-    // 5. 🔥 DEVOLVER O DOWNLOAD: Entrega o novo JSON leve e atualizado para o usuário guardar
+    sinal.set('Projeto importado com sucesso!');
+    setTimeout(() => sinal.set(''), 2000);
     this.devolverJsonModificado(projetoModificado);
   }
 
   private devolverJsonModificado(projeto: ProjectConfig) {
-    const blob = new Blob([JSON.stringify(projeto, null, 2)], { type: 'application/json' });
-    // Usa o seu saveAs para baixar o arquivo
+    const blob = new Blob([JSON.stringify(projeto, null, 2)], { type: 'application/json' });    
     saveAs(blob, `${projeto.pastaBase}.json`);
   }
-
+  
   async exportarParaZip(projetoJson: ProjectConfig, nomesArquivos: string[]) {
     const zip = new JSZip();    
     zip.file(`${projetoJson.pastaBase || 'projeto'}.json`, JSON.stringify(projetoJson, null, 2));    

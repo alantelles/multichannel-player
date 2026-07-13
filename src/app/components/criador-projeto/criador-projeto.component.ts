@@ -52,7 +52,8 @@ interface InterfaceFormTrecho {
 })
 export class CriadorProjetoComponent implements OnInit, OnDestroy {
   private fileRepository = inject(FileRepositoryService);
-  private bundleService = inject(BundleProjectService);
+  bundleService = inject(BundleProjectService);
+  statusImportacao = signal<string>('');
   // Dados Gerais do Projeto
   nomeProjeto = signal<string>('');
   pastaBase = signal<string>('');
@@ -135,7 +136,8 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
     if (!input.files || input.files.length === 0) return;
     const nomeArquivoProjeto = input.files[0].name;
     if (nomeArquivoProjeto.endsWith('.zip')) {
-      this.bundleService.importarEInstalarZip(input.files[0]);
+      this.statusImportacao.set('Carregando arquivo de projeto ZIP...');
+      this.bundleService.importarEInstalarZip(input.files[0], this.statusImportacao);
     } else if (nomeArquivoProjeto.endsWith('.json')) {
       this.importarJsonProjeto(event);
     } else {
@@ -159,7 +161,7 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
         this.pastaBase.set(config.pastaBase || '');
         this.bpm.set(config.bpm || 120);
         this.timeSignature.set(config.timeSignature || 4);
-        this.offset.set(config.offset || 0);
+        this.offset.set((config.offset || 0) * 1000); // Converte de segundos para milissegundos
         this.fullSong.set(!!config.fullSong);
 
         if (config.canais && Array.isArray(config.canais)) {
