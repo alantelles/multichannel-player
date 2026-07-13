@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import * as Tone from 'tone';
 import { FileRepositoryService } from '../../services/file-repository.service';
+import { BundleProjectService } from '../../services/bundle-project.service';
 
 export interface Marker {
   id: string;
@@ -51,7 +52,8 @@ interface InterfaceFormTrecho {
 })
 export class CriadorProjetoComponent implements OnInit, OnDestroy {
   private fileRepository = inject(FileRepositoryService);
-
+  bundleService = inject(BundleProjectService);
+  statusImportacao = signal<string>('');
   // Dados Gerais do Projeto
   nomeProjeto = signal<string>('');
   pastaBase = signal<string>('');
@@ -129,6 +131,21 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
     }
   }
 
+  importarProjeto(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const nomeArquivoProjeto = input.files[0].name;
+    if (nomeArquivoProjeto.endsWith('.zip')) {
+      this.statusImportacao.set('Carregando arquivo de projeto ZIP...');
+      this.bundleService.importarEInstalarZip(input.files[0], this.statusImportacao);
+    } else if (nomeArquivoProjeto.endsWith('.json')) {
+      this.importarJsonProjeto(event);
+    } else {
+      alert('Formato de arquivo não suportado. Por favor, selecione um arquivo .zip ou .json.');
+    }
+    input.value = '';
+  }
+
   importarJsonProjeto(event: Event) {
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) return;
@@ -144,7 +161,7 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
         this.pastaBase.set(config.pastaBase || '');
         this.bpm.set(config.bpm || 120);
         this.timeSignature.set(config.timeSignature || 4);
-        this.offset.set(config.offset || 0);
+        this.offset.set((config.offset || 0) * 1000); // Converte de segundos para milissegundos
         this.fullSong.set(!!config.fullSong);
 
         if (config.canais && Array.isArray(config.canais)) {
@@ -306,7 +323,7 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
     this.trechosForm.update(lista => lista.filter((_, i) => i !== index));
   }
 
-  baixarJsonProjeto() {
+  construirProjetoConfig(): ProjectConfig {
     const markersFormatados: Marker[] = this.trechosForm().map((t, index) => {
       const idGerado = t.nome.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || `marker-${index}`;
       return {
@@ -319,7 +336,7 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
       };
     });
 
-    const configResultado: ProjectConfig = {
+    return {
       nomeProjeto: this.nomeProjeto(),
       bpm: this.bpm(),
       timeSignature: parseInt(this.timeSignature().toString(), 10) || 4,
@@ -329,6 +346,16 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
       canais: this.canais(), 
       markers: markersFormatados
     };
+  }
+
+  exportarProjetoCompleto() {
+    const configResultado = this.construirProjetoConfig();
+    const nomesAudios = this.canais().map(c => `${c.arquivo}`);
+    this.bundleService.exportarParaZip(configResultado, nomesAudios);
+  }
+
+  baixarJsonProjeto() {
+    const configResultado = this.construirProjetoConfig();
 
     const blob = new Blob([JSON.stringify(configResultado, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
