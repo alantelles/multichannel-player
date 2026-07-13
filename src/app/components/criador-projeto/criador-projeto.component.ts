@@ -130,6 +130,20 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
     }
   }
 
+  importarProjeto(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const nomeArquivoProjeto = input.files[0].name;
+    if (nomeArquivoProjeto.endsWith('.zip')) {
+      this.bundleService.importarEInstalarZip(input.files[0]);
+    } else if (nomeArquivoProjeto.endsWith('.json')) {
+      this.importarJsonProjeto(event);
+    } else {
+      alert('Formato de arquivo não suportado. Por favor, selecione um arquivo .zip ou .json.');
+    }
+    input.value = '';
+  }
+
   importarJsonProjeto(event: Event) {
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) return;
