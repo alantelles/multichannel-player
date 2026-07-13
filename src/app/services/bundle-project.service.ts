@@ -29,29 +29,16 @@ export class BundleProjectService {
 
   async exportarParaZip(projetoJson: ProjectConfig, nomesArquivos: string[]) {
     const zip = new JSZip();
-    
-    // 1. Adiciona o JSON do projeto na raiz do ZIP
     zip.file(`${projetoJson.pastaBase || 'projeto'}.json`, JSON.stringify(projetoJson, null, 2));
-
-    // 2. Cria uma pasta interna para os áudios
     const audioFolder = zip.folder('audios');
-
-    // 3. Loop para baixar cada áudio e injetar no ZIP
-    for (const nomeArquivo of nomesArquivos) {      
-      try {
-        // Faz o fetch do áudio local/online como um Blob binário
-        const fetched = await this.fileRepository.getFileUrl(projetoJson.pastaBase, nomeArquivo);        
-        const response = await fetch(fetched.url);
-        const blob = await response.blob();
-        
-        // Adiciona o binário dentro da pasta 'audios/' do ZIP
-        audioFolder?.file(nomeArquivo, blob);
+    const arquivos = await this.fileRepository.getFiles(projetoJson.pastaBase);
+    for (const arquivo of arquivos) {
+      try {        
+        audioFolder?.file(arquivo.name, arquivo.content);
       } catch (error) {
-        console.error(`Erro ao empacotar o áudio ${nomeArquivo}:`, error);
+        console.error(`Erro ao empacotar o áudio ${arquivo.name}:`, error);
       }
     }
-
-    // 4. Gera o arquivo ZIP final e dispara o download no navegador
     const content = await zip.generateAsync({ type: 'blob' });
     saveAs(content, `${projetoJson.pastaBase || 'projeto'}.zip`);
   }
