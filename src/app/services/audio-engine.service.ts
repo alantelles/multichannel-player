@@ -60,6 +60,7 @@ export class AudioEngineService {
   public canais = signal<CanalAudio[]>([]);
   private loopId!: any;
   private offset?: number;
+  public sampleRate = signal<number>(Tone.context.sampleRate);
   
   // 1. O Signal que seu componente Angular vai ler no HTML
   public tempoMusicalAtual = signal<string>('0:0:0');
@@ -129,7 +130,7 @@ export class AudioEngineService {
   private configurarLatenciaParaPalco() {
     try {
       // Dá ao navegador uma janela maior (100ms) para processar os agendamentos de áudio
-      Tone.getContext().lookAhead = 0.1; 
+      Tone.getContext().lookAhead = 0.3; 
       
     } catch (error) {
       console.error('Erro ao configurar contexto do Tone.js:', error);
