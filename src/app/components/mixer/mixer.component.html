@@ -47,8 +47,16 @@
   @if (audio.canais().length > 0) {
     
     <div style="margin-bottom: 20px;">
-      <h3>Selecione o Próximo Bloco:</h3>
-      <div class="trechos">
+        <h3>Selecione o Próximo Bloco:</h3>
+        <div style="margin-bottom:8px;">
+          <button class="botao-basico view-mode" (click)="toggleVisualizacaoSequencia()">
+            {{ visualizacaoSequencia() ? 'Mostrar pads' : 'Mostrar sequência' }}
+          </button>
+        </div>
+      
+      <div
+        [class.trechos]="!visualizacaoSequencia()"
+        [class.visualizacao-sequencia]="visualizacaoSequencia()">
         @for (trecho of audio.markers(); track trecho.id) {
           <div class="trecho-trigger">
             <button (mousedown)="iniciarPress(trecho.id)"

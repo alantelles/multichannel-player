@@ -174,19 +174,31 @@
   grid-template-columns: repeat(8, 1fr);
   width: 100%;
   gap: 10px;
-  @include mobile-vertical {    
-    display: grid;
+  @include mobile-vertical {
     grid-template-columns: repeat(3, 1fr); /* Divide o espaço em exatamente 3 colunas iguais */
-    gap: 10px; /* Espaçamento entre os botões */
   }
 }
 
+.visualizacao-sequencia {
+  border-radius: 4px; /* Borda arredondada */
+  .botao-trecho {
+    margin-bottom: 5px; /* Espaçamento inferior */ 
+    height: 30px;
+    align-items: center;
+  }
+  &:hover {
+    background-color: #3a3a42; /* Cor de fundo ao passar o mouse */
+  }
+}
+.view-mode {
+  width: 160px;
+}
 .botao-trecho {
   padding: 5px;
   font-size: 14px;
   text-align: left;
-  height: 100px;
   width: 100%;
+  height: 100px;
   display: flex;
   align-items: flex-start; /* Posiciona o texto no topo */
   justify-content: left; /* Alinha o texto à esquerda */

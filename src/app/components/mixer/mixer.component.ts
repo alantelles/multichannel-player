@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { AudioEngineService, Marker } from '../../services/audio-engine.service'; // Ajuste o caminho se o seu arquivo tiver .service no nome
 import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
@@ -23,6 +23,7 @@ export class MixerComponent implements OnInit {
   private pressTimeout: any;
   private foiDisparoInstantaneo = false;
   trechoPressionado: Marker | null = null;
+  visualizacaoSequencia = signal<boolean>(true);
   // 🎯 NOVO: Lê o arquivo JSON de configuração mapeado pelo usuário
   onConfigSelecionada(event: Event) {
     const input = event.target as HTMLInputElement;
@@ -42,6 +43,13 @@ export class MixerComponent implements OnInit {
   ngOnInit() {
     const savedAudioRepository = localStorage.getItem('audioRepository');
     this.fileRepository.onlineRepositoryUrl.set(savedAudioRepository || 'audios/');
+    const estadoVisualizacao = localStorage.getItem('visualizacaoSequencia');
+    this.visualizacaoSequencia.set(estadoVisualizacao === 'true');
+  }
+  toggleVisualizacaoSequencia() {
+    const novoEstado = !this.visualizacaoSequencia();
+    this.visualizacaoSequencia.set(novoEstado);
+    localStorage.setItem('visualizacaoSequencia', String(novoEstado));
   }
   iniciarPress(trechoId: string) {
     if (!this.audio.isPlaying()) {
