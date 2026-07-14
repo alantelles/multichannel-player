@@ -1,11 +1,12 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { AudioEngineService, Marker } from '../../services/audio-engine.service'; // Ajuste o caminho se o seu arquivo tiver .service no nome
+import { AudioEngineService } from '../../services/audio-engine.service'; // Ajuste o caminho se o seu arquivo tiver .service no nome
 import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { AdicionarArquivosProjetoComponent } from '../adicionar-arquivos-projeto/adicionar-arquivos-projeto.component';
 import { FileRepositoryService } from '../../services/file-repository.service';
 import { RouterLink } from "@angular/router";
 import { CommonModule } from '@angular/common';
+import { Marker } from '../../models/marker';
 
 @Component({
   selector: 'app-mixer',

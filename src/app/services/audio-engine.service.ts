@@ -1,16 +1,7 @@
 import { inject, Injectable, signal } from '@angular/core';
 import * as Tone from 'tone';
 import { FileRepositoryService } from './file-repository.service';
-
-export interface Marker {
-  id: string;
-  nome: string;
-  inicio: string;   
-  duracao: string;
-  maxPlays?: number;
-  nextMarker?: string;
-  loopStart?: string;
-}
+import { Marker } from '../models/marker';
 
 export interface ProjectConfig {
   nomeProjeto: string;
@@ -42,6 +33,22 @@ export interface CanalAudio extends CanalAudioConfig {
   isMuted: any;       // Booleano para o botão de Mute
   isSoloed: any;
   saidaAtiva: any;    // String ou número indicando o canal de saída física
+}
+
+const processarMarkers = (markers: Marker[]): Marker[] => {
+  const processados: Marker[] = [];
+  markers.forEach(marker => {
+    if (marker.referencia) {
+      const referencia = markers.find(m => m.id === marker.referencia);
+      if (!referencia) {
+        throw new Error(`Referencia ${marker.referencia} não encontrada. Revise o projeto`);
+      }
+      processados.push({...referencia, id: marker.id, nome: marker.nome, nextMarker: marker.nextMarker});
+    } else {
+      processados.push({...marker});
+    }
+  });
+  return processados;
 }
 
 @Injectable({
@@ -195,7 +202,7 @@ export class AudioEngineService {
       const temMarkersValidos = projeto.markers && Array.isArray(projeto.markers) && projeto.markers.length > 0;
 
       if (projeto.markers && temMarkersValidos) {
-        const markers = projeto.markers.map(m => m);
+        const markers = processarMarkers(projeto.markers);
         if (projeto.fullSong) {
           markers.push(this.criarMarkerAudioCompleto());
         }

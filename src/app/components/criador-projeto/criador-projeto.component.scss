@@ -27,12 +27,14 @@
     &:hover { background: #2a2a32; }
   }
 }
-
 .grid-criador {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   grid-template-columns: 1fr 1.5fr;
   gap: 20px;
+  @include mobile-vertical {
+    flex-direction: column;
+  }
 }
 .status-importacao {
   background: #333;
@@ -142,6 +144,7 @@
   @include mobile-vertical {
     grid-template-columns: 1fr;
   }
+  input[disabled] { background: #1e1e24; color: #666; cursor: not-allowed; }
 }
 
 .btn-exportar {
