@@ -166,19 +166,26 @@
           <div class="campos-trecho-grid">
             <div>
               <label>Comp. Início:</label>
-              <input type="number" [(ngModel)]="trecho.compassoInicio">
+              <input [disabled]="!!trecho.referencia" type="number" [(ngModel)]="trecho.compassoInicio">
             </div>
             <div>
               <label>Duração (Comp.):</label>
-              <input type="number" [(ngModel)]="trecho.compassosDuracao">
+              <input [disabled]="!!trecho.referencia" type="number" [(ngModel)]="trecho.compassosDuracao">
             </div>
             <div>
               <label>Max Plays (Loop):</label>
-              <input type="number" [(ngModel)]="trecho.maxPlays">
+              <input [disabled]="!!trecho.referencia" type="number" [(ngModel)]="trecho.maxPlays">
             </div>
             <div>
               <label>ID Próximo Marker:</label>
               <input type="text" [(ngModel)]="trecho.nextMarker" placeholder="Ex: refrao-1">
+            </div>
+            <div>
+              <label>Referência</label>
+              <select [selectedIndex]="trecho.referencia ? listarTrechos().findIndex((r) => r.id === trecho.referencia) : -1" [(ngModel)]="trecho.referencia">
+                <option value="">-- Nenhuma --</option>
+                <option *ngFor="let ref of listarTrechos()" [value]="ref.id">{{ ref.nome }}</option>
+              </select>
             </div>
           </div>
         </div>

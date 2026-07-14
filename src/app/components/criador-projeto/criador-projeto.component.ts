@@ -5,16 +5,7 @@ import { RouterLink } from '@angular/router';
 import * as Tone from 'tone';
 import { FileRepositoryService } from '../../services/file-repository.service';
 import { BundleProjectService } from '../../services/bundle-project.service';
-
-export interface Marker {
-  id: string;
-  nome: string;
-  inicio: string;   
-  duracao: string;
-  maxPlays?: number;
-  nextMarker?: string;
-  loopStart?: string;
-}
+import { Marker } from '../../models/marker';
 
 export interface CanalAudio {
   id: string;
@@ -41,7 +32,10 @@ interface InterfaceFormTrecho {
   compassosDuracao: number;
   maxPlays: number;
   nextMarker: string;
+  referencia?: string;
 }
+
+const computarId = (nome: string) => nome.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
 @Component({
   selector: 'app-criador-projeto',
@@ -89,8 +83,6 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
       Tone.Transport.timeSignature = this.timeSignature();
     });
 
-    // 🎯 Efeito reativo: Sempre que o usuário escolher ou digitar uma Pasta Base válida,
-    // o sistema varre o IndexedDB e traz os arquivos de áudio disponíveis para o autocomplete dos canais.
     effect(async () => {
       const pasta = this.pastaBase();
       if (pasta && pasta.trim() !== '') {
@@ -111,7 +103,6 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
       this.posicaoAtual.set(Tone.Transport.position.toString());
     }, '16n');
   }
-
   // Carrega as pastas do banco ao iniciar o componente
   async ngOnInit() {
     try {
@@ -182,6 +173,7 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
               nome: m.nome,
               compassoInicio: compassoInicio,
               compassosDuracao: compassosDuracao,
+              referencia: m.referencia || '',
               maxPlays: m.maxPlays || 0,
               nextMarker: m.nextMarker || ''
             };
@@ -310,7 +302,7 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
     this.trechosForm.update(lista => [
       ...lista,
       {
-        nome: `Seção ${lista.length + 1}`,
+        nome: `Marcador ${lista.length + 1}`,
         compassoInicio: compassoAtual,
         compassosDuracao: 4,
         maxPlays: 0,
@@ -319,15 +311,23 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
     ]);
   }
 
+  listarTrechos(): {id: string, nome: string}[] {
+    return this.trechosForm().map(t => ({
+      nome: t.nome, id: computarId(t.nome)
+    }));
+  }
+
   removerTrecho(index: number) {
     this.trechosForm.update(lista => lista.filter((_, i) => i !== index));
   }
 
   construirProjetoConfig(): ProjectConfig {
     const markersFormatados: Marker[] = this.trechosForm().map((t, index) => {
-      const idGerado = t.nome.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || `marker-${index}`;
+      const idGerado = computarId(t.nome) || `marker-${index}`;
+      const idReferencia = t.referencia?.trim() !== '' ? t.referencia : undefined;
       return {
         id: idGerado,
+        referencia: idReferencia,
         nome: t.nome,
         inicio: `${t.compassoInicio}m`,
         duracao: `${t.compassosDuracao}m`,
