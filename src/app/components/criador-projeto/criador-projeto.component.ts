@@ -370,7 +370,7 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${this.pastaBase() || 'config-projeto'}.json`;
+    a.download = `${this.nomeProjeto() || 'config-projeto'}.json`;
     a.click();
     URL.revokeObjectURL(url);
   }

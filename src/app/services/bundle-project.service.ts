@@ -63,6 +63,6 @@ export class BundleProjectService {
       }
     }
     const content = await zip.generateAsync({ type: 'blob' });
-    saveAs(content, `${projetoJson.pastaBase || 'projeto'}.zip`);
+    saveAs(content, `${projetoJson.nomeProjeto || 'projeto'}.zip`);
   }
 }
