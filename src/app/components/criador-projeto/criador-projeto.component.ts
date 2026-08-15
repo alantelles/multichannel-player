@@ -2,6 +2,7 @@ import { Component, signal, effect, computed, OnDestroy, inject, OnInit } from '
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import * as Tone from 'tone';
 import { FileRepositoryService } from '../../services/file-repository.service';
 import { BundleProjectService } from '../../services/bundle-project.service';
@@ -40,7 +41,7 @@ const computarId = (nome: string) => nome.toLowerCase().replace(/\s+/g, '-').rep
 @Component({
   selector: 'app-criador-projeto',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, DragDropModule],
   templateUrl: './criador-projeto.component.html',
   styleUrls: ['./criador-projeto.component.scss']
 })
@@ -113,6 +114,14 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
     }
   }
 
+  reordenarTrechos(event: CdkDragDrop<any[]>) {
+    this.trechosForm.update(lista => {
+      // Cria uma cópia mutável do array para o moveItemInArray trabalhar
+      const novaLista = [...lista];
+      moveItemInArray(novaLista, event.previousIndex, event.currentIndex);
+      return novaLista;
+    });
+  }
   // Força atualização manual se o usuário selecionar a pasta pela lista suspensa do topo
   async aoMudarPastaBase() {
     const pasta = this.pastaBase();

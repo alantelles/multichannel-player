@@ -303,3 +303,37 @@
   cursor: not-allowed;
   opacity: 0.6;
 }
+
+/* Ícone de arrastar */
+.drag-handle {
+  cursor: grab;
+  padding: 0 8px;
+  font-size: 1.2rem;
+  color: #888;
+  user-select: none;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Animações nativas do CDK ao mover */
+.cdk-drag-preview {
+  box-sizing: border-box;
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+  background-color: #fff; /* Alinhe com o fundo do seu item */
+  opacity: 0.9;
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.2;
+}
+
+.cdk-drag-animating {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.lista-trechos.cdk-drop-list-dragging .item-trecho:not(.cdk-drag-placeholder) {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
