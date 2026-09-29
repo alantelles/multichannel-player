@@ -14,8 +14,13 @@
     </div>
     <div class="painel-arranjador">
       <h2><span class="now-playing-caption">🔊 Tocando Agora:</span><strong>{{ audio.trechoAtivo()?.nome }}</strong></h2>
-      <h4>Próximo trecho: <span [style.color]="audio.proximoTrecho()?.nome ? '#ffc107' : ''">{{ audio.proximoTrecho()?.nome || '[nenhum]' }}</span></h4>
-      <h4>Loops completos: {{ audio.loopCount() }}</h4>
+      <div class="info-loops">
+        <h4>Próximo trecho:<br><span [style.color]="audio.proximoTrecho()?.nome ? '#ffc107' : ''">{{ audio.proximoTrecho()?.nome || '[nenhum]' }}</span></h4>
+        <h4>Loops:<br> {{ audio.loopCount() }}</h4>
+        <h4 class="loops-restantes">
+          Faltam:<br><span class="destaque-restantes">{{ audio.loopsRestantes() || '[loop infinito]'}}</span>
+        </h4>
+      </div>
 
       <!-- Barra Indicadora de Compassos do Loop -->
       <div class="barra-compassos" *ngIf="audio.totalCompassosTrecho() > 0">

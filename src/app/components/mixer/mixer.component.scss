@@ -34,6 +34,20 @@
     margin-top: 10px;
   }
 }
+.info-loops {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+
+  .loops-restantes {
+    color: #00bcd4; /* Azul/Ciano para contrastar com o texto padrão */
+    
+    .destaque-restantes {
+      font-weight: bold;
+      color: #ff9800; /* Destaque em Laranja */
+    }
+  }
+}
 .carregador {
   display: flex;
   flex-direction: row;

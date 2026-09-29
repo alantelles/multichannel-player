@@ -88,7 +88,20 @@ export class AudioEngineService {
     if (!valor) return 0;
     return parseInt(valor.toString().replace(/\D/g, ''), 10) || 0;
   }
+  // Retorna quantos loops ainda faltam para atingir o maxPlays (ou null se não houver limite)
+  readonly loopsRestantes = computed(() => {
+    const trecho = this.trechoAtivo();
+    if (!trecho || !trecho.maxPlays) return null;
 
+    const max = typeof trecho.maxPlays === 'string' 
+      ? parseInt(trecho.maxPlays, 10) 
+      : trecho.maxPlays;
+
+    if (isNaN(max) || max <= 0) return null;
+
+    const restantes = max - this.loopCount();
+    return restantes > 0 ? restantes : 0;
+  });
   // Retorna a quantidade total de compassos da barra (baseado na duracao)
   readonly totalCompassosTrecho = computed(() => {
     const trecho = this.trechoAtivo();
