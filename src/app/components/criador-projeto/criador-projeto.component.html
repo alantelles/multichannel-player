@@ -151,45 +151,47 @@
         <button (click)="adicionarTrecho()" class="btn-adicionar">+ Adicionar Marker</button>
       </div>
 
-      <div class="lista-trechos" style="max-height: 350px; overflow-y: auto;">
-        <div *ngIf="trechosForm().length === 0" class="sem-trechos">
-          Nenhum marcador adicionado. Use o player guia para capturar as seções.
-        </div>
+     <!-- Div contêiner recebendo as diretivas cdkDropList -->
+<div class="lista-trechos" cdkDropList (cdkDropListDropped)="reordenarTrechos($event)">
 
-        <div class="item-trecho" *ngFor="let trecho of trechosForm(); let i = index">
-          <div class="topo-trecho">
-            <span class="badge-index">#{{ i + 1 }}</span>
-            <input type="text" [(ngModel)]="trecho.nome" class="input-inline-nome">
-            <button (click)="removerTrecho(i)" class="btn-remover">Remover</button>
-          </div>
+  <div class="item-trecho" *ngFor="let trecho of trechosForm(); let i = index" cdkDrag>
+    <div class="topo-trecho">
+      <!-- Ícone/Handle para arrastar -->
+      <span class="drag-handle" cdkDragHandle title="Arrastar para reordenar">☰</span>
+      
+      <span class="badge-index">#{{ i + 1 }}</span>
+      <input type="text" [(ngModel)]="trecho.nome" class="input-inline-nome">
+      <button (click)="removerTrecho(i)" class="btn-remover">Remover</button>
+    </div>
 
-          <div class="campos-trecho-grid">
-            <div>
-              <label>Comp. Início:</label>
-              <input [disabled]="!!trecho.referencia" type="number" [(ngModel)]="trecho.compassoInicio">
-            </div>
-            <div>
-              <label>Duração (Comp.):</label>
-              <input [disabled]="!!trecho.referencia" type="number" [(ngModel)]="trecho.compassosDuracao">
-            </div>
-            <div>
-              <label>Max Plays (Loop):</label>
-              <input [disabled]="!!trecho.referencia" type="number" [(ngModel)]="trecho.maxPlays">
-            </div>
-            <div>
-              <label>ID Próximo Marker:</label>
-              <input type="text" [(ngModel)]="trecho.nextMarker" placeholder="Ex: refrao-1">
-            </div>
-            <div>
-              <label>Referência</label>
-              <select [selectedIndex]="trecho.referencia ? listarTrechos().findIndex((r) => r.id === trecho.referencia) : -1" [(ngModel)]="trecho.referencia">
-                <option value="">-- Nenhuma --</option>
-                <option *ngFor="let ref of listarTrechos()" [value]="ref.id">{{ ref.nome }}</option>
-              </select>
-            </div>
-          </div>
-        </div>
+    <div class="campos-trecho-grid">
+      <div>
+        <label>Comp. Início:</label>
+        <input [disabled]="!!trecho.referencia" type="number" [(ngModel)]="trecho.compassoInicio">
       </div>
+      <div>
+        <label>Duração (Comp.):</label>
+        <input [disabled]="!!trecho.referencia" type="number" [(ngModel)]="trecho.compassosDuracao">
+      </div>
+      <div>
+        <label>Max Plays (Loop):</label>
+        <input [disabled]="!!trecho.referencia" type="number" [(ngModel)]="trecho.maxPlays">
+      </div>
+      <div>
+        <label>ID Próximo Marker:</label>
+        <input type="text" [(ngModel)]="trecho.nextMarker" placeholder="Ex: refrao-1">
+      </div>
+      <div>
+        <label>Referência</label>
+        <select [selectedIndex]="trecho.referencia ? listarTrechos().findIndex((r) => r.id === trecho.referencia) : -1" [(ngModel)]="trecho.referencia">
+          <option value="">-- Nenhuma --</option>
+          <option *ngFor="let ref of listarTrechos()" [value]="ref.id">{{ ref.nome }}</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+</div>
 
       <footer class="rodape-exportar" *ngIf="trechosForm().length > 0 || canais().length > 0">
         <button (click)="baixarJsonProjeto()" class="btn-exportar">
