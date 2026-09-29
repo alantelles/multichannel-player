@@ -1,4 +1,4 @@
-import { inject, Injectable, signal } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import * as Tone from 'tone';
 import { FileRepositoryService } from './file-repository.service';
 import { Marker } from '../models/marker';
@@ -82,6 +82,67 @@ export class AudioEngineService {
   public compassoAtualNoBloco = signal<number>(0);
   public beatAtualNoBloco = signal<number>(0);
   private fileRepository = inject(FileRepositoryService);
+
+  // Helper simples para converter strings do tipo "8m", "8", "0m" em numero inteiro
+  private extrairCompassos(valor: string | number | undefined | null): number {
+    if (!valor) return 0;
+    return parseInt(valor.toString().replace(/\D/g, ''), 10) || 0;
+  }
+  // Retorna quantos loops ainda faltam para atingir o maxPlays (ou null se não houver limite)
+  readonly loopsRestantes = computed(() => {
+    const trecho = this.trechoAtivo();
+    if (!trecho || !trecho.maxPlays) return null;
+
+    const max = typeof trecho.maxPlays === 'string' 
+      ? parseInt(trecho.maxPlays, 10) 
+      : trecho.maxPlays;
+
+    if (isNaN(max) || max <= 0) return null;
+
+    const restantes = max - this.loopCount();
+    return restantes > 0 ? restantes : 0;
+  });
+  // Retorna a quantidade total de compassos da barra (baseado na duracao)
+  readonly totalCompassosTrecho = computed(() => {
+    const trecho = this.trechoAtivo();
+    if (!trecho) return 0;
+
+    // A duração define a quantidade exata de segmentos da barra de loop
+    return this.extrairCompassos(trecho.duracao);
+  });
+
+  // Retorna qual compasso dentro da janela de loop esta sendo executado (1..N)
+  readonly compassoDecorritoNoTrecho = computed(() => {
+    const trecho = this.trechoAtivo();
+    if (!trecho) return 0;
+
+    const bps = this.bpmAtual() / 60;
+    const batidasTotais = this.segundosDecorridosNoBloco() * bps;
+    const timeSig = Tone.Transport.timeSignature as number || 4;
+
+    const compassosDesdeInicioBloco = Math.floor(batidasTotais / timeSig);
+
+    const mInicio = this.extrairCompassos(trecho.inicio);
+    const mLoopStart = this.extrairCompassos(trecho.loopStart || trecho.inicio);
+
+    // Offset no 1º ciclo antes de atingir o ponto do loop
+    const offsetIntro = (mLoopStart > mInicio) ? (mLoopStart - mInicio) : 0;
+
+    // Se estiver no 1º ciclo e ainda não chegou no loopStart, a barra fica inativa (0)
+    if (this.loopCount() === 0 && compassosDesdeInicioBloco < offsetIntro) {
+      return 0; 
+    }
+
+    // Se já passou o offset (ou já está nos loops seguintes)
+    const compassosNoLoop = (this.loopCount() === 0) 
+      ? (compassosDesdeInicioBloco - offsetIntro) 
+      : compassosDesdeInicioBloco;
+
+    const compassoRelativo = compassosNoLoop + 1;
+    const total = this.totalCompassosTrecho();
+
+    return total > 0 ? Math.min(Math.max(1, compassoRelativo), total) : compassoRelativo;
+  });
 
   constructor() {
     this.configurarLatenciaParaPalco();
