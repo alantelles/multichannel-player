@@ -42,7 +42,7 @@
   border-radius: 6px;
 
   div {
-    margin-right: 10px;
+    margin-right: 4px;
     @include mobile-vertical {
       margin-right: 0;
     }
@@ -264,6 +264,33 @@
   }
 }
 
+.barra-compassos {
+  display: flex;
+  width: 100%;
+  margin: 10px 0 12px 0;
+  height: 12px;
+  box-sizing: border-box;
+
+  .barra-compassos:last-child {
+    margin-right: 0;
+  }
+
+  .segmento-compasso {
+    flex: 1;
+    background-color: #3a3a3a;
+    border-radius: 2px;
+    transition: background-color 0.1s ease-in-out;
+
+    &.preenchido {
+      background-color: #ffc107; /* Amarelo idêntico à imagem de referência */
+    }
+
+    &.atual {
+      background-color: #ffe066;
+      box-shadow: 0 0 6px rgba(255, 193, 7, 0.7);
+    }
+  }
+}
 .visor-digital {
   background: #1e1e1e;
   padding: 8px;

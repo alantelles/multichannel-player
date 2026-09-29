@@ -15,13 +15,25 @@
     <div class="painel-arranjador">
       <h2><span class="now-playing-caption">🔊 Tocando Agora:</span><strong>{{ audio.trechoAtivo()?.nome }}</strong></h2>
       <h4>Próximo trecho: <span [style.color]="audio.proximoTrecho()?.nome ? '#ffc107' : ''">{{ audio.proximoTrecho()?.nome || '[nenhum]' }}</span></h4>
-      <h4>Loops completos: {{ audio.loopCount()}}</h4>
+      <h4>Loops completos: {{ audio.loopCount() }}</h4>
+
+      <!-- Barra Indicadora de Compassos do Loop -->
+      <div class="barra-compassos" *ngIf="audio.totalCompassosTrecho() > 0">
+        <div 
+          *ngFor="let c of [].constructor(audio.totalCompassosTrecho()); let i = index"
+          class="segmento-compasso"
+          [class.preenchido]="audio.compassoDecorritoNoTrecho() > 0 && (i + 1) <= audio.compassoDecorritoNoTrecho()"
+          [class.atual]="audio.compassoDecorritoNoTrecho() > 0 && (i + 1) === audio.compassoDecorritoNoTrecho()">
+        </div>
+      </div>
+
       <div class="visual-click">
         <div id="b1" [class.active-head]="audio.beatAtualNoBloco() === 1"></div>
         <div id="b2" [class.active]="audio.beatAtualNoBloco() === 2"></div>
         <div id="b3" [class.active]="audio.beatAtualNoBloco() === 3"></div>
         <div *ngIf="audio.timeSignature() === 4" id="b4" [class.active]="audio.beatAtualNoBloco() === 4"></div>
       </div>
+
       <div class="visor-digital">
         <div class="dado">
           <span class="valor-menor">POS: </span>
