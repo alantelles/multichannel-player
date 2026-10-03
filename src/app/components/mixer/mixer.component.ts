@@ -25,6 +25,10 @@ export class MixerComponent implements OnInit {
   private foiDisparoInstantaneo = false;
   trechoPressionado: Marker | null = null;
   visualizacaoSequencia = signal<boolean>(true);
+
+  isFullSong(): boolean {
+    return this.audio.trechoAtivo()?.id === 'full-audio';
+  }
   // 🎯 NOVO: Lê o arquivo JSON de configuração mapeado pelo usuário
   onConfigSelecionada(event: Event) {
     const input = event.target as HTMLInputElement;

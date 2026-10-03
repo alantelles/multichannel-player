@@ -23,7 +23,7 @@
       </div>
 
       <!-- Barra Indicadora de Compassos do Loop -->
-      <div class="barra-compassos" *ngIf="audio.totalCompassosTrecho() > 0">
+      <div class="barra-compassos" *ngIf="!isFullSong() && audio.totalCompassosTrecho() > 0">
         <div 
           *ngFor="let c of [].constructor(audio.totalCompassosTrecho()); let i = index"
           class="segmento-compasso"
