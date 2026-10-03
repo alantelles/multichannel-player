@@ -325,87 +325,109 @@ export class AudioEngineService {
     // Dispara a primeira engrenagem do carrossel
     this.executarCicloArranjador(tempoDisparoInicial);
   }
+private executarCicloArranjador(tempoDisparoCravado: number) {
+  // 1. Verifica se o usuário pediu para mudar de bloco na virada
+  const proximo = this.proximoTrecho();
+  if (proximo) {
+    this.trechoAtivo.set(proximo);
+    this.proximoTrecho.set(null); 
+    this.loopCount.set(0);
+  }
 
-  private executarCicloArranjador(tempoDisparoCravado: number) {
-    
-    // 1. Verifica se o usuário pediu para mudar de bloco na virada
-    const proximo = this.proximoTrecho();
-    if (proximo) {
-      this.trechoAtivo.set(proximo);
-      this.proximoTrecho.set(null); 
-      this.loopCount.set(0);
-    };
-    const atualAntesVirada = this.trechoAtivo();
-    
-    if (atualAntesVirada && atualAntesVirada.maxPlays) {
-      if (atualAntesVirada.maxPlays - 1 === this.loopCount()) {        
-        if (!this.proximoTrecho()) {
-          if (atualAntesVirada.nextMarker) {
-            this.agendarTrecho(atualAntesVirada.nextMarker);
-          } else {
-            this.togglePlay();
-            return;
-          }
-        }
-      }
+  const atual = this.trechoAtivo();
+  if (!atual) return;
+
+  // Checa se o ciclo atual que vai começar é a ÚLTIMA repetição permitida
+  const ehUltimoLoop = atual.maxPlays && (atual.maxPlays - 1 === this.loopCount());
+  
+  // Se for a última repetição e não houver seleção manual de próximo trecho:
+  if (ehUltimoLoop && !this.proximoTrecho()) {
+    if (atual.nextMarker) {
+      // Agenda automaticamente o próximo marcador cadastrado
+      this.agendarTrecho(atual.nextMarker);
+    }
+  }
+
+  // 2. RESOLUÇÃO DOS PONTOS DE TEMPO DE ÁUDIO
+  const inicioAbsoluto = Tone.Time(atual.inicio).toSeconds();
+  const duracaoDoLoopReal = Tone.Time(atual.duracao).toSeconds();
+  
+  let inicioSegundos = inicioAbsoluto;
+  let duracaoSegundos = duracaoDoLoopReal;
+
+  if (this.loopCount() > 0 && atual.loopStart) {
+    inicioSegundos = Tone.Time(atual.loopStart).toSeconds();
+    duracaoSegundos = duracaoDoLoopReal;
+  } else if (atual.loopStart) {
+    const loopStartSegundos = Tone.Time(atual.loopStart).toSeconds();
+    const tamanhoDoPrefixo = loopStartSegundos - inicioAbsoluto;
+    duracaoSegundos = tamanhoDoPrefixo + duracaoDoLoopReal;
+  }
+
+  const offsetAjuste = this.offset || 0;
+  const inicioComOffset = Math.max(0, inicioSegundos + offsetAjuste);
+  this.tempoInicioCicloTransport = Tone.Transport.getSecondsAtTime(tempoDisparoCravado);
+
+  // 3. DISPARO CRÍTICO DE ÁUDIO
+  this.canais().forEach(canal => {
+    if (canal.player.loaded) {
+      canal.player.stop(tempoDisparoCravado); 
+      canal.player.start(tempoDisparoCravado, inicioComOffset, duracaoSegundos);
+    }
+  });
+
+  // 4. MATEMÁTICA DA PRÓXIMA VIRADA
+  const tempoProximaVirada = tempoDisparoCravado + duracaoSegundos;
+  const tempoMusicalTransport = Tone.Transport.getSecondsAtTime(tempoProximaVirada);
+
+  // 5. AGENDA O PRÓXIMO PASSO OU A PARADA
+  this.loopId = Tone.Transport.schedule((time) => {
+    // 🎯 SE É O ÚLTIMO LOOP E NÃO HÁ PRÓXIMO TRECHO: ENCERRAR A APLICAÇÃO
+    if (ehUltimoLoop && !this.proximoTrecho() && !atual.nextMarker) {
+      this.encerrarExecucao();
+      return;
     }
 
-    const atual = this.trechoAtivo();
-    if (!atual) return;
-    // 1. RESOLUÇÃO DOS PONTOS DE TEMPO
-    const inicioAbsoluto = Tone.Time(atual.inicio).toSeconds();
-    const duracaoDoLoopReal = Tone.Time(atual.duracao).toSeconds();
-    
-    let inicioSegundos = inicioAbsoluto;
-    let duracaoSegundos = duracaoDoLoopReal;
-    // Se já passou da primeira execução e existe um ponto específico de loop
-    if (this.loopCount() > 0 && atual.loopStart) {
-      inicioSegundos = Tone.Time(atual.loopStart).toSeconds(); // 🎯 Correção da sintaxe (=+)
-      duracaoSegundos = duracaoDoLoopReal; // Usa a duração exata especificada para o loop
-    } else if (atual.loopStart) {
-      // 🎯 PRIMEIRA VOLTA: O áudio precisa tocar o trecho inteiro (Crash + Miolo)
-      const loopStartSegundos = Tone.Time(atual.loopStart).toSeconds();
-      const tamanhoDoPrefixo = loopStartSegundos - inicioAbsoluto;
-      
-      // A duração total da primeira vez será o tamanho do prefixo/crash + a duração do loop real
-      duracaoSegundos = tamanhoDoPrefixo + duracaoDoLoopReal;
+    if (!this.proximoTrecho()) {
+      this.loopCount.update(c => c + 1);
     }
 
-    // 🎯 O PULO DO GATO DO OFFSET: 
-    // Defina aqui um valor em segundos (positivo ou negativo) para testar o alinhamento.
-    // Exemplo: se o áudio está entrando atrasado um tempo (num compasso 4/4 a 120 BPM, 1 tempo = 0.5s),
-    // você pode subtrair ou somar esse valor para casar a cabeça do compasso perfeitamente.
-    const offsetAjuste = this.offset || 0; // Altere para 0.5, -0.2, etc., para calibrar o "respiro"
-    const inicioComOffset = Math.max(0, inicioSegundos + offsetAjuste);
-    this.tempoInicioCicloTransport = Tone.Transport.getSecondsAtTime(tempoDisparoCravado);
-    // 2. DISPARO CRÍTICO DE ÁUDIO
+    // Segue para a próxima execução normalmente
+    this.executarCicloArranjador(time);
+
+  }, tempoMusicalTransport);
+}
+
+  // Método dedicado para parar a engine, UI e agendamentos no momento do término
+  private encerrarExecucao() {
+    // 1. Limpa o agendamento atual para evitar loops fantasmas
+    if (this.loopId !== null) {
+      Tone.Transport.clear(this.loopId);
+      this.loopId = null;
+    }
+
+    // 2. Para os players de áudio imediatamente
     this.canais().forEach(canal => {
       if (canal.player.loaded) {
-        console.log(`Disparando canal "${canal.nome}" no tempo ${tempoDisparoCravado.toFixed(3)}s, início com offset: ${inicioComOffset.toFixed(3)}s, duração: ${duracaoSegundos.toFixed(3)}s`);
-        canal.player.stop(tempoDisparoCravado); 
-        // Aplicamos o início corrigido com o seu offset de teste
-        console.log("comecou tocar")
-        canal.player.start(tempoDisparoCravado, inicioComOffset, duracaoSegundos);
+        canal.player.stop();
       }
     });
 
-    // 3. MATEMÁTICA DA PRÓXIMA VIRADA (Régua de Hardware)
-    const tempoProximaVirada = tempoDisparoCravado + duracaoSegundos;
+    // 3. Para o Transport e cancela o laço do requestAnimationFrame (UI)
+    Tone.Transport.stop();
+    if (this.animacaoId > 0) {
+      cancelAnimationFrame(this.animacaoId);
+      this.animacaoId = -1;
+    }
 
-    // 🎯 CORREÇÃO DO GAP: Em vez de usar Tone.Transport.seconds (que sofre delay da UI),
-    // nós convertemos o tempo de hardware absoluto direto para o tempo do Transport.
-    const tempoMusicalTransport = Tone.Transport.getSecondsAtTime(tempoProximaVirada);
-
-    // 4. AGENDA A PRÓXIMA VOLTA
-    this.loopId = Tone.Transport.schedule((time) => {
-      if (!this.proximoTrecho()) {
-        this.loopCount.update(c => c + 1);
-      }
-
-      // Passa o clock puro para manter a corrente contínua sem folga
-      this.executarCicloArranjador(time);
-
-    }, tempoMusicalTransport);
+    // 4. Reseta os Signals para o estado inicial de stop
+    this.isPlaying.set(false);
+    this.loopCount.set(0);
+    this.trechoAtivo.set(null);
+    this.proximoTrecho.set(null);
+    this.beatAtualNoBloco.set(1);
+    this.compassoAtualNoBloco.set(1);
+    this.segundosDecorridosNoBloco.set(0);
   }
   public obterProgressoEmSegundos(): number {
     if (!this.isPlaying()) return 0;
