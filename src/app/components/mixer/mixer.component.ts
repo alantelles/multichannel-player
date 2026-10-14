@@ -29,6 +29,11 @@ export class MixerComponent implements OnInit {
   isFullSong(): boolean {
     return this.audio.trechoAtivo()?.id === 'full-audio';
   }
+  aoAlterarBpm(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const novoBpm = parseInt(input.value, 10);
+    this.audio.alterarBpmDesejado(novoBpm);
+  }
   // 🎯 NOVO: Lê o arquivo JSON de configuração mapeado pelo usuário
   onConfigSelecionada(event: Event) {
     const input = event.target as HTMLInputElement;

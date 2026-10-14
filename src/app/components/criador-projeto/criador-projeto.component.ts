@@ -20,6 +20,7 @@ export interface ProjectConfig {
   nomeProjeto: string;
   offset?: number;
   bpm: number;
+  bpmReproducao?:number;
   timeSignature: number;
   pastaBase: string;
   canais: CanalAudio[];
@@ -53,6 +54,7 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
   nomeProjeto = signal<string>('');
   pastaBase = signal<string>('');
   bpm = signal<number>(120);
+  bpmReproducao = signal<number>(120);
   timeSignature = signal<number>(4);
   offset = signal<number>(0);
   fullSong = signal<boolean>(false);
@@ -348,6 +350,7 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
     return {
       nomeProjeto: this.nomeProjeto(),
       bpm: this.bpm(),
+      bpmReproducao: this.bpmReproducao(),
       timeSignature: parseInt(this.timeSignature().toString(), 10) || 4,
       pastaBase: this.pastaBase(),
       offset: this.offset() / 1000,

@@ -7,7 +7,8 @@ export interface ProjectConfig {
   nomeProjeto: string;
   offset?: number;
   bpm: number;
-  timeSignature: number; // TODO: permitir compassos compostos
+  bpmReproducao?: number;
+  timeSignature: number;
   pastaBase: string;
   canais: CanalAudioConfig[];
   markers?: Marker[];
@@ -28,6 +29,7 @@ export interface CanalAudio extends CanalAudioConfig {
   player: Tone.Player;
   volumeNode: Tone.Volume;
   channelNode: Tone.Channel;
+  pitchShiftNode: Tone.PitchShift;
   // Signals para atualizar a interface do Angular em tempo real
   volumeSignal: any;  // Armazena o valor em dB (-60 a +6)
   isMuted: any;       // Booleano para o botão de Mute
@@ -61,7 +63,11 @@ export class AudioEngineService {
   public loopCount = signal<number>(0);
   public statusCarregamento = signal<string>('Aguardando projeto...');
   
-  public bpmAtual = signal<number>(120);
+  
+      // Configurações Globais de Tempo
+      // Novos Signals para gerir o BPM Original e o BPM Alvo/Desejado
+  readonly bpmOriginal = signal<number>(120);
+  readonly bpmAtual = signal<number>(120); // BPM Desejado/Ajustado pelo utilizador
   public markers = signal<Marker[]>([]);
   public trechoAtivo = signal<Marker | null>(null);
   public proximoTrecho = signal<Marker | null>(null);
@@ -207,6 +213,31 @@ export class AudioEngineService {
       console.error('Erro ao configurar contexto do Tone.js:', error);
     }
   }
+  public alterarBpmDesejado(novoBpm: number) {
+    const base = this.bpmOriginal();
+    if (!base || novoBpm <= 0) return;
+
+    this.bpmAtual.set(novoBpm);
+
+    // 1. Atualiza o relógio do Transport
+    Tone.Transport.bpm.value = novoBpm;
+
+    // 2. Calcula a nova razão de velocidade e a compensação de pitch
+    const novaRazao = novoBpm / base;
+    const semitonosDesvio = 12 * Math.log2(novaRazao);
+
+    // 3. Aplica nos canais
+    this.canais().forEach(canal => {
+      if (canal.player && canal.player.loaded) {
+        canal.player.playbackRate = novaRazao;
+        
+        // Anula a alteração de tom em tempo real
+        if (canal.pitchShiftNode) {
+          canal.pitchShiftNode.pitch = -semitonosDesvio;
+        }
+      }
+    });
+  }
   public async carregarProjetoPorJSON(jsonTexto: string) {
     if (!this.isReady()) await this.init();
     if (this.isPlaying()) this.togglePlay();
@@ -219,45 +250,66 @@ export class AudioEngineService {
       const projeto: LoadedProject = JSON.parse(jsonTexto) as LoadedProject;
 
 
-      // Configurações Globais de Tempo
-      this.bpmAtual.set(projeto.bpm);
+
+      // 1. Carregamento do Projeto
+      this.bpmOriginal.set(projeto.bpm);
+      this.bpmAtual.set(projeto.bpmReproducao || projeto.bpm);
       this.offset = projeto.offset;
-      Tone.Transport.bpm.value = projeto.bpm;
+
+      const bpmBase = this.bpmOriginal();
+      const bpmAlvo = this.bpmAtual();
+      const razaoPlayback = bpmAlvo / bpmBase;
+
+      // Calcula a diferença em semitonos causada pela mudança de BPM
+      const semitonosDesvio = 12 * Math.log2(razaoPlayback);
+
+      Tone.Transport.bpm.value = bpmAlvo;
       this.timeSignature.set(projeto.timeSignature || 4);
       Tone.Transport.timeSignature = this.timeSignature();
 
-      // Montagem da mesa de som multicanal
       const novosCanais: CanalAudio[] = [];
       let canaisCarregados = 0;
+
       for (const canal of projeto.canais) {
         const retrievalResult = await this.fileRepository.getFileUrl(projeto.pastaBase, canal.arquivo);
         const urlCompleta = retrievalResult.url;
-        // 1. Cria os nós de áudio para este canal
-        const player = new Tone.Player({ url: urlCompleta, autostart: false });
-        const volumeNode = new Tone.Volume(0); // 0dB = Volume original
+
+        const player = new Tone.Player({
+          url: urlCompleta,
+          autostart: false,
+          playbackRate: razaoPlayback
+        });
+
+        // 🎯 Nó dedicado para corrigir a afinação em tempo real
+        const pitchShiftNode = new Tone.PitchShift({
+          pitch: -semitonosDesvio // Inverte o desvio para manter o tom original
+        });
+
+        const volumeNode = new Tone.Volume(0);
         const channelNode = new Tone.Channel();
         channelNode.mute = canal.muted || false;
         volumeNode.volume.rampTo(canal.volume || 0, 0.05);
-        player.chain(volumeNode, channelNode, Tone.Destination);
-        
+
+        // Cadeia: Player -> PitchShift -> Volume -> Channel -> Master
+        player.chain(pitchShiftNode, volumeNode, channelNode, Tone.Destination);
+
         novosCanais.push({
           ...canal,
           player: player,
+          pitchShiftNode: pitchShiftNode, // Guarde a referência no objeto do canal
           volumeNode: volumeNode,
           channelNode: channelNode,
-          volumeSignal: signal(canal.volume || 0),       // Slider começa no meio (0 dB)
-          isMuted: signal(canal.muted),        // Desmutado por padrão
+          volumeSignal: signal(canal.volume || 0),
+          isMuted: signal(canal.muted),
           isSoloed: signal(false),
-          saidaAtiva: signal('Master')   // Roteamento padrão
+          saidaAtiva: signal('Master')
         });
+
         ++canaisCarregados;
         this.statusCarregamento.set(`Carregando pistas: ${canaisCarregados} / ${projeto.canais.length}`);
-      };
+      }
 
       this.canais.set(novosCanais);
-
-      // Aguarda o download e decodificação em lote dos MP3s na RAM
-
       await Tone.loaded();
       // 🎯 AGORA SIM: Se não houver markers no JSON, calculamos dinamicamente baseados na maior pista
       const temMarkersValidos = projeto.markers && Array.isArray(projeto.markers) && projeto.markers.length > 0;

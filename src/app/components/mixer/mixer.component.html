@@ -46,8 +46,26 @@
         </div>
         <div class="dado">
           <span class="valor-menor">BPM: </span>
-          <span class="valor">{{ audio.bpmAtual() }}</span>
+          <span class="valor">{{ audio.bpmOriginal()}}/{{ audio.bpmAtual() }}</span>
         </div>
+      </div>
+
+      <!-- Ajuste fino de BPM (-10/+10) -->
+      <div class="controle-bpm">
+        <div class="bpm-range-labels">
+          <span>-10</span>
+          <span class="bpm-delta">
+            {{ audio.bpmAtual() - audio.bpmOriginal() >= 0 ? '+' : '' }}{{ audio.bpmAtual() - audio.bpmOriginal() }} BPM
+          </span>
+          <span>+10</span>
+        </div>
+        <input 
+          type="range" 
+          [min]="audio.bpmOriginal() - 10" 
+          [max]="audio.bpmOriginal() + 10" 
+          [value]="audio.bpmAtual()"
+          (input)="aoAlterarBpm($event)"
+          class="slider-bpm">
       </div>
     </div>
     <div class="painel-controles">

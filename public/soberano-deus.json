@@ -1,6 +1,7 @@
 {
     "nomeProjeto": "Soberano Deus",
     "bpm": 104,
+    "bpmReproducao": 119,
     "fullSong": true,
     "timeSignature": 4,
     "offset": 0.57,
