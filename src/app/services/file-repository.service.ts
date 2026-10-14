@@ -2,6 +2,8 @@ import { inject, Injectable, Service, signal } from '@angular/core';
 import { DbService, FileItem } from './db.service';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { SavedProject } from './db.service';
+import { ProjectConfig } from './audio-engine.service';
 
 export interface FileRetrievalResult {
   url: string;
@@ -14,7 +16,40 @@ export class FileRepositoryService {
 
   onlineRepositoryUrl = signal<string>('audios/'); // URL base para repositório online
   http = inject(HttpClient);
+  async saveProject(config: ProjectConfig): Promise<number> {
+    const item: SavedProject = {
+      nomeProjeto: config.nomeProjeto,
+      pastaBase: config.pastaBase,
+      dataModificacao: new Date(),
+      config: config
+    };
 
+    // Usamos put para salvar ou atualizar se o nomeProjeto já existir
+    const idExistente = await this.db.projects.where('nomeProjeto').equals(config.nomeProjeto).first();
+    if (idExistente && idExistente.id) {
+      item.id = idExistente.id;
+    }
+
+    return await this.db.projects.put(item);
+  }
+
+  async getProjects(filtro: string = ''): Promise<SavedProject[]> {
+    if (!filtro || filtro.trim() === '') {
+      return await this.db.projects.orderBy('nomeProjeto').toArray();
+    }
+
+    const termoLower = filtro.toLowerCase();
+    return await this.db.projects
+      .filter(p => 
+        p.nomeProjeto.toLowerCase().includes(termoLower) || 
+        p.pastaBase.toLowerCase().includes(termoLower)
+      )
+      .toArray();
+  }
+
+async deleteProject(id: number): Promise<void> {
+  await this.db.projects.delete(id);
+}
   async saveFiles(directory: string, files: File[]) {
     for (const file of files) {
       await this.db.files.add({

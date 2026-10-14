@@ -3,15 +3,25 @@
   <h3>💻 Sample rate: <span style="color: #ffc107; font-weight: bold;">{{ audio.sampleRate() }}</span></h3>
 
   <div class="carregador">
-    <div class="painel-configuracao">
-      <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #aaa;">📁 Repositório áudios online:</label>
-      <input type="text" class="ordinary-text-input" [(ngModel)]="fileRepository.onlineRepositoryUrl" (ngModelChange)="setAudioRepository($event)" placeholder="URL do repositório de áudios" />
+  <!-- mixer.component.html -->
+  <div class="painel-configuracao">
+    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #aaa;">📁 Repositório áudios online:</label>
+    <input type="text" class="ordinary-text-input" [(ngModel)]="fileRepository.onlineRepositoryUrl" (ngModelChange)="setAudioRepository($event)" placeholder="URL do repositório de áudios" />
+    
+    <div style="display: flex; gap: 8px; margin-top: 8px;">
       <button class="botao-basico" (click)="adicionarArquivosLocal()">Adicionar áudios ao repositório local</button>
-      <label style="display: block; margin-top: 5px; margin-bottom: 5px; font-weight: bold; color: #aaa;">📂 Selecionar projeto:</label>
-      <input style="margin-bottom: 8px" type="file" accept=".json" (change)="onConfigSelecionada($event)" />
-      <button routerLink="/criar-projeto" class="botao-basico">Criar projeto</button>
-      <div style="margin-top: 8px; color: #ffc107; font-size: 14px;">⚡ Status: {{ audio.statusCarregamento() }}</div>
+      <!-- 🎯 BOTÃO NOVO -->
+      <button class="botao-basico" style="background-color: #0d6efd;" (click)="abrirModalProjetosSalvos()">
+        💾 Projetos Salvos
+      </button>
     </div>
+
+    <label style="display: block; margin-top: 10px; margin-bottom: 5px; font-weight: bold; color: #aaa;">📂 Selecionar projeto (.json/.zip):</label>
+    <input style="margin-bottom: 8px" type="file" accept=".json,.zip" (change)="onConfigSelecionada($event)" />
+    <button routerLink="/criar-projeto" class="botao-basico">Criar projeto</button>
+    
+    <div style="margin-top: 8px; color: #ffc107; font-size: 14px;">⚡ Status: {{ audio.statusCarregamento() }}</div>
+  </div>
     <div class="painel-arranjador">
       <h2><span class="now-playing-caption">🔊 Tocando Agora:</span><strong>{{ audio.trechoAtivo()?.nome }}</strong></h2>
       <div class="info-loops">
@@ -76,11 +86,7 @@
         [class.visualizacao-sequencia]="visualizacaoSequencia()">
         @for (trecho of audio.markers(); track trecho.id) {
           <div class="trecho-trigger">
-            <button (mousedown)="iniciarPress(trecho.id)"
-                    (mouseup)="finalizarPress(trecho.id)"
-                    (mouseleave)="cancelarPress()"
-                    (touchstart)="iniciarPress(trecho.id); $event.preventDefault()"
-                    (touchend)="finalizarPress(trecho.id)"
+            <button (click)="selecionarTrecho(trecho.id)"
                     [style.background]="decidirCorTrecho(trecho)"
                     [style.color]="(audio.trechoAtivo()?.id === trecho.id || audio.trechoAtivo()?.nextMarker === trecho.id || audio.proximoTrecho()?.id === trecho.id) ? '#000' : '#fff'"
                     class="botao-basico botao-trecho">

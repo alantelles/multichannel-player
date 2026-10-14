@@ -1,5 +1,5 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { AudioEngineService } from '../../services/audio-engine.service'; // Ajuste o caminho se o seu arquivo tiver .service no nome
+import { AudioEngineService, ProjectConfig } from '../../services/audio-engine.service'; // Ajuste o caminho se o seu arquivo tiver .service no nome
 import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { AdicionarArquivosProjetoComponent } from '../adicionar-arquivos-projeto/adicionar-arquivos-projeto.component';
@@ -7,6 +7,7 @@ import { FileRepositoryService } from '../../services/file-repository.service';
 import { RouterLink } from "@angular/router";
 import { CommonModule } from '@angular/common';
 import { Marker } from '../../models/marker';
+import { SelecionarProjetoDialogComponent } from '../selecionar-projeto-dialog/selecionar-projeto-dialog.component';
 
 @Component({
   selector: 'app-mixer',
@@ -21,9 +22,6 @@ export class MixerComponent implements OnInit {
   private dialog = inject(MatDialog);
   fileRepository = inject(FileRepositoryService);
 
-  private pressTimeout: any;
-  private foiDisparoInstantaneo = false;
-  trechoPressionado: Marker | null = null;
   visualizacaoSequencia = signal<boolean>(true);
 
   isFullSong(): boolean {
@@ -36,15 +34,33 @@ export class MixerComponent implements OnInit {
       const arquivoConfig = input.files[0];
       const reader = new FileReader();
 
-      reader.onload = (e: any) => {
+      reader.onload = async (e: any) => {
         const conteudoTexto = e.target.result;
-        this.audio.carregarProjetoPorJSON(conteudoTexto);
+        const loaded = await this.audio.carregarProjetoPorJSON(conteudoTexto);
+        if (!loaded) {
+          return;
+        }
+        const config: ProjectConfig = JSON.parse(conteudoTexto);
+        this.fileRepository.saveProject(config); // 🎯 Salva no IndexedDB
       };
 
       reader.readAsText(arquivoConfig);
     }
   }
+  abrirModalProjetosSalvos() {
+    const dialogRef = this.dialog.open(SelecionarProjetoDialogComponent, {
+      width: '90%',
+      maxWidth: '500px'
+    });
 
+    dialogRef.afterClosed().subscribe((configProjetoSelected) => {
+      if (configProjetoSelected) {
+        // Converte o objeto de volta para string JSON e envia para a Engine de Áudio
+        const jsonString = JSON.stringify(configProjetoSelected);
+        this.audio.carregarProjetoPorJSON(jsonString);
+      }
+    });
+  }
   ngOnInit() {
     const savedAudioRepository = localStorage.getItem('audioRepository');
     this.fileRepository.onlineRepositoryUrl.set(savedAudioRepository || 'audios/');
@@ -56,43 +72,7 @@ export class MixerComponent implements OnInit {
     this.visualizacaoSequencia.set(novoEstado);
     localStorage.setItem('visualizacaoSequencia', String(novoEstado));
   }
-  iniciarPress(trechoId: string) {
-    if (!this.audio.isPlaying()) {
-      return; // Se não estiver tocando, não faz nada
-    }
-    this.foiDisparoInstantaneo = false;
-    this.trechoPressionado = this.audio.markers().find(marker => marker.id === trechoId) || null;
-    // Se segurar por 500ms, é um comando de emergência!
-    this.pressTimeout = setTimeout(() => {
-      this.audio.dispararTrechoInstantaneamente(trechoId);
-      this.foiDisparoInstantaneo = true; // Avisa que o braço de emergência já foi executado
-      
-      // Feedback tátil opcional para celulares Android (vibra de leve ao ativar)
-      if (navigator.vibrate) navigator.vibrate(50); 
-    }, 500); 
-  }
-
-  finalizarPress(trechoId: string) {
-    // Limpa o cronômetro para o disparo instantâneo não acontecer no futuro
-    this.cancelarPress();
-    this.trechoPressionado = null;
-    // Se o usuário soltou o botão ANTES dos 500ms, é um clique normal (Musical)
-    if (!this.foiDisparoInstantaneo) {
-      const proximo = this.audio.proximoTrecho();
-      if (proximo && proximo.id === trechoId) {
-        // Se o trecho clicado é o mesmo que já estava agendado como próximo, desagendar
-        this.cancelarProximoTrecho();
-        return;
-      }
-      this.audio.agendarTrecho(trechoId);
-    }
-  }
-
-  cancelarPress() {
-    if (this.pressTimeout) {
-      clearTimeout(this.pressTimeout);
-    }
-  }
+ 
   cancelarProximoTrecho() {
     this.audio.agendarTrecho('');
   }
@@ -106,9 +86,6 @@ export class MixerComponent implements OnInit {
     const proximoTrecho = this.audio.proximoTrecho();
     if (!trechoAtivo) {
       return '#818181'; // Cor padrão se não houver trecho ativo
-    }
-    if (this.trechoPressionado && this.trechoPressionado.id === marker.id) {
-      return '#fd2929'; // Vermelho para trecho pressionado
     }
     if (trechoAtivo.id === marker.id) {
       return '#28a745'; // Verde para trecho ativo

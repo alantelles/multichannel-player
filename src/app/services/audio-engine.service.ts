@@ -207,7 +207,7 @@ export class AudioEngineService {
       console.error('Erro ao configurar contexto do Tone.js:', error);
     }
   }
-  public async carregarProjetoPorJSON(jsonTexto: string) {
+  public async carregarProjetoPorJSON(jsonTexto: string): Promise<boolean> {
     if (!this.isReady()) await this.init();
     if (this.isPlaying()) this.togglePlay();
 
@@ -284,6 +284,7 @@ export class AudioEngineService {
       this.statusCarregamento.set('Erro ao carregar projeto.');
       alert('Verifique a estrutura do seu arquivo JSON de projeto.');
     }
+    return this.isFullyLoaded();
   }
 
   private criarMarkerAudioCompleto() {
