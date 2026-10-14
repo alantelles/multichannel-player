@@ -1,0 +1,44 @@
+
+    <div class="dialog-container">
+      <h2 mat-dialog-title>📂 Carregar Projeto Salvo</h2>
+      
+      <div mat-dialog-content>
+        <div class="filtro-box">
+          <input 
+            type="text" 
+            class="ordinary-text-input" 
+            placeholder="🔎 Buscar projeto por nome ou pasta..." 
+            [ngModel]="filtro()" 
+            (ngModelChange)="onFiltroChange($event)" />
+        </div>
+
+        <div class="lista-projetos">
+          @if (carregando()) {
+            <p class="status-msg">Buscando projetos...</p>
+          } @else if (projetos().length === 0) {
+            <p class="status-msg">Nenhum projeto encontrado no banco de dados.</p>
+          } @else {
+            @for (item of projetos(); track item.id) {
+              <div class="card-projeto">
+                <div class="info">
+                  <strong>{{ item.nomeProjeto }}</strong>
+                  <span class="pasta">📁 {{ item.pastaBase }}</span>
+                </div>
+                <div class="acoes">
+                  <button class="botao-basico btn-carregar" (click)="selecionar(item)">
+                    ⚡ Carregar
+                  </button>
+                  <button class="btn-deletar" (click)="deletar(item)" title="Excluir do Banco">
+                    🗑️
+                  </button>
+                </div>
+              </div>
+            }
+          }
+        </div>
+      </div>
+
+      <div mat-dialog-actions align="end">
+        <button class="botao-basico btn-fechar" (click)="fechar()">Cancelar</button>
+      </div>
+    </div>

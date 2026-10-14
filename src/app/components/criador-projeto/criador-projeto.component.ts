@@ -363,7 +363,7 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
     this.bundleService.exportarParaZip(configResultado, nomesAudios);
   }
 
-  baixarJsonProjeto() {
+  async baixarJsonProjeto() {
     const configResultado = this.construirProjetoConfig();
 
     const blob = new Blob([JSON.stringify(configResultado, null, 2)], { type: 'application/json' });
@@ -373,6 +373,8 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
     a.download = `${this.nomeProjeto() || 'config-projeto'}.json`;
     a.click();
     URL.revokeObjectURL(url);
+    // No criador-projeto.component.ts ao carregar o JSON:
+    await this.fileRepository.saveProject(configResultado); // 🎯 Salva no IndexedDB
   }
 
   ngOnDestroy() {

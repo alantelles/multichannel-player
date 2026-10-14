@@ -1,0 +1,65 @@
+.dialog-container {
+      padding: 15px;
+      background: #1e1e1e;
+      color: #fff;
+      min-width: 320px;
+      max-width: 500px;
+    }
+    .filtro-box {
+      margin-bottom: 15px;
+      input {
+        width: 100%;
+        padding: 8px;
+        background: #2b2b2b;
+        border: 1px solid #444;
+        color: #fff;
+        border-radius: 4px;
+      }
+    }
+    .lista-projetos {
+      max-height: 300px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .card-projeto {
+      background: #2b2b2b;
+      padding: 10px;
+      border-radius: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-left: 4px solid #ffc107;
+
+      .info {
+        display: flex;
+        flex-direction: column;
+        strong { font-size: 15px; color: #fff; }
+        .pasta { font-size: 12px; color: #aaa; margin-top: 2px; }
+      }
+
+      .acoes {
+        display: flex;
+        gap: 8px;
+      }
+    }
+    .btn-carregar {
+      background: #198754;
+      padding: 6px 12px;
+      font-size: 13px;
+    }
+    .btn-deletar {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .status-msg {
+      color: #888;
+      text-align: center;
+      padding: 20px 0;
+    }
+    .btn-fechar {
+      background: #444;
+    }

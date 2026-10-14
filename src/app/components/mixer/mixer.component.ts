@@ -1,5 +1,5 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { AudioEngineService } from '../../services/audio-engine.service'; // Ajuste o caminho se o seu arquivo tiver .service no nome
+import { AudioEngineService, ProjectConfig } from '../../services/audio-engine.service'; // Ajuste o caminho se o seu arquivo tiver .service no nome
 import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { AdicionarArquivosProjetoComponent } from '../adicionar-arquivos-projeto/adicionar-arquivos-projeto.component';
@@ -7,6 +7,7 @@ import { FileRepositoryService } from '../../services/file-repository.service';
 import { RouterLink } from "@angular/router";
 import { CommonModule } from '@angular/common';
 import { Marker } from '../../models/marker';
+import { SelecionarProjetoDialogComponent } from '../selecionar-projeto-dialog/selecionar-projeto-dialog.component';
 
 @Component({
   selector: 'app-mixer',
@@ -36,15 +37,33 @@ export class MixerComponent implements OnInit {
       const arquivoConfig = input.files[0];
       const reader = new FileReader();
 
-      reader.onload = (e: any) => {
+      reader.onload = async (e: any) => {
         const conteudoTexto = e.target.result;
-        this.audio.carregarProjetoPorJSON(conteudoTexto);
+        const loaded = await this.audio.carregarProjetoPorJSON(conteudoTexto);
+        if (!loaded) {
+          return;
+        }
+        const config: ProjectConfig = JSON.parse(conteudoTexto);
+        this.fileRepository.saveProject(config); // 🎯 Salva no IndexedDB
       };
 
       reader.readAsText(arquivoConfig);
     }
   }
+  abrirModalProjetosSalvos() {
+    const dialogRef = this.dialog.open(SelecionarProjetoDialogComponent, {
+      width: '90%',
+      maxWidth: '500px'
+    });
 
+    dialogRef.afterClosed().subscribe((configProjetoSelected) => {
+      if (configProjetoSelected) {
+        // Converte o objeto de volta para string JSON e envia para a Engine de Áudio
+        const jsonString = JSON.stringify(configProjetoSelected);
+        this.audio.carregarProjetoPorJSON(jsonString);
+      }
+    });
+  }
   ngOnInit() {
     const savedAudioRepository = localStorage.getItem('audioRepository');
     this.fileRepository.onlineRepositoryUrl.set(savedAudioRepository || 'audios/');
