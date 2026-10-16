@@ -83,7 +83,38 @@
     }
   }
 }
+/* Oculto no Desktop */
+.hud-compassos-mobile {
+  display: none;
 
+  @include mobile-vertical {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    position: sticky;
+    top: 0;
+    z-index: 999;
+    background: #111;
+    padding: 6px 10px;
+    margin: -10px -10px 10px -10px; /* Ocupa toda a largura da tela */
+    border-bottom: 1px solid #333;
+    width: 100vw;
+    box-sizing: border-box;
+
+    .hud-barra {
+      margin: 0;
+      height: 6px; /* Barra bem fina */
+    }
+
+    .hud-click {
+      margin-bottom: 0;
+      
+      div {
+        height: 6px; /* Leds bem discretos */
+      }
+    }
+  }
+}
 .botao-basico {
   background: #1f8336;
   color: white;
