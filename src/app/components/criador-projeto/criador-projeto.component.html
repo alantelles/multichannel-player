@@ -5,7 +5,13 @@
     
     <div class="import-container">
       <label for="input-json-import" class="btn-importar-label">📂 Carregar projeto</label>
-      <input id="input-json-import" type="file" (change)="importarProjeto($event)" accept="application/json,application/zip" style="display: none;">
+      <!-- 🎯 ATUALIZADO: Aceita .zip, .json, application/octet-stream e variações de ZIP -->
+      <input 
+        id="input-json-import" 
+        type="file" 
+        (change)="importarProjeto($event)" 
+        accept=".json, .zip, application/json, application/zip, application/x-zip-compressed, application/octet-stream, */*" 
+        style="display: none;">
     </div>
   </header>
 

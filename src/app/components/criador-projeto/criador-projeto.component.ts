@@ -134,15 +134,22 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
   importarProjeto(event: Event) {
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) return;
-    const nomeArquivoProjeto = input.files[0].name;
-    if (nomeArquivoProjeto.endsWith('.zip')) {
+
+    const arquivo = input.files[0];
+    const nomeArquivo = arquivo.name.toLowerCase();
+
+    console.log('Arquivo selecionado:', arquivo.name, 'MIME:', arquivo.type);
+
+    if (nomeArquivo.endsWith('.zip')) {
       this.statusImportacao.set('Carregando arquivo de projeto ZIP...');
-      this.bundleService.importarEInstalarZip(input.files[0], this.statusImportacao);
-    } else if (nomeArquivoProjeto.endsWith('.json')) {
+      this.bundleService.importarEInstalarZip(arquivo, this.statusImportacao);
+    } else if (nomeArquivo.endsWith('.json')) {
       this.importarJsonProjeto(event);
     } else {
-      alert('Formato de arquivo não suportado. Por favor, selecione um arquivo .zip ou .json.');
+      alert(`O arquivo "${arquivo.name}" não é um .zip ou .json válido.`);
     }
+
+    // Reseta o input para permitir selecionar novamente
     input.value = '';
   }
 
@@ -157,11 +164,21 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
       try {
         const config: ProjectConfig = JSON.parse(e.target?.result as string);
 
-        this.nomeProjeto.set(config.nomeProjeto || '');
+        // 🎯 PRIORIDADE: Se o JSON não trouxer nomeProjeto, usa o nome do arquivo sem extensão, NUNCA a pastaBase
+        const nomeSemExtensao = arquivoJson.name
+          .replace(/\.json(\s*\(\d+\))?$/i, '')
+          .trim();
+
+        const nomeFinal = config.nomeProjeto && config.nomeProjeto.trim() !== '' 
+          ? config.nomeProjeto 
+          : nomeSemExtensao;
+
+        // 🎯 Atualiza TODOS os Signals de estado para o formulário carregar na tela
+        this.nomeProjeto.set(nomeFinal);
         this.pastaBase.set(config.pastaBase || '');
         this.bpm.set(config.bpm || 120);
         this.timeSignature.set(config.timeSignature || 4);
-        this.offset.set((config.offset || 0) * 1000); // Converte de segundos para milissegundos
+        this.offset.set((config.offset || 0) * 1000); // ms
         this.fullSong.set(!!config.fullSong);
 
         if (config.canais && Array.isArray(config.canais)) {
@@ -172,12 +189,14 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
             muted: c.muted ?? false,
             volume: c.volume ?? 0
           })));
+        } else {
+          this.canais.set([]);
         }
 
         if (config.markers && Array.isArray(config.markers)) {
           const trechosMapeados: InterfaceFormTrecho[] = config.markers.map(m => {
-            const compassoInicio = parseInt(m.inicio.split(':')[0], 10) || 0;
-            const compassosDuracao = parseInt(m.duracao.split(':')[0], 10) || 4;
+            const compassoInicio = parseInt(m.inicio ? m.inicio.split('m')[0] : '0', 10) || 0;
+            const compassosDuracao = parseInt(m.duracao ? m.duracao.split('m')[0] : '4', 10) || 4;
             return {
               nome: m.nome,
               compassoInicio: compassoInicio,
@@ -188,9 +207,16 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
             };
           });
           this.trechosForm.set(trechosMapeados);
+        } else {
+          this.trechosForm.set([]);
         }
 
-        console.log('Projeto importado com sucesso!');
+        // Força a atualização da lista de arquivos da pasta base importada
+        this.aoMudarPastaBase();
+
+        this.statusImportacao.set('Projeto carregado com sucesso!');
+        setTimeout(() => this.statusImportacao.set(''), 3000);
+
       } catch (err) {
         console.error('Erro ao processar o arquivo JSON de projeto:', err);
         alert('Formato de JSON inválido para ProjectConfig.');
@@ -199,6 +225,28 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
 
     reader.readAsText(arquivoJson);
     input.value = '';
+  }
+
+  async baixarJsonProjeto() {
+    const configResultado = this.construirProjetoConfig();
+
+    // 🎯 Obtém o nome limpo do projeto. Se estiver vazio, usa 'projeto-config'
+    const nomeProjetoAtual = this.nomeProjeto()?.trim();
+    
+    const nomeArquivoDownload = nomeProjetoAtual && nomeProjetoAtual !== ''
+      ? nomeProjetoAtual.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+      : 'projeto-config';
+
+    const blob = new Blob([JSON.stringify(configResultado, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${nomeArquivoDownload}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    // 🎯 Salva também no banco IndexedDB local
+    await this.fileRepository.saveProject(configResultado);
   }
 
   async onAudioGuiaSelecionado(event: Event) {
@@ -346,7 +394,7 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
     });
 
     return {
-      nomeProjeto: this.nomeProjeto(),
+      nomeProjeto: this.nomeProjeto() || 'Sem Nome',
       bpm: this.bpm(),
       timeSignature: parseInt(this.timeSignature().toString(), 10) || 4,
       pastaBase: this.pastaBase(),
@@ -361,20 +409,6 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
     const configResultado = this.construirProjetoConfig();
     const nomesAudios = this.canais().map(c => `${c.arquivo}`);
     this.bundleService.exportarParaZip(configResultado, nomesAudios);
-  }
-
-  async baixarJsonProjeto() {
-    const configResultado = this.construirProjetoConfig();
-
-    const blob = new Blob([JSON.stringify(configResultado, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${this.nomeProjeto() || 'config-projeto'}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    // No criador-projeto.component.ts ao carregar o JSON:
-    await this.fileRepository.saveProject(configResultado); // 🎯 Salva no IndexedDB
   }
 
   ngOnDestroy() {
