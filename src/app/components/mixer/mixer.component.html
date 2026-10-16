@@ -1,5 +1,28 @@
 <div class="studio-container">
+
+  <!-- 🎯 HUD MINIMALISTA PARA CELULAR (APENAS COMPASSOS E BEATS) -->
+  <div class="hud-compassos-mobile">
+    <!-- Barra Indicadora de Segmentos do Loop -->
+    <div class="barra-compassos hud-barra" *ngIf="!isFullSong() && audio.totalCompassosTrecho() > 0">
+      <div 
+        *ngFor="let c of [].constructor(audio.totalCompassosTrecho()); let i = index"
+        class="segmento-compasso"
+        [class.preenchido]="audio.compassoDecorritoNoTrecho() > 0 && (i + 1) <= audio.compassoDecorritoNoTrecho()"
+        [class.atual]="audio.compassoDecorritoNoTrecho() > 0 && (i + 1) === audio.compassoDecorritoNoTrecho()">
+      </div>
+    </div>
+
+    <!-- Indicador do Beat (Clique) -->
+    <div class="visual-click hud-click">
+      <div id="b1" [class.active-head]="audio.beatAtualNoBloco() === 1"></div>
+      <div id="b2" [class.active]="audio.beatAtualNoBloco() === 2"></div>
+      <div id="b3" [class.active]="audio.beatAtualNoBloco() === 3"></div>
+      <div *ngIf="audio.timeSignature() === 4" id="b4" [class.active]="audio.beatAtualNoBloco() === 4"></div>
+    </div>
+  </div>
+
   <h2>🎛️ Virtual Studio Web</h2>
+  <!-- Restante do template... -->
   <h3>💻 Sample rate: <span style="color: #ffc107; font-weight: bold;">{{ audio.sampleRate() }}</span></h3>
 
   <div class="carregador">
@@ -16,8 +39,8 @@
       </button>
     </div>
 
-    <label style="display: block; margin-top: 10px; margin-bottom: 5px; font-weight: bold; color: #aaa;">📂 Selecionar projeto (.json/.zip):</label>
-    <input style="margin-bottom: 8px" type="file" accept=".json,.zip" (change)="onConfigSelecionada($event)" />
+    <label style="display: block; margin-top: 10px; margin-bottom: 5px; font-weight: bold; color: #aaa;">📂 Selecionar projeto:</label>
+    <input style="margin-bottom: 8px" type="file" accept=".json" (change)="onConfigSelecionada($event)" />
     <button routerLink="/criar-projeto" class="botao-basico">Criar projeto</button>
     
     <div style="margin-top: 8px; color: #ffc107; font-size: 14px;">⚡ Status: {{ audio.statusCarregamento() }}</div>
