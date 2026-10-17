@@ -21,7 +21,9 @@ export class MixerComponent implements OnInit {
   protected audio = inject(AudioEngineService);
   private dialog = inject(MatDialog);
   fileRepository = inject(FileRepositoryService);
-
+  // Timer para controlar o atraso do clique simples
+  private clickTimer: any = null;
+  private readonly DOUBLE_CLICK_DELAY = 250; // tempo em ms para aguardar o 2º clique
   visualizacaoSequencia = signal<boolean>(true);
 
   isFullSong(): boolean {
@@ -47,6 +49,7 @@ export class MixerComponent implements OnInit {
       reader.readAsText(arquivoConfig);
     }
   }
+  
   abrirModalProjetosSalvos() {
     const dialogRef = this.dialog.open(SelecionarProjetoDialogComponent, {
       width: '90%',
@@ -61,6 +64,24 @@ export class MixerComponent implements OnInit {
       }
     });
   }
+
+  selecionarTrecho(id: string, event?: MouseEvent) {
+    if (this.clickTimer) {
+      // 🎯 DUPLO CLIQUE: Dispara cravado na cabeça do PRÓXIMO COMPASSO
+      clearTimeout(this.clickTimer);
+      this.clickTimer = null;
+      
+      this.audio.dispararTrechoNoProximoCompasso(id);
+      return;
+    }
+
+    // 🎯 CLIQUE SIMPLES: Agenda para o FIM DO BLOCO COMPLETO (comportamento atual)
+    this.clickTimer = setTimeout(() => {
+      this.clickTimer = null;
+      this.audio.agendarTrecho(id);
+    }, this.DOUBLE_CLICK_DELAY);
+  }
+
   ngOnInit() {
     const savedAudioRepository = localStorage.getItem('audioRepository');
     this.fileRepository.onlineRepositoryUrl.set(savedAudioRepository || 'audios/');
@@ -84,19 +105,31 @@ export class MixerComponent implements OnInit {
   decidirCorTrecho(marker: Marker): string {
     const trechoAtivo = this.audio.trechoAtivo();
     const proximoTrecho = this.audio.proximoTrecho();
+    const proximoTrechoImediato = this.audio.proximoTrechoImediato();
+
     if (!trechoAtivo) {
-      return '#818181'; // Cor padrão se não houver trecho ativo
+      return '#818181';
     }
+    
     if (trechoAtivo.id === marker.id) {
-      return '#28a745'; // Verde para trecho ativo
+      return '#28a745'; // Verde para trecho tocando agora
     }
+    
+    // 🎯 Destaque para o disparo de PRÓXIMO COMPASSO (Duplo Clique)
+    if (proximoTrechoImediato && proximoTrechoImediato.id === marker.id) {
+      return '#ff5722'; // Laranja avermelhado vibrante
+    }
+
+    // Destaque para o agendamento de FIM DE BLOCO (Clique simples)
     if (proximoTrecho && proximoTrecho.id === marker.id) {
-      return '#ffc107'; // Amarelo para próximo trecho
+      return '#ffc107'; // Amarelo
     }
+
     if (trechoAtivo.nextMarker && trechoAtivo.nextMarker === marker.id) {
-      return '#0772ff'; // Azul para próximo trecho
+      return '#0772ff'; // Azul para automação padrão
     }
-    return '#818181'; // Cor padrão para outros trechos
+
+    return '#818181';
   }
   adicionarArquivosLocal() {
     const dialogRef = this.dialog.open(AdicionarArquivosProjetoComponent, {
@@ -131,10 +164,6 @@ export class MixerComponent implements OnInit {
   alternarPlay() {
     this.audio.togglePlay();
   }
-  // ... dentro da classe MixerComponent
-  selecionarTrecho(id: string) {
-    this.audio.agendarTrecho(id);
-  }  
   atualizarVolumeRange(canal: any, event: Event) {
     const input = event.target as HTMLInputElement;
     this.audio.alterarVolume(canal, Number(input.value));

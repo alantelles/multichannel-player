@@ -82,6 +82,7 @@ export class AudioEngineService {
   public compassoAtualNoBloco = signal<number>(0);
   public beatAtualNoBloco = signal<number>(0);
   private fileRepository = inject(FileRepositoryService);
+  public proximoTrechoImediato = signal<Marker | null>(null);
 
   // Helper simples para converter strings do tipo "8m", "8", "0m" em numero inteiro
   private extrairCompassos(valor: string | number | undefined | null): number {
@@ -154,6 +155,61 @@ export class AudioEngineService {
     await Tone.start();
     Tone.Transport.bpm.value = this.bpmAtual();
     this.isReady.set(true);
+  }
+  public dispararTrechoNoProximoCompasso(trechoId: string) {
+    const alvo = this.markers().find(m => m.id === trechoId);
+    if (!alvo) return;
+
+    if (!this.isPlaying()) {
+      this.trechoAtivo.set(alvo);
+      this.proximoTrecho.set(null);
+      this.proximoTrechoImediato.set(null);
+      this.togglePlay();
+      return;
+    }
+
+    try {
+      // 1. Limpa qualquer agendamento pendente para evitar acúmulos
+      if (this.loopId !== undefined && this.loopId !== null) {
+        Tone.Transport.clear(this.loopId);
+        this.loopId = null;
+      }
+
+      this.proximoTrechoImediato.set(alvo);
+
+      // 2. Cálculo do tempo do próximo compasso
+      const bpm = this.bpmAtual();
+      const timeSignature = this.timeSignature() || 4;
+      const segundosPorBeat = 60 / bpm;
+      const segundosPorCompasso = segundosPorBeat * timeSignature;
+
+      const tempoDecorridoNoCiclo = Tone.Transport.seconds - this.tempoInicioCicloTransport;
+      const compassoAtualCalculado = Math.floor(tempoDecorridoNoCiclo / segundosPorCompasso);
+
+      const tempoProximoCompassoRelativo = (compassoAtualCalculado + 1) * segundosPorCompasso;
+      const tempoProximoCompassoTransport = this.tempoInicioCicloTransport + tempoProximoCompassoRelativo;
+
+      // 3. Agenda a virada pontual na cabeça do compasso
+      this.loopId = Tone.Transport.scheduleOnce((time) => {
+        // Limpa estado visual de transição e redefine o trecho e contador
+        this.trechoAtivo.set(alvo);
+        this.proximoTrecho.set(null);
+        this.proximoTrechoImediato.set(null);
+        this.loopCount.set(0);
+
+        // 🎯 REINICIA O RELÓGIO DO CICLO NO TEMPO EXATO DA VIRADA
+        this.tempoInicioCicloTransport = Tone.Transport.getSecondsAtTime(time);
+
+        // 🎯 DEVOLVE O CONTROLE IMEDIATO PARA O ARRANJADOR PADRÃO
+        // O executarCicloArranjador vai tocar o áudio e agendar a virada/parada
+        // na data correta do maxPlays já no 1º ciclo!
+        this.executarCicloArranjador(time);
+
+      }, tempoProximoCompassoTransport);
+
+    } catch (error) {
+      console.error("Erro ao disparar no próximo compasso:", error);
+    }
   }
 // 🎯 CHAME ESTE MÉTODO no 'else' do seu togglePlay(), logo após o Tone.Transport.start()
   private iniciarRelogioUI() {
@@ -326,82 +382,83 @@ export class AudioEngineService {
     // Dispara a primeira engrenagem do carrossel
     this.executarCicloArranjador(tempoDisparoInicial);
   }
-private executarCicloArranjador(tempoDisparoCravado: number) {
-  // 1. Verifica se o usuário pediu para mudar de bloco na virada
-  const proximo = this.proximoTrecho();
-  if (proximo) {
-    this.trechoAtivo.set(proximo);
-    this.proximoTrecho.set(null); 
-    this.loopCount.set(0);
-  }
+  private executarCicloArranjador(tempoDisparoCravado: number) {
+    // 1. Verifica se o usuário pediu para mudar de bloco na virada
+    const proximo = this.proximoTrecho();
+    if (proximo) {
+      this.trechoAtivo.set(proximo);
+      this.proximoTrecho.set(null); 
+      this.loopCount.set(0);
+    }
 
-  const atual = this.trechoAtivo();
-  if (!atual) return;
+    const atual = this.trechoAtivo();
+    if (!atual) return;
 
-  // Checa se o ciclo atual que vai começar é a ÚLTIMA repetição permitida
-  const ehUltimoLoop = atual.maxPlays && (atual.maxPlays - 1 === this.loopCount());
-  
-  // Se for a última repetição e não houver seleção manual de próximo trecho:
-  if (ehUltimoLoop && !this.proximoTrecho()) {
-    if (atual.nextMarker) {
-      // Agenda automaticamente o próximo marcador cadastrado
+    // 🎯 CORREÇÃO DO MAX PLAYS:
+    // Converte maxPlays para número de forma segura (padrão 1 se não definido)
+    const max = atual.maxPlays ? parseInt(atual.maxPlays.toString(), 10) : null;
+    const ehUltimoLoop = max !== null && this.loopCount() >= (max - 1);
+
+    // Se for o último loop e o usuário NÃO agendou nada manualmente, checa se há automação no JSON
+    if (ehUltimoLoop && !this.proximoTrecho() && atual.nextMarker) {
       this.agendarTrecho(atual.nextMarker);
     }
+
+    // 2. RESOLUÇÃO DOS PONTOS DE TEMPO DE ÁUDIO
+    const inicioAbsoluto = Tone.Time(atual.inicio).toSeconds();
+    const duracaoDoLoopReal = Tone.Time(atual.duracao).toSeconds();
+    
+    let inicioSegundos = inicioAbsoluto;
+    let duracaoSegundos = duracaoDoLoopReal;
+
+    if (this.loopCount() > 0 && atual.loopStart) {
+      inicioSegundos = Tone.Time(atual.loopStart).toSeconds();
+      duracaoSegundos = duracaoDoLoopReal;
+    } else if (atual.loopStart) {
+      const loopStartSegundos = Tone.Time(atual.loopStart).toSeconds();
+      const tamanhoDoPrefixo = loopStartSegundos - inicioAbsoluto;
+      duracaoSegundos = tamanhoDoPrefixo + duracaoDoLoopReal;
+    }
+
+    const offsetAjuste = this.offset || 0;
+    const inicioComOffset = Math.max(0, inicioSegundos + offsetAjuste);
+    this.tempoInicioCicloTransport = Tone.Transport.getSecondsAtTime(tempoDisparoCravado);
+
+    // 3. DISPARO CRÍTICO DE ÁUDIO
+    this.canais().forEach(canal => {
+      if (canal.player.loaded) {
+        canal.player.stop(tempoDisparoCravado); 
+        canal.player.start(tempoDisparoCravado, inicioComOffset, duracaoSegundos);
+      }
+    });
+
+    // 4. MATEMÁTICA DA PRÓXIMA VIRADA
+    const tempoProximaVirada = tempoDisparoCravado + duracaoSegundos;
+    const tempoMusicalTransport = Tone.Transport.getSecondsAtTime(tempoProximaVirada);
+
+    // 5. AGENDA O PRÓXIMO PASSO OU A PARADA
+    this.loopId = Tone.Transport.scheduleOnce((time) => {
+      // 🎯 SE É O ÚLTIMO LOOP, NÃO HÁ PRÓXIMO AGENDADO E NEM NEXTMARKER: ENCERRAR
+      if (ehUltimoLoop && !this.proximoTrecho() && !atual.nextMarker) {
+        this.encerrarExecucao();
+        return;
+      }
+
+      // Se ainda não mudou de trecho, incrementa o contador de loops
+      if (!this.proximoTrecho()) {
+        this.loopCount.update(c => c + 1);
+      }
+
+      // Segue para o próximo ciclo (que vai aplicar o proximoTrecho se ele tiver sido agendado!)
+      this.executarCicloArranjador(time);
+
+    }, tempoMusicalTransport);
   }
-
-  // 2. RESOLUÇÃO DOS PONTOS DE TEMPO DE ÁUDIO
-  const inicioAbsoluto = Tone.Time(atual.inicio).toSeconds();
-  const duracaoDoLoopReal = Tone.Time(atual.duracao).toSeconds();
-  
-  let inicioSegundos = inicioAbsoluto;
-  let duracaoSegundos = duracaoDoLoopReal;
-
-  if (this.loopCount() > 0 && atual.loopStart) {
-    inicioSegundos = Tone.Time(atual.loopStart).toSeconds();
-    duracaoSegundos = duracaoDoLoopReal;
-  } else if (atual.loopStart) {
-    const loopStartSegundos = Tone.Time(atual.loopStart).toSeconds();
-    const tamanhoDoPrefixo = loopStartSegundos - inicioAbsoluto;
-    duracaoSegundos = tamanhoDoPrefixo + duracaoDoLoopReal;
-  }
-
-  const offsetAjuste = this.offset || 0;
-  const inicioComOffset = Math.max(0, inicioSegundos + offsetAjuste);
-  this.tempoInicioCicloTransport = Tone.Transport.getSecondsAtTime(tempoDisparoCravado);
-
-  // 3. DISPARO CRÍTICO DE ÁUDIO
-  this.canais().forEach(canal => {
-    if (canal.player.loaded) {
-      canal.player.stop(tempoDisparoCravado); 
-      canal.player.start(tempoDisparoCravado, inicioComOffset, duracaoSegundos);
-    }
-  });
-
-  // 4. MATEMÁTICA DA PRÓXIMA VIRADA
-  const tempoProximaVirada = tempoDisparoCravado + duracaoSegundos;
-  const tempoMusicalTransport = Tone.Transport.getSecondsAtTime(tempoProximaVirada);
-
-  // 5. AGENDA O PRÓXIMO PASSO OU A PARADA
-  this.loopId = Tone.Transport.schedule((time) => {
-    // 🎯 SE É O ÚLTIMO LOOP E NÃO HÁ PRÓXIMO TRECHO: ENCERRAR A APLICAÇÃO
-    if (ehUltimoLoop && !this.proximoTrecho() && !atual.nextMarker) {
-      this.encerrarExecucao();
-      return;
-    }
-
-    if (!this.proximoTrecho()) {
-      this.loopCount.update(c => c + 1);
-    }
-
-    // Segue para a próxima execução normalmente
-    this.executarCicloArranjador(time);
-
-  }, tempoMusicalTransport);
-}
 
   // Método dedicado para parar a engine, UI e agendamentos no momento do término
   private encerrarExecucao() {
     // 1. Limpa o agendamento atual para evitar loops fantasmas
+    this.proximoTrechoImediato.set(null);
     if (this.loopId !== null) {
       Tone.Transport.clear(this.loopId);
       this.loopId = null;
@@ -581,5 +638,6 @@ private executarCicloArranjador(tempoDisparoCravado: number) {
       // Armas a automação baseada na linha do tempo contínua
       this.configurarLoopDoTrecho();
     }
+    this.proximoTrechoImediato.set(null);
   }
 }
