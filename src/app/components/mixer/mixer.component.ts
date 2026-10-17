@@ -66,16 +66,28 @@ export class MixerComponent implements OnInit {
   }
 
   selecionarTrecho(id: string, event?: MouseEvent) {
-    if (this.clickTimer) {
-      // 🎯 DUPLO CLIQUE: Dispara cravado na cabeça do PRÓXIMO COMPASSO
-      clearTimeout(this.clickTimer);
-      this.clickTimer = null;
-      
+    const trecho = this.audio.markers().find(m => m.id === id);
+    if (!trecho) return;
+
+    // Se o marcador for configurado para sempre entrar no compasso (ex: Viradas)
+    if (trecho.modoDisparo === 'compasso') {
+      if (this.clickTimer) {
+        clearTimeout(this.clickTimer);
+        this.clickTimer = null;
+      }
+      // Dispara no próximo compasso mesmo com clique único!
       this.audio.dispararTrechoNoProximoCompasso(id);
       return;
     }
 
-    // 🎯 CLIQUE SIMPLES: Agenda para o FIM DO BLOCO COMPLETO (comportamento atual)
+    // Comportamento padrão para os demais trechos (1 clique = bloco, 2 cliques = compasso)
+    if (this.clickTimer) {
+      clearTimeout(this.clickTimer);
+      this.clickTimer = null;
+      this.audio.dispararTrechoNoProximoCompasso(id);
+      return;
+    }
+
     this.clickTimer = setTimeout(() => {
       this.clickTimer = null;
       this.audio.agendarTrecho(id);

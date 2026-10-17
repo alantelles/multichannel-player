@@ -114,11 +114,13 @@
         @for (trecho of audio.markers(); track trecho.id) {
           <div class="trecho-trigger">
             <button (click)="selecionarTrecho(trecho.id, $event)"
-                    [style.background]="decidirCorTrecho(trecho)"
-                    [style.color]="(audio.trechoAtivo()?.id === trecho.id || audio.trechoAtivo()?.nextMarker === trecho.id || audio.proximoTrecho()?.id === trecho.id) ? '#000' : '#fff'"
-                    class="botao-basico botao-trecho">
-              {{ trecho.nome }}
-            </button>
+              [style.background]="decidirCorTrecho(trecho)"
+              class="botao-basico botao-trecho"
+              [class.virada-rapida]="trecho.modoDisparo === 'compasso'"
+              [style.color]="(audio.trechoAtivo()?.id === trecho.id || audio.trechoAtivo()?.nextMarker === trecho.id || audio.proximoTrecho()?.id === trecho.id) ? '#000' : '#fff'">
+            <span *ngIf="trecho.modoDisparo === 'compasso'">⚡ </span>
+            {{ trecho.nome }}
+          </button>
           </div>
         }
       </div>
