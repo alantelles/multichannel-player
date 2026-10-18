@@ -2,6 +2,7 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import * as Tone from 'tone';
 import { FileRepositoryService } from './file-repository.service';
 import { Marker } from '../models/marker';
+import { HookHandlerService } from './hooks/hook-handler.service';
 
 export interface ProjectConfig {
   nomeProjeto: string;
@@ -71,6 +72,8 @@ export class AudioEngineService {
   private loopId!: any;
   private offset?: number;
   public sampleRate = signal<number>(Tone.context.sampleRate);
+
+  private compassoCalculado = -1;
   
   // 1. O Signal que seu componente Angular vai ler no HTML
   public tempoMusicalAtual = signal<string>('0:0:0');
@@ -83,6 +86,8 @@ export class AudioEngineService {
   public beatAtualNoBloco = signal<number>(0);
   private fileRepository = inject(FileRepositoryService);
   public proximoTrechoImediato = signal<Marker | null>(null);
+
+  private hookService: HookHandlerService = inject(HookHandlerService);
 
   // Helper simples para converter strings do tipo "8m", "8", "0m" em numero inteiro
   private extrairCompassos(valor: string | number | undefined | null): number {
@@ -238,6 +243,10 @@ export class AudioEngineService {
       // Somamos +1 para a contagem ficar humana (Compasso 1, Compasso 2...) em vez de indexada em 0
       this.compassoAtualNoBloco.set(compassoCalculado + ajusteTrecho + 1);
 
+      if (this.compassoAtualNoBloco() !== this.compassoCalculado) {
+        this.compassoCalculado = this.compassoAtualNoBloco();
+        this.hookService.execute(this.compassoCalculado); // +1 para contagem humana
+      }
       // Continua o laço no próximo frame da tela
       this.animacaoId = requestAnimationFrame(renderizarFrame);
     };
