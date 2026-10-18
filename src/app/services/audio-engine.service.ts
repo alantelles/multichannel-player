@@ -3,6 +3,7 @@ import * as Tone from 'tone';
 import { FileRepositoryService } from './file-repository.service';
 import { Marker } from '../models/marker';
 import { HookHandlerService } from './hooks/hook-handler.service';
+import { Evento } from '../models/evento';
 
 export interface ProjectConfig {
   nomeProjeto: string;
@@ -13,6 +14,7 @@ export interface ProjectConfig {
   canais: CanalAudioConfig[];
   markers?: Marker[];
   fullSong?: boolean;
+  eventos?: Evento[];
 }
 export interface LoadedProject extends ProjectConfig {
   canais: CanalAudio[];
@@ -245,7 +247,8 @@ export class AudioEngineService {
 
       if (this.compassoAtualNoBloco() !== this.compassoCalculado) {
         this.compassoCalculado = this.compassoAtualNoBloco();
-        this.hookService.execute(this.compassoCalculado); // +1 para contagem humana
+        console.log('trocou')
+        this.hookService.dispararCorrespondentes(this.compassoCalculado); // +1 para contagem humana
       }
       // Continua o laço no próximo frame da tela
       this.animacaoId = requestAnimationFrame(renderizarFrame);
@@ -342,6 +345,7 @@ export class AudioEngineService {
       this.proximoTrecho.set(null);
       this.loopCount.set(0);
       this.isFullyLoaded.set(true);
+      this.hookService.registrarEventos(projeto.eventos || []);
       this.statusCarregamento.set(`Projeto "${projeto.nomeProjeto}" pronto!`);
 
     } catch (erro) {

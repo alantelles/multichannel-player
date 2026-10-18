@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
-import { Hook } from './hook';
+import { HookExecutor } from './hook-executor';
 
 @Injectable({  
   providedIn: 'root'
 })
-export class ConsoleLogHookService implements Hook {
+export class ConsoleLogHookService implements HookExecutor {
+  static readonly HOOK_NAME = 'console-log';  
   name = 'Console Log Hook';
   description = 'A simple hook for logging messages to the console';
 
