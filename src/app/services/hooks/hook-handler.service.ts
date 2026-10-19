@@ -2,6 +2,13 @@ import { inject, Injectable } from '@angular/core';
 import { HookExecutor } from './hook-executor';
 import { ConsoleLogHookService } from './console-log-hook.service';
 import { Evento } from '../../models/evento';
+import { HttpClientHookService } from './http-client/http-client-hook.service';
+
+
+interface AcumuladorHook {
+  melhor?: Evento;
+  padrao?: Evento;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -9,29 +16,56 @@ import { Evento } from '../../models/evento';
 export class HookHandlerService {
 
   private consoleLogHookService: ConsoleLogHookService = inject(ConsoleLogHookService);
+  private httpClientHookService: HttpClientHookService = inject(HttpClientHookService);
   private executors: { [key: string]: HookExecutor } = {};
-  private eventos: Evento[] = [];
+  private eventos = new Set<Evento>();
+  private eventosAtuais = new Set<Evento>();
 
   constructor() {
     this.executors[ConsoleLogHookService.HOOK_NAME] = this.consoleLogHookService;
+    this.executors[HttpClientHookService.HOOK_NAME] = this.httpClientHookService;
   }
 
   registrarEventos(eventos: Evento[]): void {
-    this.eventos = eventos;
+    this.eventos = new Set(eventos);
   }
 
   dispararCorrespondentes(compasso: number): void {
-    console.log(this.eventos)
-    const eventos = this.eventos.filter(evento => evento.compasso === compasso);
-    eventos.forEach(evento => this.executarHook(evento));
+    const mapaHooks = Array.from(this.eventos).reduce<Record<string, AcumuladorHook>>((acc, evento) => {
+      if (!acc[evento.hook]) {
+        acc[evento.hook] = {};
+      }
+      const grupo = acc[evento.hook];
+      if (evento.compasso === undefined || evento.compasso === null) {
+        grupo.padrao = evento;
+      }
+      else if (evento.compasso <= compasso) {
+        if (!grupo.melhor || evento.compasso > grupo.melhor.compasso!) {
+          grupo.melhor = evento;
+        }
+      }
+
+      return acc;
+    }, {});
+    const eventosCandidatos = Object.values(mapaHooks)
+      .map(grupo => grupo.melhor || grupo.padrao)
+      .filter((evento): evento is Evento => !!evento);
+    const obterId = (e: Evento) => {
+      const sufixoCompasso = (e.compasso === undefined || e.compasso === null) ? 'atemporal' : e.compasso;
+      return `${e.hook}-${sufixoCompasso}`;
+    };
+    const chavesAtivas = new Set(Array.from(this.eventosAtuais).map(obterId));
+    const eventosParaDisparo = eventosCandidatos.filter(evento => !chavesAtivas.has(obterId(evento)));
+    this.eventosAtuais = new Set(eventosCandidatos);
+    eventosParaDisparo.forEach(evento => this.executarHook(evento));
   }
 
   executarHook(evento: Evento): void {
-    const executor = this.executors[evento.nomeDisparador];
-    if (executor) {
+    try {
+      const executor = this.executors[evento.hook];
       executor.execute(evento.conteudo);
-    } else {
-      console.warn(`Executor não encontrado para o disparador: ${evento.nomeDisparador}`);
+    } catch (error) {
+      console.error(`Erro ao executar o hook ${evento.hook} no compasso ${evento.compasso} :`, error);
     }
   }
 

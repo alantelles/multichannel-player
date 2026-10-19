@@ -247,7 +247,6 @@ export class AudioEngineService {
 
       if (this.compassoAtualNoBloco() !== this.compassoCalculado) {
         this.compassoCalculado = this.compassoAtualNoBloco();
-        console.log('trocou')
         this.hookService.dispararCorrespondentes(this.compassoCalculado); // +1 para contagem humana
       }
       // Continua o laço no próximo frame da tela

@@ -1,6 +1,6 @@
 export interface Evento {
-  compasso: number;
-  nomeDisparador: string;
+  compasso?: number;
+  hook: string;
   template?: string;
   conteudo: any;
 }
