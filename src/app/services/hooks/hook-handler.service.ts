@@ -3,6 +3,7 @@ import { HookExecutor } from './hook-executor';
 import { ConsoleLogHookService } from './console-log/console-log-hook.service';
 import { Evento } from '../../models/evento';
 import { HttpClientHookService } from './http-client/http-client-hook.service';
+import { Integracao } from '../../models/integracao';
 
 
 interface AcumuladorHook {
@@ -20,6 +21,7 @@ export class HookHandlerService {
   private executors: { [key: string]: HookExecutor } = {};
   private eventos = new Set<Evento>();
   private eventosAtuais = new Set<Evento>();
+  private integracoesMap = new Map<string, { engine: string, config: any }>();
 
   constructor() {
     this.executors[ConsoleLogHookService.HOOK_NAME] = this.consoleLogHookService;
@@ -30,12 +32,22 @@ export class HookHandlerService {
     this.eventos = new Set(eventos);
   }
 
+  registrarIntegracoes(integracoes: Integracao[]): void {
+    this.integracoesMap.clear();
+    if (integracoes) {
+      integracoes.forEach(integ => {
+        this.integracoesMap.set(integ.id, { engine: integ.engine, config: integ.config || {} });
+      });
+    }
+  }
+
   dispararCorrespondentes(compasso: number): void {
     const mapaHooks = Array.from(this.eventos).reduce<Record<string, AcumuladorHook>>((acc, evento) => {
       if (!acc[evento.hook]) {
         acc[evento.hook] = {};
       }
       const grupo = acc[evento.hook];
+      
       if (evento.compasso === undefined || evento.compasso === null) {
         grupo.padrao = evento;
       }
@@ -47,23 +59,47 @@ export class HookHandlerService {
 
       return acc;
     }, {});
+
     const eventosCandidatos = Object.values(mapaHooks)
       .map(grupo => grupo.melhor || grupo.padrao)
       .filter((evento): evento is Evento => !!evento);
+
     const obterId = (e: Evento) => {
       const sufixoCompasso = (e.compasso === undefined || e.compasso === null) ? 'atemporal' : e.compasso;
       return `${e.hook}-${sufixoCompasso}`;
     };
+
     const chavesAtivas = new Set(Array.from(this.eventosAtuais).map(obterId));
     const eventosParaDisparo = eventosCandidatos.filter(evento => !chavesAtivas.has(obterId(evento)));
+    
     this.eventosAtuais = new Set(eventosCandidatos);
     eventosParaDisparo.forEach(evento => this.executarHook(evento));
   }
 
   executarHook(evento: Evento): void {
     try {
-      const executor = this.executors[evento.hook];
-      executor.execute(evento.conteudo);
+      const idIntegracao = evento.hook; // Ex: "client-presenter" ou um teste direto "console-log"
+      
+      // 1. Verifica se é uma integração registrada no projeto
+      const integracao = this.integracoesMap.get(idIntegracao);
+      
+      if (integracao) {
+        const executor = this.executors[integracao.engine];
+        if (executor) {
+          // Passa tanto o conteúdo quanto a configuração específica daquela integração
+          executor.execute(evento, integracao.config);
+        } else {
+          console.warn(`[HookHandler] Engine '${integracao.engine}' não encontrada para a integração '${idIntegracao}'.`);
+        }
+      } else {
+        // 2. Fallback: Caso queiras manter testes diretos (ex: o hook "console-log" direto sem config de integração)
+        const executorDireto = this.executors[idIntegracao];
+        if (executorDireto) {
+          executorDireto.execute(evento, {}); // Passa um objeto vazio como config para execuções diretas
+        } else {
+          console.warn(`[HookHandler] Nenhuma integração ou executor encontrado para o ID/Hook: '${idIntegracao}'.`);
+        }
+      }
     } catch (error) {
       console.error(`Erro ao executar o hook ${evento.hook} no compasso ${evento.compasso} :`, error);
     }

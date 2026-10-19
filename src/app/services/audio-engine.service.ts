@@ -4,6 +4,7 @@ import { FileRepositoryService } from './file-repository.service';
 import { Marker } from '../models/marker';
 import { HookHandlerService } from './hooks/hook-handler.service';
 import { Evento } from '../models/evento';
+import { Integracao } from '../models/integracao';
 
 export interface ProjectConfig {
   nomeProjeto: string;
@@ -15,6 +16,7 @@ export interface ProjectConfig {
   markers?: Marker[];
   fullSong?: boolean;
   eventos?: Evento[];
+  integracoes?: Integracao[];
 }
 export interface LoadedProject extends ProjectConfig {
   canais: CanalAudio[];
@@ -345,6 +347,7 @@ export class AudioEngineService {
       this.loopCount.set(0);
       this.isFullyLoaded.set(true);
       this.hookService.registrarEventos(projeto.eventos || []);
+      this.hookService.registrarIntegracoes(projeto.integracoes || []);
       this.statusCarregamento.set(`Projeto "${projeto.nomeProjeto}" pronto!`);
 
     } catch (erro) {
