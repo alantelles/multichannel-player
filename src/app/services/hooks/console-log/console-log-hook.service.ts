@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HookExecutor } from './hook-executor';
+import { HookExecutor } from '../hook-executor';
 
 @Injectable({  
   providedIn: 'root'

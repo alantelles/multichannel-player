@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { HookExecutor } from './hook-executor';
-import { ConsoleLogHookService } from './console-log-hook.service';
+import { ConsoleLogHookService } from './console-log/console-log-hook.service';
 import { Evento } from '../../models/evento';
 import { HttpClientHookService } from './http-client/http-client-hook.service';
 
