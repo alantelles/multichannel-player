@@ -11,7 +11,7 @@ export class ConsoleLogHookService implements HookExecutor {
   description = 'A simple hook for logging messages to the console';
 
   execute(evento: Evento, config: any): void {
-    console.log(`Compasso: ${evento.compasso}; Conteudo: ${evento.conteudo}`);
+    console.log(`Compasso: ${evento.compasso}; Conteudo: ${evento.data}`);
   }
 
 }
