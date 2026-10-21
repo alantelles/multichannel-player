@@ -472,6 +472,7 @@ export class AudioEngineService {
 
   // Método dedicado para parar a engine, UI e agendamentos no momento do término
   private encerrarExecucao() {
+    this.hookService.dispararEventosPadrao();
     // 1. Limpa o agendamento atual para evitar loops fantasmas
     this.proximoTrechoImediato.set(null);
     if (this.loopId !== null) {
@@ -641,6 +642,7 @@ export class AudioEngineService {
       this.loopCount.set(0);
       this.proximoTrecho.set(null);
       this.pararRelogioUI();
+      this.hookService.dispararEventosPadrao();
     } else {
       Tone.Transport.stop();
       Tone.Transport.cancel(0); 

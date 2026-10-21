@@ -76,6 +76,20 @@ export class HookHandlerService {
     eventosParaDisparo.forEach(evento => this.executarHook(evento));
   }
 
+  dispararEventosPadrao(): void {
+    // Pega todos os eventos cadastrados que não têm compasso definido (os padrões/atemporais)
+    const eventosPadrao = Array.from(this.eventos).filter(
+      evento => evento.compasso === undefined || evento.compasso === null
+    );
+
+    // Executa cada um deles para resetar o estado nas integrações (ex: limpar o teleprompter)
+    eventosPadrao.forEach(evento => {
+      this.executarHook(evento);
+    });
+
+    // Limpa o set de eventos atuais para garantir que o próximo Play comece limpo
+    this.eventosAtuais.clear();
+  }
   executarHook(evento: Evento): void {
     try {
       const idIntegracao = evento.hook;
