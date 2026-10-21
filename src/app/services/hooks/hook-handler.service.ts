@@ -5,7 +5,6 @@ import { Evento } from '../../models/evento';
 import { HttpClientHookService } from './http-client/http-client-hook.service';
 import { Integracao } from '../../models/integracao';
 
-
 interface AcumuladorHook {
   melhor?: Evento;
   padrao?: Evento;
@@ -17,8 +16,9 @@ interface AcumuladorHook {
 export class HookHandlerService {
 
   private consoleLogHookService: ConsoleLogHookService = inject(ConsoleLogHookService);
-  private httpClientHookService: HttpClientHookService = inject(HttpClientHookService);
-  private executors: { [key: string]: HookExecutor } = {};
+  private httpClientHookService: HttpClientHookService = inject(HttpClientHookService);  
+  // Mapeia engines para executores genéricos
+  private executors: { [key: string]: HookExecutor<any> } = {};  
   private eventos = new Set<Evento>();
   private eventosAtuais = new Set<Evento>();
   private integracoesMap = new Map<string, { engine: string, config: any }>();
@@ -78,31 +78,26 @@ export class HookHandlerService {
 
   executarHook(evento: Evento): void {
     try {
-      const idIntegracao = evento.hook; // Ex: "client-presenter" ou um teste direto "console-log"
-      
-      // 1. Verifica se é uma integração registrada no projeto
+      const idIntegracao = evento.hook;
       const integracao = this.integracoesMap.get(idIntegracao);
       
       if (integracao) {
         const executor = this.executors[integracao.engine];
         if (executor) {
-          // Passa tanto o conteúdo quanto a configuração específica daquela integração
           executor.execute(evento, integracao.config);
         } else {
-          console.warn(`[HookHandler] Engine '${integracao.engine}' não encontrada para a integração '${idIntegracao}'.`);
+          console.warn(`[HookHandler] Engine '${integracao.engine}' não encontrada.`);
         }
       } else {
-        // 2. Fallback: Caso queiras manter testes diretos (ex: o hook "console-log" direto sem config de integração)
         const executorDireto = this.executors[idIntegracao];
         if (executorDireto) {
-          executorDireto.execute(evento, {}); // Passa um objeto vazio como config para execuções diretas
+          executorDireto.execute(evento, {});
         } else {
-          console.warn(`[HookHandler] Nenhuma integração ou executor encontrado para o ID/Hook: '${idIntegracao}'.`);
+          console.warn(`[HookHandler] Nenhuma integração encontrada para: '${idIntegracao}'.`);
         }
       }
     } catch (error) {
-      console.error(`Erro ao executar o hook ${evento.hook} no compasso ${evento.compasso} :`, error);
+      console.error(`Erro ao executar o hook ${evento.hook} no compasso ${evento.compasso}:`, error);
     }
   }
-
 }
