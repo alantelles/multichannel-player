@@ -7,4 +7,6 @@ export interface Marker {
   nextMarker?: string;
   loopStart?: string;
   referencia?: string;
+  // 🎯 Define se o clique simples vai direto no próximo compasso ou espera o fim do bloco
+  modoDisparo?: 'compasso' | 'bloco';
 }
