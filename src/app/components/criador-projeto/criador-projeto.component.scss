@@ -10,7 +10,15 @@
   min-height: 100vh;
   font-family: sans-serif;
 }
-
+.grupo-param-trecho {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  margin-bottom: 15px;
+  @include mobile-vertical {
+    flex-direction: column;
+  }
+}
 .header-acoes {
   display: flex;
   align-items: center;
@@ -105,8 +113,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
-
+  margin-bottom: 15px;  
+  width: 100%;
   .btn-adicionar { background: #2196f3; color: white; border: none; padding: 8px 16px; font-weight: bold; cursor: pointer; border-radius: 4px; }
 }
 
@@ -136,7 +144,7 @@
 
 .campos-trecho-grid {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   gap: 10px;
   label { font-size: 11px; color: #888; display: block; margin-bottom: 3px; }
   input { width: 100%; background: #1e1e24; border: 1px solid #333; color: #fff; padding: 6px; border-radius: 4px; box-sizing: border-box; }
@@ -325,7 +333,10 @@
   background-color: #fff; /* Alinhe com o fundo do seu item */
   opacity: 0.9;
 }
+.lista-trechos {
 
+  width: 100%;
+}
 .cdk-drag-placeholder {
   opacity: 0.2;
 }

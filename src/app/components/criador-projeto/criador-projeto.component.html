@@ -171,28 +171,39 @@
     </div>
 
     <div class="campos-trecho-grid">
-      <div>
-        <label>Comp. Início:</label>
-        <input [disabled]="!!trecho.referencia" type="number" [(ngModel)]="trecho.compassoInicio">
+      <div class="grupo-param-trecho">
+        <div>
+          <label>Comp. Início:</label>
+          <input [disabled]="!!trecho.referencia" type="number" [(ngModel)]="trecho.compassoInicio">
+        </div>
+        <div>
+          <label>Duração (Comp.):</label>
+          <input [disabled]="!!trecho.referencia" type="number" [(ngModel)]="trecho.compassosDuracao">
+        </div>
+        <div>
+          <label>Max Plays (Loop):</label>
+          <input [disabled]="!!trecho.referencia" type="number" [(ngModel)]="trecho.maxPlays">
+        </div>
       </div>
-      <div>
-        <label>Duração (Comp.):</label>
-        <input [disabled]="!!trecho.referencia" type="number" [(ngModel)]="trecho.compassosDuracao">
-      </div>
-      <div>
-        <label>Max Plays (Loop):</label>
-        <input [disabled]="!!trecho.referencia" type="number" [(ngModel)]="trecho.maxPlays">
-      </div>
-      <div>
-        <label>ID Próximo Marker:</label>
-        <input type="text" [(ngModel)]="trecho.nextMarker" placeholder="Ex: refrao-1">
-      </div>
-      <div>
-        <label>Referência</label>
-        <select [selectedIndex]="trecho.referencia ? listarTrechos().findIndex((r) => r.id === trecho.referencia) : -1" [(ngModel)]="trecho.referencia">
-          <option value="">-- Nenhuma --</option>
-          <option *ngFor="let ref of listarTrechos()" [value]="ref.id">{{ ref.nome }}</option>
-        </select>
+      <div class="grupo-param-trecho">
+        <div>
+          <label>ID Próximo Marker:</label>
+          <input type="text" [(ngModel)]="trecho.nextMarker" placeholder="Ex: refrao-1">
+        </div>
+        <div>
+          <label>Referência</label>
+          <select [selectedIndex]="trecho.referencia ? listarTrechos().findIndex((r) => r.id === trecho.referencia) : -1" [(ngModel)]="trecho.referencia">
+            <option value="">-- Nenhuma --</option>
+            <option *ngFor="let ref of listarTrechos()" [value]="ref.id">{{ ref.nome }}</option>
+          </select>
+        </div>
+        <div>
+          <label>Modo de Disparo</label>
+          <select [(ngModel)]="trecho.modoDisparo">
+            <option value="bloco">Bloco</option>
+            <option value="compasso">Compasso</option>
+          </select>
+        </div>
       </div>
     </div>
   </div>

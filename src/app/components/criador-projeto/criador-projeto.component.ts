@@ -34,6 +34,7 @@ interface InterfaceFormTrecho {
   maxPlays: number;
   nextMarker: string;
   referencia?: string;
+  modoDisparo?: 'compasso' | 'bloco';
 }
 
 const computarId = (nome: string) => nome.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
@@ -203,7 +204,8 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
               compassosDuracao: compassosDuracao,
               referencia: m.referencia || '',
               maxPlays: m.maxPlays || 0,
-              nextMarker: m.nextMarker || ''
+              nextMarker: m.nextMarker || '',
+              modoDisparo: m.modoDisparo || 'bloco',
             };
           });
           this.trechosForm.set(trechosMapeados);
@@ -363,6 +365,7 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
         compassoInicio: compassoAtual,
         compassosDuracao: 4,
         maxPlays: 0,
+        modoDisparo: 'bloco',
         nextMarker: ''
       }
     ]);
@@ -386,6 +389,7 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
         id: idGerado,
         referencia: idReferencia,
         nome: t.nome,
+        modoDisparo: t.modoDisparo || 'bloco',
         inicio: `${t.compassoInicio}m`,
         duracao: `${t.compassosDuracao}m`,
         ...(t.maxPlays > 0 ? { maxPlays: t.maxPlays } : {}),
