@@ -2,6 +2,9 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import * as Tone from 'tone';
 import { FileRepositoryService } from './file-repository.service';
 import { Marker } from '../models/marker';
+import { HookHandlerService } from './hooks/hook-handler.service';
+import { Evento } from '../models/evento';
+import { Integracao } from '../models/integracao';
 
 export interface ProjectConfig {
   nomeProjeto: string;
@@ -12,6 +15,8 @@ export interface ProjectConfig {
   canais: CanalAudioConfig[];
   markers?: Marker[];
   fullSong?: boolean;
+  eventos?: Evento[];
+  integracoes?: Integracao[];
 }
 export interface LoadedProject extends ProjectConfig {
   canais: CanalAudio[];
@@ -71,6 +76,8 @@ export class AudioEngineService {
   private loopId!: any;
   private offset?: number;
   public sampleRate = signal<number>(Tone.context.sampleRate);
+
+  private compassoCalculado = -1;
   
   // 1. O Signal que seu componente Angular vai ler no HTML
   public tempoMusicalAtual = signal<string>('0:0:0');
@@ -83,6 +90,8 @@ export class AudioEngineService {
   public beatAtualNoBloco = signal<number>(0);
   private fileRepository = inject(FileRepositoryService);
   public proximoTrechoImediato = signal<Marker | null>(null);
+
+  private hookService: HookHandlerService = inject(HookHandlerService);
 
   // Helper simples para converter strings do tipo "8m", "8", "0m" em numero inteiro
   private extrairCompassos(valor: string | number | undefined | null): number {
@@ -238,6 +247,10 @@ export class AudioEngineService {
       // Somamos +1 para a contagem ficar humana (Compasso 1, Compasso 2...) em vez de indexada em 0
       this.compassoAtualNoBloco.set(compassoCalculado + ajusteTrecho + 1);
 
+      if (this.compassoAtualNoBloco() !== this.compassoCalculado) {
+        this.compassoCalculado = this.compassoAtualNoBloco();
+        this.hookService.dispararCorrespondentes(this.compassoCalculado); // +1 para contagem humana
+      }
       // Continua o laço no próximo frame da tela
       this.animacaoId = requestAnimationFrame(renderizarFrame);
     };
@@ -333,6 +346,8 @@ export class AudioEngineService {
       this.proximoTrecho.set(null);
       this.loopCount.set(0);
       this.isFullyLoaded.set(true);
+      this.hookService.registrarEventos(projeto.eventos || []);
+      this.hookService.registrarIntegracoes(projeto.integracoes || []);
       this.statusCarregamento.set(`Projeto "${projeto.nomeProjeto}" pronto!`);
 
     } catch (erro) {
@@ -457,6 +472,7 @@ export class AudioEngineService {
 
   // Método dedicado para parar a engine, UI e agendamentos no momento do término
   private encerrarExecucao() {
+    this.hookService.dispararEventosPadrao();
     // 1. Limpa o agendamento atual para evitar loops fantasmas
     this.proximoTrechoImediato.set(null);
     if (this.loopId !== null) {
@@ -626,6 +642,7 @@ export class AudioEngineService {
       this.loopCount.set(0);
       this.proximoTrecho.set(null);
       this.pararRelogioUI();
+      this.hookService.dispararEventosPadrao();
     } else {
       Tone.Transport.stop();
       Tone.Transport.cancel(0); 
