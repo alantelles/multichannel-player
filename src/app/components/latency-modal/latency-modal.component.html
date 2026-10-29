@@ -1,0 +1,58 @@
+<div class="modal-backdrop" (click)="fechar.emit()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <header class="modal-header">
+      <h2>⚙️ Configurações de Latência & Performance</h2>
+      <button class="btn-close" (click)="fechar.emit()">✕</button>
+    </header>
+
+    <div class="modal-body">
+      <section class="section">
+        <h3>Perfil de Resposta do Motor (Lookahead)</h3>
+        <p class="help-text">Escolha o nível de antecipação do motor de áudio de acordo com a potência do seu dispositivo.</p>
+
+        <div class="profiles-grid">
+          @for (p of profiles; track p.key) {
+            <button 
+              class="profile-card" 
+              [class.active]="selectedKey() === p.key"
+              (click)="selecionarPerfil(p.key)">
+              <div class="profile-title">{{ p.label }}</div>
+              <div class="profile-desc">{{ p.description }}</div>
+            </button>
+          }
+        </div>
+      </section>
+
+      @if (selectedKey() === 'custom') {
+        <section class="section custom-slider">
+          <label>Ajuste Fino de Lookahead: <strong>{{ customMs() }} ms</strong></label>
+          <input 
+            type="range" 
+            min="25" 
+            max="1000" 
+            step="5" 
+            [ngModel]="customMs()" 
+            (ngModelChange)="customMs.set($event)" />
+        </section>
+      }
+
+      <section class="section offset-section">
+        <h3>Compensação de Hardware (Offset)</h3>
+        <p class="help-text">Ajuste em milissegundos se o toque/display parecer descalibrado em relação ao som (ex: atraso de Bluetooth/driver).</p>
+        <div class="offset-controls">
+          <input 
+            type="number" 
+            class="input-number"
+            [ngModel]="offsetMs()" 
+            (ngModelChange)="offsetMs.set($event)" />
+          <span>ms</span>
+        </div>
+      </section>
+    </div>
+
+    <footer class="modal-footer">
+      <button class="btn-secondary" (click)="fechar.emit()">Cancelar</button>
+      <button class="btn-primary" (click)="salvarEFechar()">Salvar e Aplicar</button>
+    </footer>
+  </div>
+</div>

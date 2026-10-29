@@ -1,10 +1,11 @@
-import { computed, inject, Injectable, signal } from '@angular/core';
+import { computed, effect, inject, Injectable, signal } from '@angular/core';
 import * as Tone from 'tone';
 import { FileRepositoryService } from './file-repository.service';
 import { Marker } from '../models/marker';
 import { HookHandlerService } from './hooks/hook-handler.service';
 import { Evento } from '../models/evento';
 import { Integracao } from '../models/integracao';
+import { LatencySettingsService } from './latency-settings.service'; // Inporte do novo serviço
 
 export interface ProjectConfig {
   nomeProjeto: string;
@@ -92,6 +93,7 @@ export class AudioEngineService {
   public proximoTrechoImediato = signal<Marker | null>(null);
 
   private hookService: HookHandlerService = inject(HookHandlerService);
+  private latencySettings = inject(LatencySettingsService);
 
   // Helper simples para converter strings do tipo "8m", "8", "0m" em numero inteiro
   private extrairCompassos(valor: string | number | undefined | null): number {
@@ -155,9 +157,28 @@ export class AudioEngineService {
   });
 
   constructor() {
-    this.configurarLatenciaParaPalco();
+    effect(() => {
+      const config = this.latencySettings.activeConfig();
+      this.aplicarConfiguracaoLatencia(config.lookaheadMs, config.offsetMs);
+    });
   }
 
+  private aplicarConfiguracaoLatencia(lookaheadMs: number, offsetMs: number): void {
+    try {
+      // Converte milissegundos para segundos (ex: 150ms -> 0.15s)
+      const lookaheadSegundos = lookaheadMs / 1000;
+      Tone.getContext().lookAhead = lookaheadSegundos;
+
+      // Opcional: Atualiza o offset global do projeto se o usuário definiu um offset de hardware
+      if (offsetMs !== undefined) {
+        // Você pode aplicar ou somar com o offset que vem do projeto JSON
+      }
+      
+      console.log(`[AudioEngine] Latência ajustada para: ${lookaheadMs}ms (${lookaheadSegundos}s)`);
+    } catch (error) {
+      console.error('Erro ao atualizar latência no Tone.js:', error);
+    }
+  }
   async init() {
     if (this.isReady()) return;
 
@@ -199,6 +220,7 @@ export class AudioEngineService {
       const tempoProximoCompassoTransport = this.tempoInicioCicloTransport + tempoProximoCompassoRelativo;
 
       // 3. Agenda a virada pontual na cabeça do compasso
+// 3. Agenda a virada pontual na cabeça do compasso
       this.loopId = Tone.Transport.scheduleOnce((time) => {
         // Limpa estado visual de transição e redefine o trecho e contador
         this.trechoAtivo.set(alvo);
@@ -206,12 +228,10 @@ export class AudioEngineService {
         this.proximoTrechoImediato.set(null);
         this.loopCount.set(0);
 
-        // 🎯 REINICIA O RELÓGIO DO CICLO NO TEMPO EXATO DA VIRADA
-        this.tempoInicioCicloTransport = Tone.Transport.getSecondsAtTime(time);
+        // 🎯 ANCORAGEM NA VIRADA DO PRÓXIMO COMPASSO
+        this.tempoInicioCicloTransport = Tone.Transport.seconds;
 
-        // 🎯 DEVOLVE O CONTROLE IMEDIATO PARA O ARRANJADOR PADRÃO
-        // O executarCicloArranjador vai tocar o áudio e agendar a virada/parada
-        // na data correta do maxPlays já no 1º ciclo!
+        // O executarCicloArranjador vai cuidar do resto
         this.executarCicloArranjador(time);
 
       }, tempoProximoCompassoTransport);
@@ -221,43 +241,50 @@ export class AudioEngineService {
     }
   }
 // 🎯 CHAME ESTE MÉTODO no 'else' do seu togglePlay(), logo após o Tone.Transport.start()
+// No AudioEngineService:
+
   private iniciarRelogioUI() {
     const renderizarFrame = () => {
       if (!this.isPlaying()) return;
 
-      // 1. Calcula os segundos decorridos usando a abordagem 2
+      // 1. Calcula os segundos decorridos no bloco (versão original estável)
       const tempoDecorrido = Tone.Transport.seconds - this.tempoInicioCicloTransport;
       const segundosPuros = Math.max(0, tempoDecorrido);
       this.segundosDecorridosNoBloco.set(segundosPuros);
 
-      // 2. Converte para compassos puros (matemática baseada no BPM e Fórmula de Compasso)
+      // 2. Converte para compassos e batidas usando a matemática exata do projeto
       const bps = this.bpmAtual() / 60; // Batidas por segundo
       const batidasTotais = segundosPuros * bps;
-      const beat = Math.floor(batidasTotais) % (Tone.Transport.timeSignature as number); // Batida dentro do compasso
+      const timeSig = Tone.Transport.timeSignature as number || 4;
+      
+      const beat = Math.floor(batidasTotais) % timeSig; // Batida dentro do compasso
       this.beatAtualNoBloco.set(beat + 1);
 
-      const compassoCalculado = Math.floor(batidasTotais / (Tone.Transport.timeSignature as number));
-      let ajusteTrechoStr = this.loopCount() > 0 ? (this.trechoAtivo()?.loopStart || this.trechoAtivo()?.inicio) : this.trechoAtivo()?.inicio;
+      const compassoCalculado = Math.floor(batidasTotais / timeSig);
+      let ajusteTrechoStr = this.loopCount() > 0 
+        ? (this.trechoAtivo()?.loopStart || this.trechoAtivo()?.inicio) 
+        : this.trechoAtivo()?.inicio;
+
       if (ajusteTrechoStr?.includes('m')) {
-        ajusteTrechoStr = ajusteTrechoStr?.replace('m', ''); // Remove o 'm' para parseInt funcionar
-      } else { // assume contagem completa de compassos, sem 'm'
-        ajusteTrechoStr = ajusteTrechoStr && ajusteTrechoStr[0]; // Pega apenas o primeiro caractere, que é o compasso, despreza sub por enquanto
+        ajusteTrechoStr = ajusteTrechoStr.replace('m', ''); 
+      } else { 
+        ajusteTrechoStr = ajusteTrechoStr && ajusteTrechoStr[0]; 
       }
-      const ajusteTrecho = parseInt((ajusteTrechoStr || '0m').replaceAll('\D*', ''));
-      // Somamos +1 para a contagem ficar humana (Compasso 1, Compasso 2...) em vez de indexada em 0
+      
+      const ajusteTrecho = parseInt((ajusteTrechoStr || '0m').replace(/\D/g, ''), 10);
       this.compassoAtualNoBloco.set(compassoCalculado + ajusteTrecho + 1);
 
       if (this.compassoAtualNoBloco() !== this.compassoCalculado) {
         this.compassoCalculado = this.compassoAtualNoBloco();
-        this.hookService.dispararCorrespondentes(this.compassoCalculado); // +1 para contagem humana
+        this.hookService.dispararCorrespondentes(this.compassoCalculado); 
       }
+
       // Continua o laço no próximo frame da tela
       this.animacaoId = requestAnimationFrame(renderizarFrame);
     };
 
     requestAnimationFrame(renderizarFrame);
   }
-
   // 🎯 CHAME ESTE MÉTODO no 'if (this.isPlaying())' do seu togglePlay() para limpar tudo
   private pararRelogioUI() {
     if (this.animacaoId) {
@@ -409,10 +436,16 @@ export class AudioEngineService {
     const atual = this.trechoAtivo();
     if (!atual) return;
 
+    // 🎯 ANCORAGEM PERFEITA DO CICLO: 
+    // Sincroniza a referência do relógio visual exatamente com a linha do tempo do Tone.Transport no momento do disparo
+    this.tempoInicioCicloTransport = Tone.Transport.seconds;
+
     // 🎯 CORREÇÃO DO MAX PLAYS:
     // Converte maxPlays para número de forma segura (padrão 1 se não definido)
     const max = atual.maxPlays ? parseInt(atual.maxPlays.toString(), 10) : null;
     const ehUltimoLoop = max !== null && this.loopCount() >= (max - 1);
+    
+    // ... (restante do método continua igual)
 
     // Se for o último loop e o usuário NÃO agendou nada manualmente, checa se há automação no JSON
     if (ehUltimoLoop && !this.proximoTrecho() && atual.nextMarker) {
@@ -554,13 +587,12 @@ export class AudioEngineService {
 
     try {
       // 1. CANCELA O AGENDAMENTO FUTURO
-      // Limpa o evento do Tone.Transport para o loop antigo não "acordar" do nada
       if (this.loopId !== undefined) {
         Tone.Transport.clear(this.loopId);
+        this.loopId = null;
       }
 
       // 2. CORTA O SOM ATUAL IMEDIATAMENTE
-      // Damos o stop no tempo absoluto agora (Tone.immediate())
       const agoraHardware = Tone.immediate();
       this.canais().forEach(canal => {
         if (canal.player.loaded) {
@@ -571,10 +603,14 @@ export class AudioEngineService {
       // 3. ATUALIZA OS ESTADOS DO ANGULAR (A INTERFACE)
       this.trechoAtivo.set(alvo);
       this.proximoTrecho.set(null);
+      this.proximoTrechoImediato.set(null);
       this.loopCount.set(0); // Reseta o contador para o novo trecho começar do zero
 
-      // 4. FORÇA O REINÍCIO DO MOTOR DE ÁUDIO NO TEMPO ATUAL
-      // Chamamos o seu método original passando o tempo exato de "agora"
+      // 🎯 4. ANCORAGEM INSTANTÂNEA DO RELÓGIO VISUAL
+      // Garante que o relógio da UI zere o cálculo exato no segundo atual do Transport
+      this.tempoInicioCicloTransport = Tone.Transport.seconds;
+
+      // 5. FORÇA O REINÍCIO DO MOTOR DE ÁUDIO NO TEMPO ATUAL
       this.executarCicloArranjador(agoraHardware);
 
     } catch (error) {

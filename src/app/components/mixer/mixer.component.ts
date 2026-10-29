@@ -8,11 +8,12 @@ import { RouterLink } from "@angular/router";
 import { CommonModule } from '@angular/common';
 import { Marker } from '../../models/marker';
 import { SelecionarProjetoDialogComponent } from '../selecionar-projeto-dialog/selecionar-projeto-dialog.component';
+import { LatencyModalComponent } from '../latency-modal/latency-modal.component';
 
 @Component({
   selector: 'app-mixer',
   standalone: true,
-  imports: [FormsModule, MatDialogModule, RouterLink, CommonModule],
+  imports: [FormsModule, MatDialogModule, RouterLink, CommonModule, LatencyModalComponent],
   templateUrl: './mixer.component.html', // ou mixer.component.html dependendo de como foi gerado
   styleUrl: './mixer.component.scss'     // ou mixer.component.scss
 })
@@ -26,6 +27,15 @@ export class MixerComponent implements OnInit {
   private readonly DOUBLE_CLICK_DELAY = 250; // tempo em ms para aguardar o 2º clique
   visualizacaoSequencia = signal<boolean>(true);
 
+  exibirModalLatencia = signal<boolean>(false);
+
+  abrirConfiguracoes(): void {
+    this.exibirModalLatencia.set(true);
+  }
+
+  fecharConfiguracoes(): void {
+    this.exibirModalLatencia.set(false);
+  }
   isFullSong(): boolean {
     return this.audio.trechoAtivo()?.id === 'full-audio';
   }
