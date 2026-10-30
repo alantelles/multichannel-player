@@ -16,21 +16,45 @@ export class FileRepositoryService {
 
   onlineRepositoryUrl = signal<string>('audios/'); // URL base para repositório online
   http = inject(HttpClient);
-  async saveProject(config: ProjectConfig): Promise<number> {
-    const item: SavedProject = {
-      nomeProjeto: config.nomeProjeto,
-      pastaBase: config.pastaBase,
-      dataModificacao: new Date(),
-      config: config
-    };
+  async saveProject(config: ProjectConfig): Promise<ProjectConfig> {
+    return this.db.transaction('rw', this.db.projects, async () => {
+      const nomeOriginal = config.nomeProjeto?.trim() || 'Sem Nome';
+      const projetos = await this.db.projects.toArray();
+      const nomesExistentes = new Set(projetos.map(projeto => projeto.nomeProjeto.toLocaleLowerCase()));
+      let nomeProjeto = nomeOriginal;
 
-    // Usamos put para salvar ou atualizar se o nomeProjeto já existir
-    const idExistente = await this.db.projects.where('nomeProjeto').equals(config.nomeProjeto).first();
-    if (idExistente && idExistente.id) {
-      item.id = idExistente.id;
-    }
+      if (nomesExistentes.has(nomeOriginal.toLocaleLowerCase())) {
+        const correspondenciaVersao = nomeOriginal.match(/^(.*?)\s+v(\d+)$/i);
+        const nomeBase = correspondenciaVersao?.[1]?.trim() || nomeOriginal;
+        const nomeBaseLower = nomeBase.toLocaleLowerCase();
+        let maiorVersao = 1;
 
-    return await this.db.projects.put(item);
+        for (const nomeExistente of nomesExistentes) {
+          if (nomeExistente === nomeBaseLower) {
+            maiorVersao = Math.max(maiorVersao, 1);
+            continue;
+          }
+
+          const versao = nomeExistente.match(/^(.*?)\s+v(\d+)$/i);
+          if (versao?.[1].trim() === nomeBaseLower) {
+            maiorVersao = Math.max(maiorVersao, Number(versao[2]));
+          }
+        }
+
+        nomeProjeto = `${nomeBase} v${maiorVersao + 1}`;
+      }
+
+      const configSalva: ProjectConfig = { ...config, nomeProjeto };
+      const item: SavedProject = {
+        nomeProjeto,
+        pastaBase: configSalva.pastaBase,
+        dataModificacao: new Date(),
+        config: configSalva,
+      };
+
+      await this.db.projects.add(item);
+      return configSalva;
+    });
   }
 
   async getProjects(filtro: string = ''): Promise<SavedProject[]> {

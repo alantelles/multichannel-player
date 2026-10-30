@@ -21,7 +21,7 @@ describe('CriadorProjetoComponent', () => {
   const fileRepository = {
     getDirectories: vi.fn().mockResolvedValue([]),
     getFiles: vi.fn().mockResolvedValue([]),
-    saveProject: vi.fn().mockResolvedValue(1),
+    saveProject: vi.fn(async (config: unknown) => config),
   };
   const bundleService = { importarEInstalarZip: vi.fn() };
 

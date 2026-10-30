@@ -225,7 +225,8 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
       this.aoMudarPastaBase();
 
       try {
-        await this.fileRepository.saveProject(configImportada);
+        const configSalva = await this.fileRepository.saveProject(configImportada);
+        this.nomeProjeto.set(configSalva.nomeProjeto);
         this.statusImportacao.set('Projeto carregado e salvo no banco local.');
         setTimeout(() => this.statusImportacao.set(''), 3000);
       } catch (error) {
@@ -239,7 +240,8 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
   }
 
   async baixarJsonProjeto() {
-    const configResultado = this.construirProjetoConfig();
+    const configResultado = await this.fileRepository.saveProject(this.construirProjetoConfig());
+    this.nomeProjeto.set(configResultado.nomeProjeto);
 
     // 🎯 Obtém o nome limpo do projeto. Se estiver vazio, usa 'projeto-config'
     const nomeProjetoAtual = this.nomeProjeto()?.trim();
@@ -255,9 +257,6 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
     a.download = `${nomeArquivoDownload}.json`;
     a.click();
     URL.revokeObjectURL(url);
-
-    // 🎯 Salva também no banco IndexedDB local
-    await this.fileRepository.saveProject(configResultado);
   }
 
   async onAudioGuiaSelecionado(event: Event) {
