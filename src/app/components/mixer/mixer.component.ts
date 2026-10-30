@@ -63,7 +63,7 @@ export class MixerComponent implements OnInit {
   abrirModalProjetosSalvos() {
     const dialogRef = this.dialog.open(SelecionarProjetoDialogComponent, {
       width: '90%',
-      maxWidth: '500px'
+      maxWidth: '680px'
     });
 
     dialogRef.afterClosed().subscribe((configProjetoSelected) => {

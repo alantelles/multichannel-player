@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { MatDialogRef, MatDialogModule } from '@angular/material/dialog';
 import { FileRepositoryService } from '../../services/file-repository.service';
 import { SavedProject } from '../../services/db.service';
+import { BundleProjectService } from '../../services/bundle-project.service';
 
 @Component({
   selector: 'app-selecionar-projeto-dialog',
@@ -15,6 +16,7 @@ import { SavedProject } from '../../services/db.service';
 })
 export class SelecionarProjetoDialogComponent implements OnInit {
   private fileRepo = inject(FileRepositoryService);
+  private bundleService = inject(BundleProjectService);
   private dialogRef = inject(MatDialogRef<SelecionarProjetoDialogComponent>);
 
   projetos = signal<SavedProject[]>([]);
@@ -39,6 +41,11 @@ export class SelecionarProjetoDialogComponent implements OnInit {
 
   selecionar(projeto: SavedProject) {
     this.dialogRef.close(projeto.config);
+  }
+
+  async baixarProjeto(projeto: SavedProject) {
+    const nomesArquivos = projeto.config.canais.map(canal => canal.arquivo);
+    await this.bundleService.exportarParaZip(projeto.config, nomesArquivos);
   }
 
   async deletar(projeto: SavedProject) {

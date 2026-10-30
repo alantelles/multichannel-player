@@ -1,44 +1,61 @@
 
     <div class="dialog-container">
-      <h2 mat-dialog-title>📂 Carregar Projeto Salvo</h2>
-      
-      <div mat-dialog-content>
-        <div class="filtro-box">
-          <input 
-            type="text" 
-            class="ordinary-text-input" 
-            placeholder="🔎 Buscar projeto por nome ou pasta..." 
-            [ngModel]="filtro()" 
-            (ngModelChange)="onFiltroChange($event)" />
+      <header class="dialog-header">
+        <div>
+          <span class="eyebrow">BIBLIOTECA LOCAL</span>
+          <h2 mat-dialog-title>Projetos salvos</h2>
         </div>
+        <span class="project-count">{{ projetos().length }} projetos</span>
+      </header>
+
+      <div mat-dialog-content>
+        <label class="filtro-box">
+          <span aria-hidden="true">⌕</span>
+          <input
+            type="search"
+            class="ordinary-text-input"
+            aria-label="Buscar projeto por nome ou pasta"
+            placeholder="Buscar por nome ou pasta..."
+            [ngModel]="filtro()"
+            (ngModelChange)="onFiltroChange($event)" />
+        </label>
 
         <div class="lista-projetos">
           @if (carregando()) {
             <p class="status-msg">Buscando projetos...</p>
           } @else if (projetos().length === 0) {
-            <p class="status-msg">Nenhum projeto encontrado no banco de dados.</p>
+            <p class="status-msg">Nenhum projeto encontrado.</p>
           } @else {
             @for (item of projetos(); track item.id) {
-              <div class="card-projeto">
+              <article class="card-projeto">
                 <div class="info">
                   <strong>{{ item.nomeProjeto }}</strong>
-                  <span class="pasta">📁 {{ item.pastaBase }}</span>
+                  <span class="pasta"><span aria-hidden="true">/</span> {{ item.pastaBase }}</span>
+                </div>
+                <div class="projeto-bpm"
+                  [attr.aria-label]="'Andamento do projeto: ' + item.config.bpm + ' BPM'"
+                  [style.--beat-duration]="(60 / (item.config.bpm || 120)) + 's'">
+                  <span class="led-bpm" aria-hidden="true"></span>
+                  <span>{{ item.config.bpm }} BPM</span>
                 </div>
                 <div class="acoes">
-                  <button class="botao-basico btn-carregar" (click)="selecionar(item)">
-                    ⚡ Carregar
+                  <button type="button" class="btn-download" (click)="baixarProjeto(item)" [attr.aria-label]="'Baixar projeto ' + item.nomeProjeto" title="Baixar projeto completo em ZIP">
+                    <span aria-hidden="true">↓</span> ZIP
                   </button>
-                  <button class="btn-deletar" (click)="deletar(item)" title="Excluir do Banco">
-                    🗑️
+                  <button type="button" class="btn-carregar" (click)="selecionar(item)">
+                    Carregar <span aria-hidden="true">→</span>
+                  </button>
+                  <button type="button" class="btn-deletar" (click)="deletar(item)" [attr.aria-label]="'Excluir ' + item.nomeProjeto" title="Excluir do banco local">
+                    ×
                   </button>
                 </div>
-              </div>
+              </article>
             }
           }
         </div>
       </div>
 
       <div mat-dialog-actions align="end">
-        <button class="botao-basico btn-fechar" (click)="fechar()">Cancelar</button>
+        <button type="button" class="btn-fechar" (click)="fechar()">Cancelar</button>
       </div>
     </div>
