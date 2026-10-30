@@ -161,67 +161,76 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
     const arquivoJson = input.files[0];
     const reader = new FileReader();
 
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
+      let config: ProjectConfig;
       try {
-        const config: ProjectConfig = JSON.parse(e.target?.result as string);
-
-        // 🎯 PRIORIDADE: Se o JSON não trouxer nomeProjeto, usa o nome do arquivo sem extensão, NUNCA a pastaBase
-        const nomeSemExtensao = arquivoJson.name
-          .replace(/\.json(\s*\(\d+\))?$/i, '')
-          .trim();
-
-        const nomeFinal = config.nomeProjeto && config.nomeProjeto.trim() !== '' 
-          ? config.nomeProjeto 
-          : nomeSemExtensao;
-
-        // 🎯 Atualiza TODOS os Signals de estado para o formulário carregar na tela
-        this.nomeProjeto.set(nomeFinal);
-        this.pastaBase.set(config.pastaBase || '');
-        this.bpm.set(config.bpm || 120);
-        this.timeSignature.set(config.timeSignature || 4);
-        this.offset.set((config.offset || 0) * 1000); // ms
-        this.fullSong.set(!!config.fullSong);
-
-        if (config.canais && Array.isArray(config.canais)) {
-          this.canais.set(config.canais.map(c => ({
-            id: c.id,
-            nome: c.nome,
-            arquivo: c.arquivo || '',
-            muted: c.muted ?? false,
-            volume: c.volume ?? 0
-          })));
-        } else {
-          this.canais.set([]);
-        }
-
-        if (config.markers && Array.isArray(config.markers)) {
-          const trechosMapeados: InterfaceFormTrecho[] = config.markers.map(m => {
-            const compassoInicio = parseInt(m.inicio ? m.inicio.split('m')[0] : '0', 10) || 0;
-            const compassosDuracao = parseInt(m.duracao ? m.duracao.split('m')[0] : '4', 10) || 4;
-            return {
-              nome: m.nome,
-              compassoInicio: compassoInicio,
-              compassosDuracao: compassosDuracao,
-              referencia: m.referencia || '',
-              maxPlays: m.maxPlays || 0,
-              nextMarker: m.nextMarker || '',
-              modoDisparo: m.modoDisparo || 'bloco',
-            };
-          });
-          this.trechosForm.set(trechosMapeados);
-        } else {
-          this.trechosForm.set([]);
-        }
-
-        // Força a atualização da lista de arquivos da pasta base importada
-        this.aoMudarPastaBase();
-
-        this.statusImportacao.set('Projeto carregado com sucesso!');
-        setTimeout(() => this.statusImportacao.set(''), 3000);
-
+        config = JSON.parse(e.target?.result as string) as ProjectConfig;
       } catch (err) {
         console.error('Erro ao processar o arquivo JSON de projeto:', err);
         alert('Formato de JSON inválido para ProjectConfig.');
+        return;
+      }
+
+      // Prioriza o nome do JSON e usa o nome do arquivo quando ele estiver ausente.
+      const nomeSemExtensao = arquivoJson.name
+        .replace(/\.json(\s*\(\d+\))?$/i, '')
+        .trim();
+
+      const nomeFinal = config.nomeProjeto && config.nomeProjeto.trim() !== ''
+        ? config.nomeProjeto
+        : nomeSemExtensao;
+      const canaisImportados = Array.isArray(config.canais)
+        ? config.canais.map(canal => ({
+          id: canal.id,
+          nome: canal.nome,
+          arquivo: canal.arquivo || '',
+          muted: canal.muted ?? false,
+          volume: canal.volume ?? 0,
+        }))
+        : [];
+      const configImportada: ProjectConfig = {
+        ...config,
+        nomeProjeto: nomeFinal,
+        pastaBase: config.pastaBase || '',
+        bpm: config.bpm || 120,
+        timeSignature: config.timeSignature || 4,
+        offset: config.offset || 0,
+        fullSong: !!config.fullSong,
+        canais: canaisImportados,
+      };
+
+      this.nomeProjeto.set(nomeFinal);
+      this.pastaBase.set(configImportada.pastaBase);
+      this.bpm.set(configImportada.bpm);
+      this.timeSignature.set(configImportada.timeSignature);
+      this.offset.set((configImportada.offset || 0) * 1000);
+      this.fullSong.set(!!configImportada.fullSong);
+      this.canais.set(canaisImportados);
+
+      if (configImportada.markers) {
+        const trechosMapeados: InterfaceFormTrecho[] = configImportada.markers.map(marker => ({
+          nome: marker.nome,
+          compassoInicio: parseInt(marker.inicio ? marker.inicio.split('m')[0] : '0', 10) || 0,
+          compassosDuracao: parseInt(marker.duracao ? marker.duracao.split('m')[0] : '4', 10) || 4,
+          referencia: marker.referencia || '',
+          maxPlays: marker.maxPlays || 0,
+          nextMarker: marker.nextMarker || '',
+          modoDisparo: marker.modoDisparo || 'bloco',
+        }));
+        this.trechosForm.set(trechosMapeados);
+      } else {
+        this.trechosForm.set([]);
+      }
+
+      this.aoMudarPastaBase();
+
+      try {
+        await this.fileRepository.saveProject(configImportada);
+        this.statusImportacao.set('Projeto carregado e salvo no banco local.');
+        setTimeout(() => this.statusImportacao.set(''), 3000);
+      } catch (error) {
+        console.error('Erro ao salvar o projeto importado:', error);
+        this.statusImportacao.set('Projeto carregado, mas não foi possível salvar no banco local.');
       }
     };
 
