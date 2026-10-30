@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { LatencyModalComponent } from './latency-modal.component';
 
-import { LatencyModalComponent } from './latency-modal/latency-modal.component';
+
 
 describe('LatencyModalComponent', () => {
   let component: LatencyModalComponent;

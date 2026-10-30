@@ -42,19 +42,17 @@ export interface CanalAudio extends CanalAudioConfig {
 }
 
 const processarMarkers = (markers: Marker[]): Marker[] => {
-  const processados: Marker[] = [];
-  markers.forEach(marker => {
+  const markersPorId = new Map(markers.map(marker => [marker.id, marker]));
+  return markers.map(marker => {
     if (marker.referencia) {
-      const referencia = markers.find(m => m.id === marker.referencia);
+      const referencia = markersPorId.get(marker.referencia);
       if (!referencia) {
         throw new Error(`Referencia ${marker.referencia} não encontrada. Revise o projeto`);
       }
-      processados.push({...referencia, id: marker.id, nome: marker.nome, nextMarker: marker.nextMarker});
-    } else {
-      processados.push({...marker});
+      return {...referencia, id: marker.id, nome: marker.nome, nextMarker: marker.nextMarker};
     }
+    return {...marker};
   });
-  return processados;
 }
 
 @Injectable({
@@ -250,7 +248,6 @@ export class AudioEngineService {
       // 1. Calcula os segundos decorridos no bloco (versão original estável)
       const tempoDecorrido = Tone.Transport.seconds - this.tempoInicioCicloTransport;
       const segundosPuros = Math.max(0, tempoDecorrido);
-      this.segundosDecorridosNoBloco.set(segundosPuros);
 
       // 2. Converte para compassos e batidas usando a matemática exata do projeto
       const bps = this.bpmAtual() / 60; // Batidas por segundo
@@ -258,7 +255,11 @@ export class AudioEngineService {
       const timeSig = Tone.Transport.timeSignature as number || 4;
       
       const beat = Math.floor(batidasTotais) % timeSig; // Batida dentro do compasso
-      this.beatAtualNoBloco.set(beat + 1);
+      const beatAtual = beat + 1;
+      if (this.beatAtualNoBloco() !== beatAtual) {
+        this.beatAtualNoBloco.set(beatAtual);
+        this.segundosDecorridosNoBloco.set(segundosPuros);
+      }
 
       const compassoCalculado = Math.floor(batidasTotais / timeSig);
       let ajusteTrechoStr = this.loopCount() > 0 
@@ -323,9 +324,8 @@ export class AudioEngineService {
       Tone.Transport.timeSignature = this.timeSignature();
 
       // Montagem da mesa de som multicanal
-      const novosCanais: CanalAudio[] = [];
       let canaisCarregados = 0;
-      for (const canal of projeto.canais) {
+      const novosCanais = await Promise.all(projeto.canais.map(async canal => {
         const retrievalResult = await this.fileRepository.getFileUrl(projeto.pastaBase, canal.arquivo);
         const urlCompleta = retrievalResult.url;
         // 1. Cria os nós de áudio para este canal
@@ -336,7 +336,7 @@ export class AudioEngineService {
         volumeNode.volume.rampTo(canal.volume || 0, 0.05);
         player.chain(volumeNode, channelNode, Tone.Destination);
         
-        novosCanais.push({
+        const novoCanal: CanalAudio = {
           ...canal,
           player: player,
           volumeNode: volumeNode,
@@ -345,10 +345,11 @@ export class AudioEngineService {
           isMuted: signal(canal.muted),        // Desmutado por padrão
           isSoloed: signal(false),
           saidaAtiva: signal('Master')   // Roteamento padrão
-        });
+        };
         ++canaisCarregados;
         this.statusCarregamento.set(`Carregando pistas: ${canaisCarregados} / ${projeto.canais.length}`);
-      };
+        return novoCanal;
+      }));
 
       this.canais.set(novosCanais);
 
@@ -571,10 +572,7 @@ export class AudioEngineService {
     
     // Desconecta das saídas atuais para não duplicar o som
     canal.channelNode.disconnect();
-    
-    // Cria um nó de split/routing para mandar para o canal específico da sua interface de som
-    const panner = new Tone.Panner3D(); // Ou use Tone.Channel e mude o destino de hardware
-    
+
     // Nota técnica: Para roteamento multicanais avançados (Ex: placas com 8 saídas),
     // o Tone.js se conecta ao nó nativo da Web Audio API (AudioDestinationNode).
     // Se sua interface tiver múltiplos canais, você faz assim:
