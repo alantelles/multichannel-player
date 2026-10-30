@@ -10,17 +10,23 @@ export interface FileRetrievalResult {
   fromCache: boolean;
 }
 
+export interface ProjectSaveResult {
+  id: number;
+  config: ProjectConfig;
+}
+
 @Injectable({providedIn: 'root'})
 export class FileRepositoryService {
   private db = inject(DbService);
 
   onlineRepositoryUrl = signal<string>('audios/'); // URL base para repositório online
   http = inject(HttpClient);
-  async saveProject(config: ProjectConfig): Promise<ProjectConfig> {
+  async saveProject(config: ProjectConfig, projectId?: number): Promise<ProjectSaveResult> {
     return this.db.transaction('rw', this.db.projects, async () => {
       const nomeOriginal = config.nomeProjeto?.trim() || 'Sem Nome';
       const projetos = await this.db.projects.toArray();
-      const nomesExistentes = new Set(projetos.map(projeto => projeto.nomeProjeto.toLocaleLowerCase()));
+      const projetosConsiderados = projetos.filter(projeto => projectId === undefined || projeto.id !== projectId);
+      const nomesExistentes = new Set(projetosConsiderados.map(projeto => projeto.nomeProjeto.toLocaleLowerCase()));
       let nomeProjeto = nomeOriginal;
 
       if (nomesExistentes.has(nomeOriginal.toLocaleLowerCase())) {
@@ -46,14 +52,17 @@ export class FileRepositoryService {
 
       const configSalva: ProjectConfig = { ...config, nomeProjeto };
       const item: SavedProject = {
+        ...(projectId ? { id: projectId } : {}),
         nomeProjeto,
         pastaBase: configSalva.pastaBase,
         dataModificacao: new Date(),
         config: configSalva,
       };
 
-      await this.db.projects.add(item);
-      return configSalva;
+      const id = projectId
+        ? await this.db.projects.put(item)
+        : await this.db.projects.add(item);
+      return { id, config: configSalva };
     });
   }
 

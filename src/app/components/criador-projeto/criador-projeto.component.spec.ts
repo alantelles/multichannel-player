@@ -21,7 +21,7 @@ describe('CriadorProjetoComponent', () => {
   const fileRepository = {
     getDirectories: vi.fn().mockResolvedValue([]),
     getFiles: vi.fn().mockResolvedValue([]),
-    saveProject: vi.fn(async (config: unknown) => config),
+    saveProject: vi.fn(async (config: { nomeProjeto: string }) => ({ id: 1, config })),
   };
   const bundleService = { importarEInstalarZip: vi.fn() };
 
@@ -43,6 +43,8 @@ describe('CriadorProjetoComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Salvar Projeto');
   });
 
   it('saves an imported JSON project locally without downloading it', async () => {
@@ -74,6 +76,19 @@ describe('CriadorProjetoComponent', () => {
       pastaBase: 'ensaio',
     }));
     expect(component.statusImportacao()).toBe('Projeto carregado e salvo no banco local.');
+    expect(downloadSpy).not.toHaveBeenCalled();
+  });
+
+  it('saves the current project without starting a download', async () => {
+    const downloadSpy = vi.spyOn(component, 'baixarJsonProjeto');
+
+    await component.salvarProjeto();
+
+    expect(fileRepository.saveProject).toHaveBeenCalledWith(expect.objectContaining({
+      nomeProjeto: 'Sem Nome',
+      bpm: 120,
+    }), undefined);
+    expect(component.statusImportacao()).toBe('Projeto salvo no banco local.');
     expect(downloadSpy).not.toHaveBeenCalled();
   });
 

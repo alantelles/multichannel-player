@@ -2,7 +2,10 @@
   <header class="header-acoes">
     <button routerLink="/" class="btn-voltar">← Mixer</button>
     <h2>Criar/Editar Projeto</h2>
-    
+
+    <button type="button" class="btn-projetos-salvos" (click)="abrirSeletorProjetos()">
+      Projetos salvos
+    </button>
     <div class="import-container">
       <label for="input-json-import" class="btn-importar-label">📂 Carregar projeto</label>
       <!-- 🎯 ATUALIZADO: Aceita .zip, .json, application/octet-stream e variações de ZIP -->
@@ -211,12 +214,17 @@
 </div>
 
       <footer class="rodape-exportar" *ngIf="trechosForm().length > 0 || canais().length > 0">
-        <button (click)="baixarJsonProjeto()" class="btn-exportar">
-          💾 Baixar Arquivo JSON Configuração
+        <button (click)="salvarProjeto()" class="btn-exportar">
+          💾 Salvar Projeto
         </button>
-        <button (click)="exportarProjetoCompleto()" class="btn-exportar">
-          📦 Exportar Projeto Completo (JSON + Áudios)
-        </button>
+        @if (trechosForm().length > 0 || canais().length > 0) {
+          <button (click)="baixarJsonProjeto()" class="btn-exportar">
+            💾 Baixar Arquivo JSON Configuração
+          </button>
+          <button (click)="exportarProjetoCompleto()" class="btn-exportar">
+            📦 Exportar Projeto Completo (JSON + Áudios)
+          </button>
+        }
       </footer>
     </section>
   </div>

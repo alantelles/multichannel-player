@@ -39,15 +39,22 @@
                   <span>{{ item.config.bpm }} BPM</span>
                 </div>
                 <div class="acoes">
-                  <button type="button" class="btn-download" (click)="baixarProjeto(item)" [attr.aria-label]="'Baixar projeto ' + item.nomeProjeto" title="Baixar projeto completo em ZIP">
-                    <span aria-hidden="true">↓</span> ZIP
-                  </button>
+                  @if (origem === 'criador') {
+                    <button type="button" class="btn-download" (click)="baixarProjeto(item)" [attr.aria-label]="'Baixar projeto ' + item.nomeProjeto" title="Baixar projeto completo em ZIP">
+                      <span aria-hidden="true">↓</span> ZIP
+                    </button>
+                    <button type="button" class="btn-editar" (click)="editar(item)">
+                      Editar
+                    </button>
+                  }
                   <button type="button" class="btn-carregar" (click)="selecionar(item)">
                     Carregar <span aria-hidden="true">→</span>
                   </button>
-                  <button type="button" class="btn-deletar" (click)="deletar(item)" [attr.aria-label]="'Excluir ' + item.nomeProjeto" title="Excluir do banco local">
-                    ×
-                  </button>
+                  @if (origem === 'criador') {
+                    <button type="button" class="btn-deletar" (click)="deletar(item)" [attr.aria-label]="'Excluir ' + item.nomeProjeto" title="Excluir do banco local">
+                      ×
+                    </button>
+                  }
                 </div>
               </article>
             }

@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { vi } from 'vitest';
 import { FileRepositoryService } from '../../services/file-repository.service';
 import { BundleProjectService } from '../../services/bundle-project.service';
@@ -21,6 +21,7 @@ describe('SelecionarProjetoDialogComponent', () => {
         { provide: FileRepositoryService, useValue: fileRepo },
         { provide: BundleProjectService, useValue: bundleService },
         { provide: MatDialogRef, useValue: dialogRef },
+        { provide: MAT_DIALOG_DATA, useValue: { origem: 'mixer' } },
       ],
     }).compileComponents();
 
@@ -50,5 +51,36 @@ describe('SelecionarProjetoDialogComponent', () => {
     await component.baixarProjeto(projeto);
 
     expect(bundleService.exportarParaZip).toHaveBeenCalledWith(projeto.config, ['click.wav']);
+  });
+
+  it('offers only live loading when opened from the mixer', async () => {
+    const project = {
+      id: 1,
+      nomeProjeto: 'Ensaio',
+      pastaBase: 'ensaio',
+      config: { nomeProjeto: 'Ensaio', bpm: 100, canais: [] },
+    } as any;
+    fileRepo.getProjects.mockResolvedValue([project]);
+    await component.carregarLista();
+    fixture.detectChanges();
+
+    expect(component.origem).toBe('mixer');
+    expect(fixture.nativeElement.querySelector('.btn-editar')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.btn-download')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.btn-deletar')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.btn-carregar')).not.toBeNull();
+  });
+
+  it('returns an explicit load action', () => {
+    const project = {
+      id: 2,
+      nomeProjeto: 'Ao vivo',
+      pastaBase: 'ao-vivo',
+      config: { nomeProjeto: 'Ao vivo', bpm: 100 },
+    } as any;
+
+    component.selecionar(project);
+
+    expect(dialogRef.close).toHaveBeenCalledWith({ acao: 'carregar', config: project.config });
   });
 });

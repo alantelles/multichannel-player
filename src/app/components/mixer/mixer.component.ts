@@ -7,8 +7,12 @@ import { FileRepositoryService } from '../../services/file-repository.service';
 import { RouterLink } from "@angular/router";
 import { CommonModule } from '@angular/common';
 import { Marker } from '../../models/marker';
-import { SelecionarProjetoDialogComponent } from '../selecionar-projeto-dialog/selecionar-projeto-dialog.component';
+import {
+  SelecionarProjetoDialogComponent,
+  SelecionarProjetoDialogResult,
+} from '../selecionar-projeto-dialog/selecionar-projeto-dialog.component';
 import { LatencyModalComponent } from '../latency-modal/latency-modal.component';
+import { ProjectNavigationService } from '../../services/project-navigation.service';
 
 @Component({
   selector: 'app-mixer',
@@ -21,6 +25,7 @@ export class MixerComponent implements OnInit {
   // Injeta o serviço corrigido usando a sintaxe moderna inject()
   protected audio = inject(AudioEngineService);
   private dialog = inject(MatDialog);
+  private projectNavigation = inject(ProjectNavigationService);
   fileRepository = inject(FileRepositoryService);
   // Timer para controlar o atraso do clique simples
   private clickTimer: any = null;
@@ -63,13 +68,13 @@ export class MixerComponent implements OnInit {
   abrirModalProjetosSalvos() {
     const dialogRef = this.dialog.open(SelecionarProjetoDialogComponent, {
       width: '90%',
-      maxWidth: '680px'
+      maxWidth: '680px',
+      data: { origem: 'mixer' }
     });
 
-    dialogRef.afterClosed().subscribe((configProjetoSelected) => {
-      if (configProjetoSelected) {
-        // Converte o objeto de volta para string JSON e envia para a Engine de Áudio
-        const jsonString = JSON.stringify(configProjetoSelected);
+    dialogRef.afterClosed().subscribe((resultado: SelecionarProjetoDialogResult | undefined) => {
+      if (resultado?.acao === 'carregar') {
+        const jsonString = JSON.stringify(resultado.config);
         this.audio.carregarProjetoPorJSON(jsonString);
       }
     });
@@ -109,6 +114,10 @@ export class MixerComponent implements OnInit {
     this.fileRepository.onlineRepositoryUrl.set(savedAudioRepository || 'audios/');
     const estadoVisualizacao = localStorage.getItem('visualizacaoSequencia');
     this.visualizacaoSequencia.set(estadoVisualizacao === 'true');
+    const projetoPendente = this.projectNavigation.consumePendingProject();
+    if (projetoPendente) {
+      void this.audio.carregarProjetoPorJSON(JSON.stringify(projetoPendente));
+    }
   }
   toggleVisualizacaoSequencia() {
     const novoEstado = !this.visualizacaoSequencia();

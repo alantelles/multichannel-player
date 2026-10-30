@@ -146,6 +146,7 @@
   }
 
   .btn-download,
+  .btn-editar,
   .btn-carregar,
   .btn-deletar,
   .btn-fechar {
@@ -168,6 +169,13 @@
     color: var(--ink);
     background: #35433d;
     border-color: #4b5b52;
+  }
+
+  .btn-editar {
+    padding: 0 10px;
+    color: #e8eee8;
+    background: #394740;
+    border-color: #506057;
   }
 
   .btn-carregar {

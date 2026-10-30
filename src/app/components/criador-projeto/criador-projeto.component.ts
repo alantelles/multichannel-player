@@ -1,12 +1,18 @@
 import { Component, signal, effect, computed, OnDestroy, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import * as Tone from 'tone';
 import { FileRepositoryService } from '../../services/file-repository.service';
 import { BundleProjectService } from '../../services/bundle-project.service';
 import { Marker } from '../../models/marker';
+import { ProjectNavigationService } from '../../services/project-navigation.service';
+import {
+  SelecionarProjetoDialogComponent,
+  SelecionarProjetoDialogResult,
+} from '../selecionar-projeto-dialog/selecionar-projeto-dialog.component';
 
 export interface CanalAudio {
   id: string;
@@ -42,14 +48,18 @@ const computarId = (nome: string) => nome.toLowerCase().replace(/\s+/g, '-').rep
 @Component({
   selector: 'app-criador-projeto',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, DragDropModule],
+  imports: [CommonModule, FormsModule, RouterLink, DragDropModule, MatDialogModule],
   templateUrl: './criador-projeto.component.html',
   styleUrls: ['./criador-projeto.component.scss']
 })
 export class CriadorProjetoComponent implements OnInit, OnDestroy {
   private fileRepository = inject(FileRepositoryService);
+  private dialog = inject(MatDialog);
+  private router = inject(Router);
+  private projectNavigation = inject(ProjectNavigationService);
   bundleService = inject(BundleProjectService);
   statusImportacao = signal<string>('');
+  private projetoEmEdicaoId: number | null = null;
   // Dados Gerais do Projeto
   nomeProjeto = signal<string>('');
   pastaBase = signal<string>('');
@@ -122,6 +132,60 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
       moveItemInArray(novaLista, event.previousIndex, event.currentIndex);
       return novaLista;
     });
+  }
+
+  abrirSeletorProjetos() {
+    const dialogRef = this.dialog.open(SelecionarProjetoDialogComponent, {
+      width: '90%',
+      maxWidth: '680px',
+      data: { origem: 'criador' },
+    });
+
+    dialogRef.afterClosed().subscribe((resultado: SelecionarProjetoDialogResult | undefined) => {
+      if (!resultado) return;
+
+      if (resultado.acao === 'editar') {
+        this.preencherFormulario(resultado.projeto.config, resultado.projeto.id ?? null);
+        this.statusImportacao.set(`Editando ${resultado.projeto.nomeProjeto}`);
+        return;
+      }
+
+      this.projectNavigation.queueProject(resultado.config);
+      void this.router.navigateByUrl('/');
+    });
+  }
+
+  private preencherFormulario(config: ProjectConfig, projetoId: number | null = null) {
+    this.projetoEmEdicaoId = projetoId;
+    this.nomeProjeto.set(config.nomeProjeto || '');
+    this.pastaBase.set(config.pastaBase || '');
+    this.bpm.set(config.bpm || 120);
+    this.timeSignature.set(config.timeSignature || 4);
+    this.offset.set((config.offset || 0) * 1000);
+    this.fullSong.set(!!config.fullSong);
+
+    const canaisImportados = Array.isArray(config.canais)
+      ? config.canais.map(canal => ({
+        id: canal.id,
+        nome: canal.nome,
+        arquivo: canal.arquivo || '',
+        muted: canal.muted ?? false,
+        volume: canal.volume ?? 0,
+      }))
+      : [];
+    this.canais.set(canaisImportados);
+
+    const trechosMapeados: InterfaceFormTrecho[] = (config.markers || []).map(marker => ({
+      nome: marker.nome,
+      compassoInicio: parseInt(marker.inicio ? marker.inicio.split('m')[0] : '0', 10) || 0,
+      compassosDuracao: parseInt(marker.duracao ? marker.duracao.split('m')[0] : '4', 10) || 4,
+      referencia: marker.referencia || '',
+      maxPlays: marker.maxPlays || 0,
+      nextMarker: marker.nextMarker || '',
+      modoDisparo: marker.modoDisparo || 'bloco',
+    }));
+    this.trechosForm.set(trechosMapeados);
+    void this.aoMudarPastaBase();
   }
   // Força atualização manual se o usuário selecionar a pasta pela lista suspensa do topo
   async aoMudarPastaBase() {
@@ -225,8 +289,9 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
       this.aoMudarPastaBase();
 
       try {
-        const configSalva = await this.fileRepository.saveProject(configImportada);
-        this.nomeProjeto.set(configSalva.nomeProjeto);
+        const resultado = await this.fileRepository.saveProject(configImportada);
+        this.projetoEmEdicaoId = resultado.id;
+        this.nomeProjeto.set(resultado.config.nomeProjeto);
         this.statusImportacao.set('Projeto carregado e salvo no banco local.');
         setTimeout(() => this.statusImportacao.set(''), 3000);
       } catch (error) {
@@ -240,7 +305,9 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
   }
 
   async baixarJsonProjeto() {
-    const configResultado = await this.fileRepository.saveProject(this.construirProjetoConfig());
+    const resultado = await this.fileRepository.saveProject(this.construirProjetoConfig(), this.projetoEmEdicaoId ?? undefined);
+    this.projetoEmEdicaoId = resultado.id;
+    const configResultado = resultado.config;
     this.nomeProjeto.set(configResultado.nomeProjeto);
 
     // 🎯 Obtém o nome limpo do projeto. Se estiver vazio, usa 'projeto-config'
@@ -257,6 +324,22 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
     a.download = `${nomeArquivoDownload}.json`;
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  async salvarProjeto() {
+    try {
+      const resultado = await this.fileRepository.saveProject(
+        this.construirProjetoConfig(),
+        this.projetoEmEdicaoId ?? undefined,
+      );
+      this.projetoEmEdicaoId = resultado.id;
+      this.nomeProjeto.set(resultado.config.nomeProjeto);
+      this.statusImportacao.set('Projeto salvo no banco local.');
+      setTimeout(() => this.statusImportacao.set(''), 3000);
+    } catch (error) {
+      console.error('Erro ao salvar o projeto:', error);
+      this.statusImportacao.set('Não foi possível salvar o projeto no banco local.');
+    }
   }
 
   async onAudioGuiaSelecionado(event: Event) {
