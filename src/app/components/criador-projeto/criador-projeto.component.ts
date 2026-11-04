@@ -95,22 +95,6 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
       Tone.Transport.timeSignature = this.timeSignature();
     });
 
-    effect(async () => {
-      const pasta = this.pastaBase();
-      if (pasta && pasta.trim() !== '') {
-        try {
-          const files = await this.fileRepository.getFiles(pasta);
-          // Mapeia extraindo apenas a propriedade string do nome do arquivo
-          this.arquivosDaPastaAtiva.set(files.map(f => f.name || (f as any).arquivo || ''));
-        } catch (error) {
-          console.error('Erro ao ler arquivos da pasta base:', error);
-          this.arquivosDaPastaAtiva.set([]);
-        }
-      } else {
-        this.arquivosDaPastaAtiva.set([]);
-      }
-    });
-
     Tone.Transport.scheduleRepeat(() => {
       this.posicaoAtual.set(Tone.Transport.position.toString());
     }, '16n');
@@ -462,9 +446,10 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
     ]);
   }
 
-  listarTrechos(): {id: string, nome: string}[] {
+  listarTrechos(): { id: string; nome: string }[] {
     return this.trechosForm().map(t => ({
-      nome: t.nome, id: computarId(t.nome)
+      nome: t.nome,
+      id: computarId(t.nome),
     }));
   }
 

@@ -142,10 +142,12 @@
   .acoes {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 6px;
   }
 
   .btn-download,
+  .btn-duplicar,
   .btn-editar,
   .btn-carregar,
   .btn-deletar,

@@ -106,4 +106,30 @@ describe('FileRepositoryService', () => {
     expect(savedProjects).toHaveLength(1);
     expect(projectTable.put).toHaveBeenCalled();
   });
+
+  it('duplicates project settings and keeps the original audio folder', async () => {
+    const original: SavedProject = {
+      id: 1,
+      nomeProjeto: 'Ensaio',
+      pastaBase: 'ensaio',
+      config: {
+        nomeProjeto: 'Ensaio',
+        pastaBase: 'ensaio',
+        bpm: 96,
+        timeSignature: 4,
+        canais: [{ id: 'click', nome: 'Click', arquivo: 'click.wav' }],
+      },
+    };
+    savedProjects.push(original);
+
+    const copy = await service.duplicateProject(original);
+
+    expect(copy).toMatchObject({
+      nomeProjeto: 'Ensaio cópia',
+      pastaBase: 'ensaio',
+      config: { bpm: 96, pastaBase: 'ensaio' },
+    });
+    expect(savedProjects[1].config.canais).toEqual(original.config.canais);
+    expect(savedProjects).toHaveLength(2);
+  });
 });

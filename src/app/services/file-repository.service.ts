@@ -80,6 +80,21 @@ export class FileRepositoryService {
       .toArray();
   }
 
+  async duplicateProject(project: SavedProject): Promise<SavedProject> {
+    const saved = await this.saveProject({
+      ...project.config,
+      nomeProjeto: `${project.nomeProjeto} cópia`,
+    });
+
+    return {
+      id: saved.id,
+      nomeProjeto: saved.config.nomeProjeto,
+      pastaBase: saved.config.pastaBase,
+      dataModificacao: new Date(),
+      config: saved.config,
+    };
+  }
+
 async deleteProject(id: number): Promise<void> {
   await this.db.projects.delete(id);
 }

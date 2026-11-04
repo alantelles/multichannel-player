@@ -195,9 +195,11 @@
         </div>
         <div>
           <label>Referência</label>
-          <select [selectedIndex]="trecho.referencia ? listarTrechos().findIndex((r) => r.id === trecho.referencia) : -1" [(ngModel)]="trecho.referencia">
+          <select [(ngModel)]="trecho.referencia">
             <option value="">-- Nenhuma --</option>
-            <option *ngFor="let ref of listarTrechos()" [value]="ref.id">{{ ref.nome }}</option>
+            @for (ref of listarTrechos(); track $index) {
+              <option [value]="ref.id">{{ ref.nome }}</option>
+            }
           </select>
         </div>
         <div>

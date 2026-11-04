@@ -21,6 +21,9 @@
         </label>
 
         <div class="lista-projetos">
+          @if (statusAcao()) {
+            <p class="status-msg" role="alert">{{ statusAcao() }}</p>
+          }
           @if (carregando()) {
             <p class="status-msg">Buscando projetos...</p>
           } @else if (projetos().length === 0) {
@@ -42,6 +45,9 @@
                   @if (origem === 'criador') {
                     <button type="button" class="btn-download" (click)="baixarProjeto(item)" [attr.aria-label]="'Baixar projeto ' + item.nomeProjeto" title="Baixar projeto completo em ZIP">
                       <span aria-hidden="true">↓</span> ZIP
+                    </button>
+                    <button type="button" class="btn-editar btn-duplicar" (click)="duplicar(item)" [attr.aria-label]="'Duplicar ' + item.nomeProjeto">
+                      Duplicar
                     </button>
                     <button type="button" class="btn-editar" (click)="editar(item)">
                       Editar

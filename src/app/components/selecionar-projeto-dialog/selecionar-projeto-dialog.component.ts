@@ -32,6 +32,7 @@ export class SelecionarProjetoDialogComponent implements OnInit {
   projetos = signal<SavedProject[]>([]);
   filtro = signal<string>('');
   carregando = signal<boolean>(true);
+  statusAcao = signal<string>('');
 
   async ngOnInit() {
     await this.carregarLista();
@@ -55,6 +56,16 @@ export class SelecionarProjetoDialogComponent implements OnInit {
 
   editar(projeto: SavedProject) {
     this.dialogRef.close({ acao: 'editar', projeto } satisfies SelecionarProjetoDialogResult);
+  }
+
+  async duplicar(projeto: SavedProject) {
+    try {
+      const copia = await this.fileRepo.duplicateProject(projeto);
+      this.dialogRef.close({ acao: 'editar', projeto: copia } satisfies SelecionarProjetoDialogResult);
+    } catch (error) {
+      console.error('Erro ao duplicar o projeto:', error);
+      this.statusAcao.set('Não foi possível duplicar o projeto. Verifique se os áudios estão disponíveis.');
+    }
   }
 
   async baixarProjeto(projeto: SavedProject) {

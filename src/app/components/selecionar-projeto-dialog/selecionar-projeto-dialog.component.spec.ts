@@ -9,19 +9,25 @@ import { SelecionarProjetoDialogComponent } from './selecionar-projeto-dialog.co
 describe('SelecionarProjetoDialogComponent', () => {
   let component: SelecionarProjetoDialogComponent;
   let fixture: ComponentFixture<SelecionarProjetoDialogComponent>;
-  const fileRepo = { getProjects: vi.fn().mockResolvedValue([]), deleteProject: vi.fn() };
+  const fileRepo = {
+    getProjects: vi.fn().mockResolvedValue([]),
+    duplicateProject: vi.fn(),
+    deleteProject: vi.fn(),
+  };
   const bundleService = { exportarParaZip: vi.fn().mockResolvedValue(undefined) };
   const dialogRef = { close: vi.fn() };
+  const dialogData: { origem: 'mixer' | 'criador' } = { origem: 'mixer' };
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    dialogData.origem = 'mixer';
     await TestBed.configureTestingModule({
       imports: [SelecionarProjetoDialogComponent],
       providers: [
         { provide: FileRepositoryService, useValue: fileRepo },
         { provide: BundleProjectService, useValue: bundleService },
         { provide: MatDialogRef, useValue: dialogRef },
-        { provide: MAT_DIALOG_DATA, useValue: { origem: 'mixer' } },
+        { provide: MAT_DIALOG_DATA, useValue: dialogData },
       ],
     }).compileComponents();
 
@@ -67,6 +73,7 @@ describe('SelecionarProjetoDialogComponent', () => {
     expect(component.origem).toBe('mixer');
     expect(fixture.nativeElement.querySelector('.btn-editar')).toBeNull();
     expect(fixture.nativeElement.querySelector('.btn-download')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.btn-duplicar')).toBeNull();
     expect(fixture.nativeElement.querySelector('.btn-deletar')).toBeNull();
     expect(fixture.nativeElement.querySelector('.btn-carregar')).not.toBeNull();
   });
@@ -82,5 +89,39 @@ describe('SelecionarProjetoDialogComponent', () => {
     component.selecionar(project);
 
     expect(dialogRef.close).toHaveBeenCalledWith({ acao: 'carregar', config: project.config });
+  });
+
+  it('shows duplication only when opened from the creator', async () => {
+    const project = {
+      id: 1,
+      nomeProjeto: 'Ensaio',
+      pastaBase: 'ensaio',
+      config: { nomeProjeto: 'Ensaio', bpm: 100, canais: [] },
+    } as any;
+    dialogData.origem = 'criador';
+    fileRepo.getProjects.mockResolvedValue([project]);
+    fixture.destroy();
+    fixture = TestBed.createComponent(SelecionarProjetoDialogComponent);
+    component = fixture.componentInstance;
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.btn-duplicar')).not.toBeNull();
+  });
+
+  it('opens the duplicated project in edit mode', async () => {
+    const original = {
+      id: 1,
+      nomeProjeto: 'Ensaio',
+      pastaBase: 'ensaio',
+      config: { nomeProjeto: 'Ensaio', bpm: 100, canais: [] },
+    } as any;
+    const copy = { ...original, id: 2, nomeProjeto: 'Ensaio cópia' };
+    fileRepo.duplicateProject.mockResolvedValue(copy);
+
+    await component.duplicar(original);
+
+    expect(fileRepo.duplicateProject).toHaveBeenCalledWith(original);
+    expect(dialogRef.close).toHaveBeenCalledWith({ acao: 'editar', projeto: copy });
   });
 });
