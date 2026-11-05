@@ -4,7 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { AdicionarArquivosProjetoComponent } from '../adicionar-arquivos-projeto/adicionar-arquivos-projeto.component';
 import { FileRepositoryService } from '../../services/file-repository.service';
-import { RouterLink } from "@angular/router";
 import { CommonModule } from '@angular/common';
 import { Marker } from '../../models/marker';
 import {
@@ -18,7 +17,7 @@ import { ConfirmacaoDialogService } from '../../services/confirmacao-dialog.serv
 @Component({
   selector: 'app-mixer',
   standalone: true,
-  imports: [FormsModule, MatDialogModule, RouterLink, CommonModule, LatencyModalComponent],
+  imports: [FormsModule, MatDialogModule, CommonModule, LatencyModalComponent],
   templateUrl: './mixer.component.html', // ou mixer.component.html dependendo de como foi gerado
   styleUrl: './mixer.component.scss'     // ou mixer.component.scss
 })
