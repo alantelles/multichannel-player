@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { AudioEngineService } from '../../services/audio-engine.service';
+import { ConfirmacaoDialogService } from '../../services/confirmacao-dialog.service';
 
 import { MixerComponent } from './mixer.component';
 
@@ -25,43 +26,46 @@ describe('MixerComponent', () => {
 
   it('allows leaving without confirmation when playback is stopped', async () => {
     const audio = TestBed.inject(AudioEngineService);
+    const confirmacaoDialog = TestBed.inject(ConfirmacaoDialogService);
     const isPlaying = vi.spyOn(audio, 'isPlaying').mockReturnValue(false);
     const togglePlay = vi.spyOn(audio, 'togglePlay');
-    const confirm = vi.spyOn(window, 'confirm');
+    const confirmar = vi.spyOn(confirmacaoDialog, 'confirmar');
 
     await expect(component.confirmarSaida()).resolves.toBe(true);
 
-    expect(confirm).not.toHaveBeenCalled();
+    expect(confirmar).not.toHaveBeenCalled();
     expect(togglePlay).not.toHaveBeenCalled();
     isPlaying.mockRestore();
-    confirm.mockRestore();
+    confirmar.mockRestore();
   });
 
   it('keeps playback running when leaving is canceled', async () => {
     const audio = TestBed.inject(AudioEngineService);
+    const confirmacaoDialog = TestBed.inject(ConfirmacaoDialogService);
     const isPlaying = vi.spyOn(audio, 'isPlaying').mockReturnValue(true);
     const togglePlay = vi.spyOn(audio, 'togglePlay');
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const confirmar = vi.spyOn(confirmacaoDialog, 'confirmar').mockResolvedValue(false);
 
     await expect(component.confirmarSaida()).resolves.toBe(false);
 
-    expect(confirm).toHaveBeenCalledOnce();
+    expect(confirmar).toHaveBeenCalledOnce();
     expect(togglePlay).not.toHaveBeenCalled();
     isPlaying.mockRestore();
-    confirm.mockRestore();
+    confirmar.mockRestore();
   });
 
   it('stops playback before allowing navigation when confirmed', async () => {
     const audio = TestBed.inject(AudioEngineService);
+    const confirmacaoDialog = TestBed.inject(ConfirmacaoDialogService);
     const isPlaying = vi.spyOn(audio, 'isPlaying').mockReturnValue(true);
     const togglePlay = vi.spyOn(audio, 'togglePlay').mockResolvedValue(undefined);
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const confirmar = vi.spyOn(confirmacaoDialog, 'confirmar').mockResolvedValue(true);
 
     await expect(component.confirmarSaida()).resolves.toBe(true);
 
     expect(togglePlay).toHaveBeenCalledOnce();
     isPlaying.mockRestore();
     togglePlay.mockRestore();
-    confirm.mockRestore();
+    confirmar.mockRestore();
   });
 });

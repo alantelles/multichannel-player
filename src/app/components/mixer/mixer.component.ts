@@ -13,6 +13,7 @@ import {
 } from '../selecionar-projeto-dialog/selecionar-projeto-dialog.component';
 import { LatencyModalComponent } from '../latency-modal/latency-modal.component';
 import { ProjectNavigationService } from '../../services/project-navigation.service';
+import { ConfirmacaoDialogService } from '../../services/confirmacao-dialog.service';
 
 @Component({
   selector: 'app-mixer',
@@ -25,6 +26,7 @@ export class MixerComponent implements OnInit {
   // Injeta o serviço corrigido usando a sintaxe moderna inject()
   protected audio = inject(AudioEngineService);
   private dialog = inject(MatDialog);
+  private readonly confirmacaoDialog = inject(ConfirmacaoDialogService);
   private projectNavigation = inject(ProjectNavigationService);
   fileRepository = inject(FileRepositoryService);
   // Timer para controlar o atraso do clique simples
@@ -201,9 +203,13 @@ export class MixerComponent implements OnInit {
       return true;
     }
 
-    const confirmou = window.confirm(
-      'O player está tocando. Ao sair do mixer, a reprodução será interrompida. Deseja continuar?'
-    );
+    const confirmou = await this.confirmacaoDialog.confirmar({
+      titulo: 'Interromper reprodução?',
+      mensagem: 'O player está tocando. Ao sair do mixer, a reprodução será interrompida.',
+      textoConfirmacao: 'Parar e sair',
+      textoCancelamento: 'Continuar tocando',
+      aparencia: 'perigo',
+    });
     if (!confirmou) {
       return false;
     }
