@@ -1,0 +1,119 @@
+:host {
+  display: block;
+  min-height: 100%;
+  color: #f3f5ef;
+  background: #111a18;
+  font-family: 'Aptos', 'Trebuchet MS', sans-serif;
+}
+
+.app-container {
+  min-height: 100vh;
+}
+
+.app-header {
+  position: sticky;
+  z-index: 20;
+  top: 0;
+  display: flex;
+  min-height: 62px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 0 clamp(16px, 4vw, 42px);
+  background: rgba(17, 26, 24, 0.97);
+  border-bottom: 1px solid #394741;
+}
+
+.brand {
+  color: #f3f5ef;
+  font-size: 15px;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.main-navigation {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.main-navigation a {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  padding: 0 13px;
+  color: #c4cec7;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: color 140ms ease, background-color 140ms ease;
+}
+
+.main-navigation a:hover,
+.main-navigation a.active {
+  color: #14200f;
+  background: #c9ef74;
+}
+
+.brand:focus-visible,
+.main-navigation a:focus-visible,
+.menu-toggle:focus-visible {
+  outline: 2px solid #c9ef74;
+  outline-offset: 3px;
+}
+
+.menu-toggle {
+  display: none;
+  width: 42px;
+  height: 42px;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0;
+  color: #f3f5ef;
+  background: transparent;
+  border: 1px solid #394741;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.menu-toggle span {
+  width: 18px;
+  height: 2px;
+  background: currentColor;
+}
+
+@media (max-width: 640px) {
+  .app-header {
+    position: relative;
+    flex-wrap: wrap;
+    gap: 0 16px;
+    padding-top: 9px;
+    padding-bottom: 9px;
+  }
+
+  .menu-toggle {
+    display: flex;
+  }
+
+  .main-navigation {
+    display: none;
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    padding-top: 9px;
+  }
+
+  .main-navigation.is-open {
+    display: flex;
+  }
+
+  .main-navigation a {
+    min-height: 44px;
+  }
+}

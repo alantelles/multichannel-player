@@ -1,1 +1,29 @@
-<app-mixer>
+<div class="app-container">
+	<header class="app-header">
+		<a class="brand" routerLink="/" (click)="fecharMenu()">Multichannel Player</a>
+
+		<button
+			class="menu-toggle"
+			type="button"
+			aria-controls="main-navigation"
+			[attr.aria-expanded]="menuAberto()"
+			[attr.aria-label]="menuAberto() ? 'Fechar menu' : 'Abrir menu'"
+			(click)="menuAberto.update(aberto => !aberto)">
+			<span></span>
+			<span></span>
+			<span></span>
+		</button>
+
+		<nav
+			id="main-navigation"
+			class="main-navigation"
+			aria-label="Navegação principal"
+			[class.is-open]="menuAberto()">
+			<a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" ariaCurrentWhenActive="page" (click)="fecharMenu()">Mixer</a>
+			<a routerLink="/criar-projeto" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="fecharMenu()">Criar projeto</a>
+			<a routerLink="/projetos" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="fecharMenu()">Admin de projetos</a>
+		</nav>
+	</header>
+
+	<router-outlet></router-outlet>
+</div>

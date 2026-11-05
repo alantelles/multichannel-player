@@ -1,15 +1,16 @@
 import { Component, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
-  standalone: true,
-  template: `<div class="app-container">
-    <router-outlet></router-outlet>
-  </div>
-  `
+  imports: [RouterLink, RouterLinkActive, RouterOutlet],
+  templateUrl: './app.html',
+  styleUrl: './app.scss',
 })
 export class App {
-  protected readonly title = signal('multichannel-player');
+  protected readonly menuAberto = signal(false);
+
+  protected fecharMenu(): void {
+    this.menuAberto.set(false);
+  }
 }

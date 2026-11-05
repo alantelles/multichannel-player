@@ -195,6 +195,23 @@ export class MixerComponent implements OnInit {
   alternarPlay() {
     this.audio.togglePlay();
   }
+
+  async confirmarSaida(): Promise<boolean> {
+    if (!this.audio.isPlaying()) {
+      return true;
+    }
+
+    const confirmou = window.confirm(
+      'O player está tocando. Ao sair do mixer, a reprodução será interrompida. Deseja continuar?'
+    );
+    if (!confirmou) {
+      return false;
+    }
+
+    await this.audio.togglePlay();
+    return true;
+  }
+
   atualizarVolumeRange(canal: any, event: Event) {
     const input = event.target as HTMLInputElement;
     this.audio.alterarVolume(canal, Number(input.value));

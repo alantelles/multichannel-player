@@ -1,9 +1,11 @@
 import { Routes } from '@angular/router';
+import { confirmarSaidaMixerGuard } from './guards/confirmar-saida-mixer.guard';
 
 export const routes: Routes = [
   {
     path: '',
-    loadComponent: () => import('./components/mixer/mixer.component').then(m => m.MixerComponent)
+    loadComponent: () => import('./components/mixer/mixer.component').then(m => m.MixerComponent),
+    canDeactivate: [confirmarSaidaMixerGuard],
   },
   {
     path: 'criar-projeto',
