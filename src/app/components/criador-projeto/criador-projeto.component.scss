@@ -256,6 +256,19 @@
   border-left: 3px solid #ffca28;
 }
 
+.btn-download-canal {
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  border: 1px solid #52635a;
+  border-radius: 4px;
+  background: #394740;
+  color: #e8eee8;
+  cursor: pointer;
+
+  &:hover:not(:disabled) { background: #45554c; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
 .channel-badge {
   background: #ffca28 !important;
   color: #121214 !important;

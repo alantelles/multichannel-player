@@ -21,6 +21,7 @@ describe('CriadorProjetoComponent', () => {
   const fileRepository = {
     getDirectories: vi.fn().mockResolvedValue([]),
     getFiles: vi.fn().mockResolvedValue([]),
+    getFileUrl: vi.fn(),
     saveProject: vi.fn(async (config: { nomeProjeto: string }) => ({ id: 1, config })),
   };
   const bundleService = { importarEInstalarZip: vi.fn() };
@@ -90,6 +91,29 @@ describe('CriadorProjetoComponent', () => {
     }), undefined);
     expect(component.statusImportacao()).toBe('Projeto salvo no banco local.');
     expect(downloadSpy).not.toHaveBeenCalled();
+  });
+
+  it('checks and downloads a channel audio only when requested', async () => {
+    fileRepository.getFileUrl.mockResolvedValue({ url: 'blob:audio', fromCache: true });
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    component.pastaBase.set('ensaio');
+    const canal = { id: 'click', nome: 'Click', arquivo: 'click.wav' };
+
+    expect(fileRepository.getFileUrl).not.toHaveBeenCalled();
+    await component.baixarAudioCanal(canal);
+
+    expect(fileRepository.getFileUrl).toHaveBeenCalledWith('ensaio', 'click.wav');
+    expect(clickSpy).toHaveBeenCalledOnce();
+    expect(component.statusImportacao()).toBe('Download iniciado: click.wav');
+  });
+
+  it('reports a missing channel audio when the download returns 404', async () => {
+    fileRepository.getFileUrl.mockRejectedValue({ status: 404 });
+    component.pastaBase.set('ensaio');
+
+    await component.baixarAudioCanal({ id: 'click', nome: 'Click', arquivo: 'missing.wav' });
+
+    expect(component.statusImportacao()).toBe('Arquivo de áudio "missing.wav" não encontrado na pasta "ensaio".');
   });
 
   afterEach(() => {
