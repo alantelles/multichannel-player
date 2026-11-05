@@ -15,5 +15,9 @@ export const routes: Routes = [
     path: 'projetos',
     loadComponent: () => import('./components/admin-projetos/admin-projetos.component').then(m => m.AdminProjetosComponent)
   },
+  {
+    path: 'configuracoes',
+    loadComponent: () => import('./components/configuracoes/configuracoes.component').then(m => m.ConfiguracoesComponent)
+  },
   { path: '**', redirectTo: '' } // Fallback seguro
 ];

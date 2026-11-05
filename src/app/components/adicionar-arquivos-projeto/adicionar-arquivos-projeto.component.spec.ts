@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 export interface DadosUploadProjeto {
   pastaBase: string;
@@ -68,3 +69,54 @@ export class AdicionarArquivosProjetoComponent {
     this.aoFechar.emit();
   }
 }
+
+describe('AdicionarArquivosProjetoComponent', () => {
+  let component: AdicionarArquivosProjetoComponent;
+  let fixture: ComponentFixture<AdicionarArquivosProjetoComponent>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [AdicionarArquivosProjetoComponent],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(AdicionarArquivosProjetoComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('starts with the confirmation action disabled until valid inputs are supplied', () => {
+    const confirmButton = fixture.nativeElement.querySelector('.btn-confirmar') as HTMLButtonElement;
+
+    expect(confirmButton.disabled).toBe(true);
+  });
+
+  it('filters selected files to supported audio types and extensions', () => {
+    const audio = new File(['audio'], 'kick.wav', { type: 'audio/wav' });
+    const audioByExtension = new File(['audio'], 'snare.mp3', { type: 'application/octet-stream' });
+    const document = new File(['text'], 'notes.txt', { type: 'text/plain' });
+    const event = { target: { files: [audio, audioByExtension, document] } } as unknown as Event;
+
+    component.aoSelecionarArquivos(event);
+
+    expect(component.arquivosSelecionados).toEqual([audio, audioByExtension]);
+  });
+
+  it('emits trimmed folder name and selected audio files on confirmation', () => {
+    const audio = new File(['audio'], 'kick.wav', { type: 'audio/wav' });
+    const confirmSpy = vi.spyOn(component.aoConfirmar, 'emit');
+    component.pastaBaseNome = ' ensaio ';
+    component.arquivosSelecionados = [audio];
+
+    component.confirmarUpload();
+
+    expect(confirmSpy).toHaveBeenCalledWith({ pastaBase: 'ensaio', arquivos: [audio] });
+  });
+
+  it('emits cancel without saving', () => {
+    const cancelSpy = vi.spyOn(component.aoFechar, 'emit');
+
+    component.cancelar();
+
+    expect(cancelSpy).toHaveBeenCalledOnce();
+  });
+});

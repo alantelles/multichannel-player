@@ -45,7 +45,7 @@ describe('CriadorProjetoComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('Salvar Projeto');
+    expect(fixture.nativeElement.textContent).toContain('Criar/Editar Projeto');
   });
 
   it('saves an imported JSON project locally without downloading it', async () => {

@@ -1,8 +1,7 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { AudioEngineService, ProjectConfig } from '../../services/audio-engine.service'; // Ajuste o caminho se o seu arquivo tiver .service no nome
+import { AudioEngineService } from '../../services/audio-engine.service';
 import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { AdicionarArquivosProjetoComponent } from '../adicionar-arquivos-projeto/adicionar-arquivos-projeto.component';
 import { FileRepositoryService } from '../../services/file-repository.service';
 import { CommonModule } from '@angular/common';
 import { Marker } from '../../models/marker';
@@ -10,14 +9,13 @@ import {
   SelecionarProjetoDialogComponent,
   SelecionarProjetoDialogResult,
 } from '../selecionar-projeto-dialog/selecionar-projeto-dialog.component';
-import { LatencyModalComponent } from '../latency-modal/latency-modal.component';
 import { ProjectNavigationService } from '../../services/project-navigation.service';
 import { ConfirmacaoDialogService } from '../../services/confirmacao-dialog.service';
 
 @Component({
   selector: 'app-mixer',
   standalone: true,
-  imports: [FormsModule, MatDialogModule, CommonModule, LatencyModalComponent],
+  imports: [FormsModule, MatDialogModule, CommonModule],
   templateUrl: './mixer.component.html', // ou mixer.component.html dependendo de como foi gerado
   styleUrl: './mixer.component.scss'     // ou mixer.component.scss
 })
@@ -33,39 +31,10 @@ export class MixerComponent implements OnInit {
   private readonly DOUBLE_CLICK_DELAY = 250; // tempo em ms para aguardar o 2º clique
   visualizacaoSequencia = signal<boolean>(true);
 
-  exibirModalLatencia = signal<boolean>(false);
-
-  abrirConfiguracoes(): void {
-    this.exibirModalLatencia.set(true);
-  }
-
-  fecharConfiguracoes(): void {
-    this.exibirModalLatencia.set(false);
-  }
   isFullSong(): boolean {
     return this.audio.trechoAtivo()?.id === 'full-audio';
   }
-  // 🎯 NOVO: Lê o arquivo JSON de configuração mapeado pelo usuário
-  onConfigSelecionada(event: Event) {
-    const input = event.target as HTMLInputElement;
-    if (input.files && input.files.length > 0) {
-      const arquivoConfig = input.files[0];
-      const reader = new FileReader();
 
-      reader.onload = async (e: any) => {
-        const conteudoTexto = e.target.result;
-        const loaded = await this.audio.carregarProjetoPorJSON(conteudoTexto);
-        if (!loaded) {
-          return;
-        }
-        const config: ProjectConfig = JSON.parse(conteudoTexto);
-        this.fileRepository.saveProject(config); // 🎯 Salva no IndexedDB
-      };
-
-      reader.readAsText(arquivoConfig);
-    }
-  }
-  
   abrirModalProjetosSalvos() {
     const dialogRef = this.dialog.open(SelecionarProjetoDialogComponent, {
       width: '90%',
@@ -163,24 +132,6 @@ export class MixerComponent implements OnInit {
 
     return '#818181';
   }
-  adicionarArquivosLocal() {
-    const dialogRef = this.dialog.open(AdicionarArquivosProjetoComponent, {
-      width: '500px', disableClose: true
-    });
-    dialogRef.componentInstance.aoFechar.subscribe(() => dialogRef.close());
-    
-    dialogRef.componentInstance.aoConfirmar.subscribe(async dados => {
-      console.log('Dados recebidos no Mixer:', dados);
-      await this.fileRepository.saveFiles(dados.pastaBase, dados.arquivos);
-      dialogRef.close();
-    });
-  }
-
-  setAudioRepository(novaUrl: string) {
-    this.fileRepository.onlineRepositoryUrl.set(novaUrl);
-    localStorage.setItem('audioRepository', novaUrl);
-  }
-
   backgroundColorPlayButton(): string {
     if (this.audio.isFullyLoaded()) {
       return this.audio.isPlaying() ? '#dc3545' : '#28a745'

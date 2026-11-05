@@ -28,29 +28,9 @@
   <div class="carregador">
   <!-- mixer.component.html -->
   <div class="painel-configuracao">
-    <!-- Botão de Configurações no Header/Mixer -->
-    <button class="btn-config" (click)="abrirConfiguracoes()">
-      ⚙️ Configurações
+    <button class="botao-basico" type="button" (click)="abrirModalProjetosSalvos()">
+      💾 Projetos salvos
     </button>
-
-    <!-- Modal de Latência condicional -->
-    @if (exibirModalLatencia()) {
-      <app-latency-modal (fechar)="fecharConfiguracoes()"></app-latency-modal>
-    }
-    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #aaa;">📁 Repositório áudios online:</label>
-    <input type="text" class="ordinary-text-input" [(ngModel)]="fileRepository.onlineRepositoryUrl" (ngModelChange)="setAudioRepository($event)" placeholder="URL do repositório de áudios" />
-    
-    <div style="display: flex; gap: 8px; margin-top: 8px;">
-      <button class="botao-basico" (click)="adicionarArquivosLocal()">Adicionar áudios ao repositório local</button>
-      <!-- 🎯 BOTÃO NOVO -->
-      <button class="botao-basico" style="background-color: #0d6efd;" (click)="abrirModalProjetosSalvos()">
-        💾 Projetos Salvos
-      </button>
-    </div>
-
-    <label style="display: block; margin-top: 10px; margin-bottom: 5px; font-weight: bold; color: #aaa;">📂 Selecionar projeto:</label>
-    <input style="margin-bottom: 8px" type="file" accept=".json" (change)="onConfigSelecionada($event)" />
-    
     <div style="margin-top: 8px; color: #ffc107; font-size: 14px;">⚡ Status: {{ audio.statusCarregamento() }}</div>
   </div>
     <div class="painel-arranjador">
