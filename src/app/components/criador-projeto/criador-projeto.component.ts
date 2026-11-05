@@ -387,6 +387,32 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
     }
   }
 
+  async baixarAudioCanal(canal: CanalAudio) {
+    const pasta = this.pastaBase().trim();
+    const nomeArquivo = canal.arquivo.trim();
+
+    if (!pasta || !nomeArquivo) {
+      this.statusImportacao.set('Defina a pasta base e o arquivo de áudio do canal antes de baixar.');
+      return;
+    }
+
+    try {
+      const resultado = await this.fileRepository.getFileUrl(pasta, nomeArquivo);
+      const link = document.createElement('a');
+      link.href = resultado.url;
+      link.download = nomeArquivo;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(resultado.url), 1000);
+      this.statusImportacao.set(`Download iniciado: ${nomeArquivo}`);
+    } catch (error) {
+      console.error(`Erro ao baixar o áudio ${nomeArquivo}:`, error);
+      const erroHttp = error as { status?: number };
+      this.statusImportacao.set(erroHttp.status === 404
+        ? `Arquivo de áudio "${nomeArquivo}" não encontrado na pasta "${pasta}".`
+        : `Não foi possível baixar o arquivo de áudio "${nomeArquivo}".`);
+    }
+  }
+
   removerCanal(index: number) {
     this.canais.update(lista => lista.filter((_, i) => i !== index));
   }
