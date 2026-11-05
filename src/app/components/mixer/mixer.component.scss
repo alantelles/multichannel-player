@@ -61,6 +61,7 @@
       margin-right: 0;
     }
   }
+
   div:last-child {
     margin-right: 0;
   }
@@ -212,7 +213,6 @@
 
   @include mobile-vertical {
     width: calc(100% - 9px);
-    flex-direction: column;
     align-items: flex-start;
     justify-content: space-between;
     padding: 5px;
@@ -293,8 +293,6 @@
     }
   }
   @include mobile-vertical {
-    width: 100%;
-    justify-content: space-between;
     div {
       height: 15px;
     }
@@ -381,8 +379,6 @@
 
   @include mobile-vertical {
     width: 100%;
-    flex-direction: row;
-    justify-content: space-between;
     gap: 5px;
   }
 }
@@ -504,5 +500,19 @@
 
   @include mobile-vertical {
     text-align: center;
+  }
+}
+
+@include mobile-vertical {
+  .paineis-deslizantes {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+  }
+
+  .painel-slide {
+    flex: 0 0 100%;
+    min-width: 0;
+    scroll-snap-align: start;
   }
 }
