@@ -6,6 +6,7 @@ import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import * as Tone from 'tone';
 import { FileRepositoryService } from '../../services/file-repository.service';
+import { SavedProject } from '../../services/db.service';
 import { BundleProjectService } from '../../services/bundle-project.service';
 import { Marker } from '../../models/marker';
 import { ProjectNavigationService } from '../../services/project-navigation.service';
@@ -106,6 +107,12 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
       this.pastasDisponiveis.set(pastas);
     } catch (error) {
       console.error('Erro ao carregar diretórios do IndexedDB:', error);
+    }
+
+    const projeto = history.state?.['projeto'] as SavedProject | undefined;
+    if (projeto) {
+      this.preencherFormulario(projeto.config, projeto.id ?? null);
+      this.statusImportacao.set(`Editando ${projeto.nomeProjeto}`);
     }
   }
 

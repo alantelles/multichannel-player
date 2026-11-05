@@ -1,0 +1,85 @@
+<section class="details-dialog">
+  <header class="dialog-header">
+    <div>
+      <span class="eyebrow">DETALHES DO PROJETO</span>
+      <h2 mat-dialog-title>{{ projeto.nomeProjeto }}</h2>
+      <p class="base-folder">{{ projeto.pastaBase || 'Sem pasta base' }}</p>
+    </div>
+    <button type="button" class="icon-close" aria-label="Fechar detalhes" title="Fechar" (click)="fechar()">×</button>
+  </header>
+
+  <div mat-dialog-content>
+    <section class="metadata" aria-label="Dados do projeto">
+      <div><span>BPM</span><strong>{{ projeto.config.bpm }}</strong></div>
+      <div><span>Compasso</span><strong>{{ projeto.config.timeSignature === 3 ? '6/8' : '4/4' }}</strong></div>
+      <div><span>Offset</span><strong>{{ (projeto.config.offset || 0) * 1000 }} ms</strong></div>
+      <div><span>Modo</span><strong>{{ projeto.config.fullSong ? 'Música contínua' : 'Por marcadores' }}</strong></div>
+      <div><span>Atualizado</span><strong>{{ projeto.dataModificacao ? (projeto.dataModificacao | date:'dd/MM/yyyy HH:mm') : 'Não informado' }}</strong></div>
+    </section>
+
+    <details class="content-section" open>
+      <summary>Marcadores <span>{{ projeto.config.markers?.length || 0 }}</span></summary>
+      @if (projeto.config.markers?.length) {
+        <div class="marker-list">
+          @for (marker of projeto.config.markers; track marker.id) {
+            <details class="marker-item">
+              <summary><strong>{{ marker.nome }}</strong><span>{{ marker.inicio }} · {{ marker.duracao }}</span></summary>
+              <dl>
+                <div><dt>ID</dt><dd>{{ marker.id }}</dd></div>
+                <div><dt>Início</dt><dd>{{ marker.inicio }}</dd></div>
+                <div><dt>Duração</dt><dd>{{ marker.duracao }}</dd></div>
+                <div><dt>Repetições máximas</dt><dd>{{ marker.maxPlays || 'Sem limite' }}</dd></div>
+                <div><dt>Próximo marcador</dt><dd>{{ marker.nextMarker || 'Não definido' }}</dd></div>
+                <div><dt>Modo de disparo</dt><dd>{{ marker.modoDisparo || 'bloco' }}</dd></div>
+                @if (marker.referencia) { <div><dt>Referência</dt><dd>{{ marker.referencia }}</dd></div> }
+              </dl>
+            </details>
+          }
+        </div>
+      } @else {
+        <p class="section-empty">Este projeto não tem marcadores.</p>
+      }
+    </details>
+
+    <details class="content-section" open>
+      <summary>Canais <span>{{ projeto.config.canais?.length || 0 }}</span></summary>
+      @if (projeto.config.canais?.length) {
+        <div class="channel-list">
+          @for (canal of projeto.config.canais; track canal.id) {
+            <article class="channel-row">
+              <div class="channel-info">
+                <strong>{{ canal.nome }}</strong>
+                <span>{{ canal.arquivo || 'Sem arquivo associado' }} · {{ canal.id }}</span>
+              </div>
+              <div class="channel-state">
+                <span>{{ canal.volume ?? 0 }} dB</span>
+                @if (canal.muted) { <span class="muted-state">Mutado</span> }
+              </div>
+              <button
+                type="button"
+                class="download-button"
+                [disabled]="!canal.arquivo || !projeto.pastaBase"
+                [attr.aria-label]="'Baixar áudio do canal ' + canal.nome"
+                title="Baixar áudio do canal"
+                (click)="baixarAudio(canal.arquivo)">
+                ↓ <span>Baixar</span>
+              </button>
+            </article>
+          }
+        </div>
+      } @else {
+        <p class="section-empty">Este projeto não tem canais.</p>
+      }
+    </details>
+
+    @if (status()) { <p class="status-message" role="status">{{ status() }}</p> }
+  </div>
+
+  <footer mat-dialog-actions>
+    <button type="button" class="action-secondary" (click)="baixarProjeto()" title="Baixar projeto completo em ZIP">↓ ZIP</button>
+    <button type="button" class="action-secondary" (click)="duplicar()">Duplicar</button>
+    <button type="button" class="action-secondary" (click)="editar()">Editar</button>
+    <button type="button" class="action-primary" (click)="carregar()">Carregar <span aria-hidden="true">→</span></button>
+    <button type="button" class="action-danger" (click)="excluir()" [disabled]="!projeto.id" title="Excluir do banco local">Excluir</button>
+  </footer>
+</section>

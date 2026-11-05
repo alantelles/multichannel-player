@@ -51,6 +51,7 @@
     <label style="display: block; margin-top: 10px; margin-bottom: 5px; font-weight: bold; color: #aaa;">📂 Selecionar projeto:</label>
     <input style="margin-bottom: 8px" type="file" accept=".json" (change)="onConfigSelecionada($event)" />
     <button routerLink="/criar-projeto" class="botao-basico">Criar projeto</button>
+    <button routerLink="/projetos" class="botao-basico">Admin de projetos</button>
     
     <div style="margin-top: 8px; color: #ffc107; font-size: 14px;">⚡ Status: {{ audio.statusCarregamento() }}</div>
   </div>
