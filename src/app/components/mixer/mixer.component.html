@@ -122,7 +122,10 @@
           <div class="strips-container">
             <div class="channel-strip master-strip" aria-label="Bus master">
               <div class="strip-channel-name-container">
-                <strong class="strip-channel-name">MASTER</strong>
+                <strong title="Duplo clique ou toque duplo para zerar o volume master"
+                  (dblclick)="audio.alterarVolumeMaster(0)"
+                  (touchend)="resetarVolumeNoDuploToque('master', $event)"
+                  class="strip-channel-name channel-reset-control">MASTER</strong>
                 <span class="master-level fader-level fader-level-vertical" style="background: #ffb74d;">{{ audio.masterVolume() }}</span>
               </div>
 
@@ -159,7 +162,10 @@
             @for (canal of audio.canais(); track canal.id) {
               <div class="channel-strip">
                 <div class="strip-channel-name-container">
-                  <strong [title]="canal.nome" class="strip-channel-name">{{ canal.nome }}</strong>
+                  <strong [title]="canal.nome + ' (duplo clique ou toque duplo para zerar o volume)'"
+                    (dblclick)="audio.alterarVolume(canal, 0)"
+                    (touchend)="resetarVolumeNoDuploToque(canal, $event)"
+                    class="strip-channel-name channel-reset-control">{{ canal.nome }}</strong>
                   <span class="fader-level fader-level-vertical">{{ canal.volumeSignal() }}</span>
                 </div>
 

@@ -64,11 +64,89 @@ describe('MixerComponent', () => {
     expect(masterSlider).not.toBeNull();
     expect(firstStrip.classList.contains('master-strip')).toBe(true);
     expect(masterSlider.getAttribute('aria-label')).toBe('Volume master em decibéis');
+    const masterName = fixture.nativeElement.querySelector('.master-strip .strip-channel-name') as HTMLElement;
+    expect(masterName.classList.contains('channel-reset-control')).toBe(true);
 
     masterSlider.value = '-6';
     masterSlider.dispatchEvent(new Event('input'));
+    masterName.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    const criarToque = (timestamp: number) => {
+      const event = new Event('touchend', { bubbles: true, cancelable: true });
+      Object.defineProperties(event, {
+        changedTouches: { value: { length: 1 } },
+        timeStamp: { value: timestamp }
+      });
+      return event;
+    };
+    masterName.dispatchEvent(criarToque(100));
+    const secondTap = criarToque(250);
+    masterName.dispatchEvent(secondTap);
 
-    expect(alterarVolumeMaster).toHaveBeenCalledWith(-6);
+    expect(alterarVolumeMaster).toHaveBeenNthCalledWith(1, -6);
+    expect(alterarVolumeMaster).toHaveBeenNthCalledWith(2, 0);
+    expect(alterarVolumeMaster).toHaveBeenNthCalledWith(3, 0);
+    expect(audio.masterVolume()).toBe(0);
+    expect(secondTap.defaultPrevented).toBe(true);
+  });
+
+  it('resets a channel volume to 0 dB when its name is double-clicked', () => {
+    const audio = TestBed.inject(AudioEngineService);
+    const channel = {
+      id: 'test-track',
+      nome: 'Test track',
+      arquivo: 'test.mp3',
+      player: {} as CanalAudio['player'],
+      volumeNode: {} as CanalAudio['volumeNode'],
+      channelNode: {} as CanalAudio['channelNode'],
+      volumeSignal: signal(-12),
+      isMuted: signal(false),
+      isSoloed: signal(false),
+      saidaAtiva: signal('Master')
+    } satisfies CanalAudio;
+    audio.canais.set([channel]);
+    fixture.detectChanges();
+    const alterarVolume = vi.spyOn(audio, 'alterarVolume').mockImplementation(() => {});
+    const channelName = fixture.nativeElement.querySelector('.channel-strip:not(.master-strip) .strip-channel-name') as HTMLElement;
+
+    expect(channelName.title).toContain('para zerar o volume');
+    channelName.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+
+    expect(alterarVolume).toHaveBeenCalledWith(channel, 0);
+  });
+
+  it('resets a channel volume on a mobile double-tap', () => {
+    const audio = TestBed.inject(AudioEngineService);
+    const channel = {
+      id: 'test-track',
+      nome: 'Test track',
+      arquivo: 'test.mp3',
+      player: {} as CanalAudio['player'],
+      volumeNode: {} as CanalAudio['volumeNode'],
+      channelNode: {} as CanalAudio['channelNode'],
+      volumeSignal: signal(-12),
+      isMuted: signal(false),
+      isSoloed: signal(false),
+      saidaAtiva: signal('Master')
+    } satisfies CanalAudio;
+    audio.canais.set([channel]);
+    fixture.detectChanges();
+    const alterarVolume = vi.spyOn(audio, 'alterarVolume').mockImplementation(() => {});
+    const channelName = fixture.nativeElement.querySelector('.channel-strip:not(.master-strip) .strip-channel-name') as HTMLElement;
+    const criarToque = (timestamp: number) => {
+      const event = new Event('touchend', { bubbles: true, cancelable: true });
+      Object.defineProperties(event, {
+        changedTouches: { value: { length: 1 } },
+        timeStamp: { value: timestamp }
+      });
+      return event;
+    };
+
+    channelName.dispatchEvent(criarToque(100));
+    const secondTap = criarToque(250);
+    channelName.dispatchEvent(secondTap);
+
+    expect(alterarVolume).toHaveBeenCalledWith(channel, 0);
+    expect(secondTap.defaultPrevented).toBe(true);
   });
 
   it('renders a master mute button with its current accessible state', () => {

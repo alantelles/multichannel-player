@@ -1,5 +1,5 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { AudioEngineService } from '../../services/audio-engine.service';
+import { AudioEngineService, CanalAudio } from '../../services/audio-engine.service';
 import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { FileRepositoryService } from '../../services/file-repository.service';
@@ -29,6 +29,8 @@ export class MixerComponent implements OnInit {
   // Timer para controlar o atraso do clique simples
   private clickTimer: any = null;
   private readonly DOUBLE_CLICK_DELAY = 250; // tempo em ms para aguardar o 2º clique
+  private lastVolumeResetTap: { targetId: string; timestamp: number } | null = null;
+  private readonly DOUBLE_TAP_DELAY = 350;
   visualizacaoSequencia = signal<boolean>(true);
 
   isFullSong(): boolean {
@@ -176,6 +178,25 @@ export class MixerComponent implements OnInit {
   atualizarVolumeMaster(event: Event) {
     const input = event.target as HTMLInputElement;
     this.audio.alterarVolumeMaster(Number(input.value));
+  }
+
+  resetarVolumeNoDuploToque(target: CanalAudio | 'master', event: TouchEvent) {
+    if (event.changedTouches.length !== 1) return;
+
+    const targetId = target === 'master' ? 'master' : `channel:${target.id}`;
+    const previousTap = this.lastVolumeResetTap;
+    if (previousTap?.targetId === targetId && event.timeStamp - previousTap.timestamp <= this.DOUBLE_TAP_DELAY) {
+      event.preventDefault();
+      this.lastVolumeResetTap = null;
+      if (target === 'master') {
+        this.audio.alterarVolumeMaster(0);
+      } else {
+        this.audio.alterarVolume(target, 0);
+      }
+      return;
+    }
+
+    this.lastVolumeResetTap = { targetId, timestamp: event.timeStamp };
   }
 
   selecionarSaidaFisica(canal: any, event: Event) {

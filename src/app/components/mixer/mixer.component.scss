@@ -426,6 +426,11 @@
   }
 }
 
+.channel-reset-control {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
 .fader-level-vertical {
   display: none;
 
