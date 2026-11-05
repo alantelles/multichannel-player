@@ -40,6 +40,9 @@ vi.mock('tone', () => {
     volume = { rampTo: vi.fn() };
     dispose = vi.fn();
   }
+  class GainMock {
+    connect = vi.fn();
+  }
   class ChannelMock {
     mute = false;
     solo = false;
@@ -53,6 +56,7 @@ vi.mock('tone', () => {
     Destination: {},
     Player: PlayerMock,
     Volume: VolumeMock,
+    Gain: GainMock,
     Channel: ChannelMock,
     start: toneMocks.start,
     loaded: toneMocks.loaded,
@@ -202,6 +206,23 @@ describe('AudioEngineService', () => {
     expect(service.isFullyLoaded()).toBe(true);
   });
 
+  it('routes every track through one master bus before the browser destination', async () => {
+    await service.carregarProjetoPorJSON(projectJson({ canais: [
+      { id: 'first', nome: 'Primeira', arquivo: 'first.mp3' },
+      { id: 'second', nome: 'Segunda', arquivo: 'second.mp3' }
+    ] }));
+
+    const masterBus = (service as unknown as { masterBus: InstanceType<typeof Tone.Gain> }).masterBus;
+
+    expect(masterBus.connect).toHaveBeenCalledOnce();
+    expect(masterBus.connect).toHaveBeenCalledWith(Tone.Destination);
+    expect(service.canais()).toHaveLength(2);
+    service.canais().forEach(channel => {
+      expect(channel.player.chain).toHaveBeenCalledWith(channel.volumeNode, channel.channelNode, masterBus);
+      expect(channel.player.chain).not.toHaveBeenCalledWith(channel.volumeNode, channel.channelNode, Tone.Destination);
+    });
+  });
+
   it('resolves marker references and optionally appends the full-song marker', async () => {
     const original = marker('original', { inicio: '2m', duracao: '8m', nextMarker: 'next' });
     const alias = marker('alias', { nome: 'Alias', referencia: 'original', nextMarker: 'later' });
@@ -271,9 +292,9 @@ describe('AudioEngineService', () => {
     expect(channel.channelNode.solo).toBe(true);
     expect(channel.isMuted()).toBe(true);
     expect(channel.channelNode.mute).toBe(true);
-    expect(channel.saidaAtiva()).toBe('Saída 2');
+    expect(channel.saidaAtiva()).toBe('Master');
     expect(channel.channelNode.disconnect).toHaveBeenCalledOnce();
-    expect(channel.channelNode.connect).toHaveBeenCalledWith(Tone.Destination, 0, 1);
+    expect(channel.channelNode.connect).toHaveBeenCalledWith((service as unknown as { masterBus: InstanceType<typeof Tone.Gain> }).masterBus);
   });
 
   it('reports progress only while playing', () => {

@@ -72,6 +72,7 @@ export class AudioEngineService {
   public timeSignature = signal<number>(4); // 4/4 por padrão
   
   public canais = signal<CanalAudio[]>([]);
+  private readonly masterBus = new Tone.Gain(1);
   private loopId!: any;
   private offset?: number;
   public sampleRate = signal<number>(Tone.context.sampleRate);
@@ -155,6 +156,7 @@ export class AudioEngineService {
   });
 
   constructor() {
+    this.masterBus.connect(Tone.Destination);
     effect(() => {
       const config = this.latencySettings.activeConfig();
       this.aplicarConfiguracaoLatencia(config.lookaheadMs, config.offsetMs);
@@ -334,7 +336,7 @@ export class AudioEngineService {
         const channelNode = new Tone.Channel();
         channelNode.mute = canal.muted || false;
         volumeNode.volume.rampTo(canal.volume || 0, 0.05);
-        player.chain(volumeNode, channelNode, Tone.Destination);
+        player.chain(volumeNode, channelNode, this.masterBus);
         
         const novoCanal: CanalAudio = {
           ...canal,
@@ -568,15 +570,10 @@ export class AudioEngineService {
   }
 
   public alterarSaidaFisica(canal: CanalAudio, indiceSaida: number) {
-    canal.saidaAtiva.set(`Saída ${indiceSaida + 1}`);
-    
-    // Desconecta das saídas atuais para não duplicar o som
+    void indiceSaida;
+    canal.saidaAtiva.set('Master');
     canal.channelNode.disconnect();
-
-    // Nota técnica: Para roteamento multicanais avançados (Ex: placas com 8 saídas),
-    // o Tone.js se conecta ao nó nativo da Web Audio API (AudioDestinationNode).
-    // Se sua interface tiver múltiplos canais, você faz assim:
-    canal.channelNode.connect(Tone.Destination, 0, indiceSaida);
+    canal.channelNode.connect(this.masterBus);
   }
 
   dispararTrechoInstantaneamente(trechoId: string) {
