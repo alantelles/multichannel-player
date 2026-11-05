@@ -72,7 +72,8 @@ export class AudioEngineService {
   public timeSignature = signal<number>(4); // 4/4 por padrão
   
   public canais = signal<CanalAudio[]>([]);
-  private readonly masterBus = new Tone.Gain(1);
+  public masterVolume = signal<number>(0);
+  private readonly masterBus = new Tone.Volume(0);
   private loopId!: any;
   private offset?: number;
   public sampleRate = signal<number>(Tone.context.sampleRate);
@@ -552,6 +553,10 @@ export class AudioEngineService {
     canal.volumeSignal.set(db);
     // O Tone.js usa escala logarítmica para volume (dB). -60 é silêncio absoluto.
     canal.volumeNode.volume.rampTo(db, 0.05); // Suaviza em 50ms para não dar estalo (pop)
+  }
+  public alterarVolumeMaster(db: number) {
+    this.masterVolume.set(db);
+    this.masterBus.volume.rampTo(db, 0.05);
   }
   public alternarSolo(canal: CanalAudio) {
     const novoEstadoSolo = !canal.isSoloed();

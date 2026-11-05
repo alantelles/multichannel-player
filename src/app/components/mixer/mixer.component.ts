@@ -173,6 +173,11 @@ export class MixerComponent implements OnInit {
     this.audio.alterarVolume(canal, Number(input.value));
   }
 
+  atualizarVolumeMaster(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.audio.alterarVolumeMaster(Number(input.value));
+  }
+
   selecionarSaidaFisica(canal: any, event: Event) {
     const select = event.target as HTMLSelectElement;
     this.audio.alterarSaidaFisica(canal, Number(select.value));

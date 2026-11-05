@@ -1,9 +1,26 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
 import { provideRouter } from '@angular/router';
-import { AudioEngineService } from '../../services/audio-engine.service';
+import { AudioEngineService, CanalAudio } from '../../services/audio-engine.service';
 import { ConfirmacaoDialogService } from '../../services/confirmacao-dialog.service';
 
 import { MixerComponent } from './mixer.component';
+
+vi.mock('tone', () => {
+  const context = { state: 'running', sampleRate: 48000, lookAhead: 0 };
+  class VolumeMock {
+    volume = { rampTo: vi.fn() };
+    connect = vi.fn();
+  }
+
+  return {
+    Volume: VolumeMock,
+    Destination: {},
+    context,
+    Transport: { bpm: { value: 120 }, timeSignature: 4 },
+    getContext: () => context
+  };
+});
 
 describe('MixerComponent', () => {
   let component: MixerComponent;
@@ -22,6 +39,35 @@ describe('MixerComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('renders the highlighted master fader and forwards its value', () => {
+    const audio = TestBed.inject(AudioEngineService);
+    audio.canais.set([{
+      id: 'test-track',
+      nome: 'Test track',
+      arquivo: 'test.mp3',
+      player: {} as CanalAudio['player'],
+      volumeNode: {} as CanalAudio['volumeNode'],
+      channelNode: {} as CanalAudio['channelNode'],
+      volumeSignal: signal(0),
+      isMuted: signal(false),
+      isSoloed: signal(false),
+      saidaAtiva: signal('Master')
+    }]);
+    fixture.detectChanges();
+    const alterarVolumeMaster = vi.spyOn(audio, 'alterarVolumeMaster');
+    const masterSlider = fixture.nativeElement.querySelector('.master-slider') as HTMLInputElement;
+    const firstStrip = fixture.nativeElement.querySelector('.strips-container')?.firstElementChild as HTMLElement;
+
+    expect(masterSlider).not.toBeNull();
+    expect(firstStrip.classList.contains('master-strip')).toBe(true);
+    expect(masterSlider.getAttribute('aria-label')).toBe('Volume master em decibéis');
+
+    masterSlider.value = '-6';
+    masterSlider.dispatchEvent(new Event('input'));
+
+    expect(alterarVolumeMaster).toHaveBeenCalledWith(-6);
   });
 
   it('allows leaving without confirmation when playback is stopped', async () => {

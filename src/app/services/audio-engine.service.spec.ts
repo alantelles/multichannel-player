@@ -38,6 +38,7 @@ vi.mock('tone', () => {
   }
   class VolumeMock {
     volume = { rampTo: vi.fn() };
+    connect = vi.fn();
     dispose = vi.fn();
   }
   class GainMock {
@@ -212,7 +213,7 @@ describe('AudioEngineService', () => {
       { id: 'second', nome: 'Segunda', arquivo: 'second.mp3' }
     ] }));
 
-    const masterBus = (service as unknown as { masterBus: InstanceType<typeof Tone.Gain> }).masterBus;
+    const masterBus = (service as unknown as { masterBus: InstanceType<typeof Tone.Volume> }).masterBus;
 
     expect(masterBus.connect).toHaveBeenCalledOnce();
     expect(masterBus.connect).toHaveBeenCalledWith(Tone.Destination);
@@ -221,6 +222,14 @@ describe('AudioEngineService', () => {
       expect(channel.player.chain).toHaveBeenCalledWith(channel.volumeNode, channel.channelNode, masterBus);
       expect(channel.player.chain).not.toHaveBeenCalledWith(channel.volumeNode, channel.channelNode, Tone.Destination);
     });
+  });
+
+  it('updates the shared master bus volume in decibels', () => {
+    service.alterarVolumeMaster(-6);
+    const masterBus = (service as unknown as { masterBus: InstanceType<typeof Tone.Volume> }).masterBus;
+
+    expect(service.masterVolume()).toBe(-6);
+    expect(masterBus.volume.rampTo).toHaveBeenCalledWith(-6, 0.05);
   });
 
   it('resolves marker references and optionally appends the full-song marker', async () => {

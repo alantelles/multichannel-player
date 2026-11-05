@@ -221,6 +221,12 @@
   }
 }
 
+.master-strip {
+  background: #302719;
+  color: #ffb74d;
+  border-top-color: #ffb74d;
+}
+
 .trechos {
   display: grid;
   grid-template-columns: repeat(8, 1fr);

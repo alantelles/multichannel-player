@@ -120,6 +120,32 @@
         <div class="mixer-container">
           <h3>🎚️ Mixer</h3>
           <div class="strips-container">
+            <div class="channel-strip master-strip" aria-label="Bus master">
+              <div class="strip-channel-name-container">
+                <strong class="strip-channel-name">MASTER</strong>
+                <span class="master-level fader-level fader-level-vertical" style="background: #ffb74d;">{{ audio.masterVolume() }} dB</span>
+              </div>
+
+              <div class="fader-functions">
+                <div class="fader-indicators">
+                  <div class="limits">
+                    <span>+9</span>
+                    <span class="master-level fader-level" style="background: #ffb74d;">{{ audio.masterVolume() }}</span>
+                    <span>-40</span>
+                  </div>
+                  <div class="fader">
+                    <input type="range" min="-40" max="9" step="1"
+                      [value]="audio.masterVolume()"
+                      (input)="atualizarVolumeMaster($event)"
+                      aria-label="Volume master em decibéis"
+                      style="accent-color: #ffb74d;"
+                      class="strip-slider master-slider" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="master-destination">Saída do navegador</div>
+            </div>
             @for (canal of audio.canais(); track canal.id) {
               <div class="channel-strip">
                 <div class="strip-channel-name-container">
