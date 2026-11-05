@@ -1,12 +1,18 @@
 import { Component, signal, effect, computed, OnDestroy, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import * as Tone from 'tone';
 import { FileRepositoryService } from '../../services/file-repository.service';
 import { BundleProjectService } from '../../services/bundle-project.service';
 import { Marker } from '../../models/marker';
+import { ProjectNavigationService } from '../../services/project-navigation.service';
+import {
+  SelecionarProjetoDialogComponent,
+  SelecionarProjetoDialogResult,
+} from '../selecionar-projeto-dialog/selecionar-projeto-dialog.component';
 
 export interface CanalAudio {
   id: string;
@@ -42,14 +48,18 @@ const computarId = (nome: string) => nome.toLowerCase().replace(/\s+/g, '-').rep
 @Component({
   selector: 'app-criador-projeto',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, DragDropModule],
+  imports: [CommonModule, FormsModule, RouterLink, DragDropModule, MatDialogModule],
   templateUrl: './criador-projeto.component.html',
   styleUrls: ['./criador-projeto.component.scss']
 })
 export class CriadorProjetoComponent implements OnInit, OnDestroy {
   private fileRepository = inject(FileRepositoryService);
+  private dialog = inject(MatDialog);
+  private router = inject(Router);
+  private projectNavigation = inject(ProjectNavigationService);
   bundleService = inject(BundleProjectService);
   statusImportacao = signal<string>('');
+  private projetoEmEdicaoId: number | null = null;
   // Dados Gerais do Projeto
   nomeProjeto = signal<string>('');
   pastaBase = signal<string>('');
@@ -85,22 +95,6 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
       Tone.Transport.timeSignature = this.timeSignature();
     });
 
-    effect(async () => {
-      const pasta = this.pastaBase();
-      if (pasta && pasta.trim() !== '') {
-        try {
-          const files = await this.fileRepository.getFiles(pasta);
-          // Mapeia extraindo apenas a propriedade string do nome do arquivo
-          this.arquivosDaPastaAtiva.set(files.map(f => f.name || (f as any).arquivo || ''));
-        } catch (error) {
-          console.error('Erro ao ler arquivos da pasta base:', error);
-          this.arquivosDaPastaAtiva.set([]);
-        }
-      } else {
-        this.arquivosDaPastaAtiva.set([]);
-      }
-    });
-
     Tone.Transport.scheduleRepeat(() => {
       this.posicaoAtual.set(Tone.Transport.position.toString());
     }, '16n');
@@ -122,6 +116,60 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
       moveItemInArray(novaLista, event.previousIndex, event.currentIndex);
       return novaLista;
     });
+  }
+
+  abrirSeletorProjetos() {
+    const dialogRef = this.dialog.open(SelecionarProjetoDialogComponent, {
+      width: '90%',
+      maxWidth: '680px',
+      data: { origem: 'criador' },
+    });
+
+    dialogRef.afterClosed().subscribe((resultado: SelecionarProjetoDialogResult | undefined) => {
+      if (!resultado) return;
+
+      if (resultado.acao === 'editar') {
+        this.preencherFormulario(resultado.projeto.config, resultado.projeto.id ?? null);
+        this.statusImportacao.set(`Editando ${resultado.projeto.nomeProjeto}`);
+        return;
+      }
+
+      this.projectNavigation.queueProject(resultado.config);
+      void this.router.navigateByUrl('/');
+    });
+  }
+
+  private preencherFormulario(config: ProjectConfig, projetoId: number | null = null) {
+    this.projetoEmEdicaoId = projetoId;
+    this.nomeProjeto.set(config.nomeProjeto || '');
+    this.pastaBase.set(config.pastaBase || '');
+    this.bpm.set(config.bpm || 120);
+    this.timeSignature.set(config.timeSignature || 4);
+    this.offset.set((config.offset || 0) * 1000);
+    this.fullSong.set(!!config.fullSong);
+
+    const canaisImportados = Array.isArray(config.canais)
+      ? config.canais.map(canal => ({
+        id: canal.id,
+        nome: canal.nome,
+        arquivo: canal.arquivo || '',
+        muted: canal.muted ?? false,
+        volume: canal.volume ?? 0,
+      }))
+      : [];
+    this.canais.set(canaisImportados);
+
+    const trechosMapeados: InterfaceFormTrecho[] = (config.markers || []).map(marker => ({
+      nome: marker.nome,
+      compassoInicio: parseInt(marker.inicio ? marker.inicio.split('m')[0] : '0', 10) || 0,
+      compassosDuracao: parseInt(marker.duracao ? marker.duracao.split('m')[0] : '4', 10) || 4,
+      referencia: marker.referencia || '',
+      maxPlays: marker.maxPlays || 0,
+      nextMarker: marker.nextMarker || '',
+      modoDisparo: marker.modoDisparo || 'bloco',
+    }));
+    this.trechosForm.set(trechosMapeados);
+    void this.aoMudarPastaBase();
   }
   // Força atualização manual se o usuário selecionar a pasta pela lista suspensa do topo
   async aoMudarPastaBase() {
@@ -161,67 +209,78 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
     const arquivoJson = input.files[0];
     const reader = new FileReader();
 
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
+      let config: ProjectConfig;
       try {
-        const config: ProjectConfig = JSON.parse(e.target?.result as string);
-
-        // 🎯 PRIORIDADE: Se o JSON não trouxer nomeProjeto, usa o nome do arquivo sem extensão, NUNCA a pastaBase
-        const nomeSemExtensao = arquivoJson.name
-          .replace(/\.json(\s*\(\d+\))?$/i, '')
-          .trim();
-
-        const nomeFinal = config.nomeProjeto && config.nomeProjeto.trim() !== '' 
-          ? config.nomeProjeto 
-          : nomeSemExtensao;
-
-        // 🎯 Atualiza TODOS os Signals de estado para o formulário carregar na tela
-        this.nomeProjeto.set(nomeFinal);
-        this.pastaBase.set(config.pastaBase || '');
-        this.bpm.set(config.bpm || 120);
-        this.timeSignature.set(config.timeSignature || 4);
-        this.offset.set((config.offset || 0) * 1000); // ms
-        this.fullSong.set(!!config.fullSong);
-
-        if (config.canais && Array.isArray(config.canais)) {
-          this.canais.set(config.canais.map(c => ({
-            id: c.id,
-            nome: c.nome,
-            arquivo: c.arquivo || '',
-            muted: c.muted ?? false,
-            volume: c.volume ?? 0
-          })));
-        } else {
-          this.canais.set([]);
-        }
-
-        if (config.markers && Array.isArray(config.markers)) {
-          const trechosMapeados: InterfaceFormTrecho[] = config.markers.map(m => {
-            const compassoInicio = parseInt(m.inicio ? m.inicio.split('m')[0] : '0', 10) || 0;
-            const compassosDuracao = parseInt(m.duracao ? m.duracao.split('m')[0] : '4', 10) || 4;
-            return {
-              nome: m.nome,
-              compassoInicio: compassoInicio,
-              compassosDuracao: compassosDuracao,
-              referencia: m.referencia || '',
-              maxPlays: m.maxPlays || 0,
-              nextMarker: m.nextMarker || '',
-              modoDisparo: m.modoDisparo || 'bloco',
-            };
-          });
-          this.trechosForm.set(trechosMapeados);
-        } else {
-          this.trechosForm.set([]);
-        }
-
-        // Força a atualização da lista de arquivos da pasta base importada
-        this.aoMudarPastaBase();
-
-        this.statusImportacao.set('Projeto carregado com sucesso!');
-        setTimeout(() => this.statusImportacao.set(''), 3000);
-
+        config = JSON.parse(e.target?.result as string) as ProjectConfig;
       } catch (err) {
         console.error('Erro ao processar o arquivo JSON de projeto:', err);
         alert('Formato de JSON inválido para ProjectConfig.');
+        return;
+      }
+
+      // Prioriza o nome do JSON e usa o nome do arquivo quando ele estiver ausente.
+      const nomeSemExtensao = arquivoJson.name
+        .replace(/\.json(\s*\(\d+\))?$/i, '')
+        .trim();
+
+      const nomeFinal = config.nomeProjeto && config.nomeProjeto.trim() !== ''
+        ? config.nomeProjeto
+        : nomeSemExtensao;
+      const canaisImportados = Array.isArray(config.canais)
+        ? config.canais.map(canal => ({
+          id: canal.id,
+          nome: canal.nome,
+          arquivo: canal.arquivo || '',
+          muted: canal.muted ?? false,
+          volume: canal.volume ?? 0,
+        }))
+        : [];
+      const configImportada: ProjectConfig = {
+        ...config,
+        nomeProjeto: nomeFinal,
+        pastaBase: config.pastaBase || '',
+        bpm: config.bpm || 120,
+        timeSignature: config.timeSignature || 4,
+        offset: config.offset || 0,
+        fullSong: !!config.fullSong,
+        canais: canaisImportados,
+      };
+
+      this.nomeProjeto.set(nomeFinal);
+      this.pastaBase.set(configImportada.pastaBase);
+      this.bpm.set(configImportada.bpm);
+      this.timeSignature.set(configImportada.timeSignature);
+      this.offset.set((configImportada.offset || 0) * 1000);
+      this.fullSong.set(!!configImportada.fullSong);
+      this.canais.set(canaisImportados);
+
+      if (configImportada.markers) {
+        const trechosMapeados: InterfaceFormTrecho[] = configImportada.markers.map(marker => ({
+          nome: marker.nome,
+          compassoInicio: parseInt(marker.inicio ? marker.inicio.split('m')[0] : '0', 10) || 0,
+          compassosDuracao: parseInt(marker.duracao ? marker.duracao.split('m')[0] : '4', 10) || 4,
+          referencia: marker.referencia || '',
+          maxPlays: marker.maxPlays || 0,
+          nextMarker: marker.nextMarker || '',
+          modoDisparo: marker.modoDisparo || 'bloco',
+        }));
+        this.trechosForm.set(trechosMapeados);
+      } else {
+        this.trechosForm.set([]);
+      }
+
+      this.aoMudarPastaBase();
+
+      try {
+        const resultado = await this.fileRepository.saveProject(configImportada);
+        this.projetoEmEdicaoId = resultado.id;
+        this.nomeProjeto.set(resultado.config.nomeProjeto);
+        this.statusImportacao.set('Projeto carregado e salvo no banco local.');
+        setTimeout(() => this.statusImportacao.set(''), 3000);
+      } catch (error) {
+        console.error('Erro ao salvar o projeto importado:', error);
+        this.statusImportacao.set('Projeto carregado, mas não foi possível salvar no banco local.');
       }
     };
 
@@ -230,7 +289,10 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
   }
 
   async baixarJsonProjeto() {
-    const configResultado = this.construirProjetoConfig();
+    const resultado = await this.fileRepository.saveProject(this.construirProjetoConfig(), this.projetoEmEdicaoId ?? undefined);
+    this.projetoEmEdicaoId = resultado.id;
+    const configResultado = resultado.config;
+    this.nomeProjeto.set(configResultado.nomeProjeto);
 
     // 🎯 Obtém o nome limpo do projeto. Se estiver vazio, usa 'projeto-config'
     const nomeProjetoAtual = this.nomeProjeto()?.trim();
@@ -246,9 +308,22 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
     a.download = `${nomeArquivoDownload}.json`;
     a.click();
     URL.revokeObjectURL(url);
+  }
 
-    // 🎯 Salva também no banco IndexedDB local
-    await this.fileRepository.saveProject(configResultado);
+  async salvarProjeto() {
+    try {
+      const resultado = await this.fileRepository.saveProject(
+        this.construirProjetoConfig(),
+        this.projetoEmEdicaoId ?? undefined,
+      );
+      this.projetoEmEdicaoId = resultado.id;
+      this.nomeProjeto.set(resultado.config.nomeProjeto);
+      this.statusImportacao.set('Projeto salvo no banco local.');
+      setTimeout(() => this.statusImportacao.set(''), 3000);
+    } catch (error) {
+      console.error('Erro ao salvar o projeto:', error);
+      this.statusImportacao.set('Não foi possível salvar o projeto no banco local.');
+    }
   }
 
   async onAudioGuiaSelecionado(event: Event) {
@@ -371,9 +446,10 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
     ]);
   }
 
-  listarTrechos(): {id: string, nome: string}[] {
+  listarTrechos(): { id: string; nome: string }[] {
     return this.trechosForm().map(t => ({
-      nome: t.nome, id: computarId(t.nome)
+      nome: t.nome,
+      id: computarId(t.nome),
     }));
   }
 

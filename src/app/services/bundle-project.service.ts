@@ -40,14 +40,9 @@ export class BundleProjectService {
       const arquivoParaSalvar = new File([blob], nomeArquivo, { type: blob.type });      
       await this.fileRepository.saveFile(novaPastaBase, nomeArquivo, arquivoParaSalvar);
     }
-    sinal.set('Projeto importado com sucesso!');
+    await this.fileRepository.saveProject(projetoModificado);
+    sinal.set('Projeto importado e salvo no banco local!');
     setTimeout(() => sinal.set(''), 2000);
-    this.devolverJsonModificado(projetoModificado);
-  }
-
-  private devolverJsonModificado(projeto: ProjectConfig) {
-    const blob = new Blob([JSON.stringify(projeto, null, 2)], { type: 'application/json' });    
-    saveAs(blob, `${projeto.pastaBase}.json`);
   }
   
   async exportarParaZip(projetoJson: ProjectConfig, nomesArquivos: string[]) {

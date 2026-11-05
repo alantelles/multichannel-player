@@ -28,6 +28,15 @@
   <div class="carregador">
   <!-- mixer.component.html -->
   <div class="painel-configuracao">
+    <!-- Botão de Configurações no Header/Mixer -->
+    <button class="btn-config" (click)="abrirConfiguracoes()">
+      ⚙️ Configurações
+    </button>
+
+    <!-- Modal de Latência condicional -->
+    @if (exibirModalLatencia()) {
+      <app-latency-modal (fechar)="fecharConfiguracoes()"></app-latency-modal>
+    }
     <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #aaa;">📁 Repositório áudios online:</label>
     <input type="text" class="ordinary-text-input" [(ngModel)]="fileRepository.onlineRepositoryUrl" (ngModelChange)="setAudioRepository($event)" placeholder="URL do repositório de áudios" />
     

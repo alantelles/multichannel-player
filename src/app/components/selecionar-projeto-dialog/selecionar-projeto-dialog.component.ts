@@ -2,9 +2,19 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MatDialogRef, MatDialogModule } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogRef, MatDialogModule } from '@angular/material/dialog';
 import { FileRepositoryService } from '../../services/file-repository.service';
 import { SavedProject } from '../../services/db.service';
+import { BundleProjectService } from '../../services/bundle-project.service';
+import { ProjectConfig } from '../../services/audio-engine.service';
+
+export interface SelecionarProjetoDialogData {
+  origem: 'mixer' | 'criador';
+}
+
+export type SelecionarProjetoDialogResult =
+  | { acao: 'carregar'; config: ProjectConfig }
+  | { acao: 'editar'; projeto: SavedProject };
 
 @Component({
   selector: 'app-selecionar-projeto-dialog',
@@ -15,11 +25,14 @@ import { SavedProject } from '../../services/db.service';
 })
 export class SelecionarProjetoDialogComponent implements OnInit {
   private fileRepo = inject(FileRepositoryService);
+  private bundleService = inject(BundleProjectService);
   private dialogRef = inject(MatDialogRef<SelecionarProjetoDialogComponent>);
+  readonly origem = inject<SelecionarProjetoDialogData>(MAT_DIALOG_DATA, { optional: true })?.origem ?? 'mixer';
 
   projetos = signal<SavedProject[]>([]);
   filtro = signal<string>('');
   carregando = signal<boolean>(true);
+  statusAcao = signal<string>('');
 
   async ngOnInit() {
     await this.carregarLista();
@@ -38,7 +51,26 @@ export class SelecionarProjetoDialogComponent implements OnInit {
   }
 
   selecionar(projeto: SavedProject) {
-    this.dialogRef.close(projeto.config);
+    this.dialogRef.close({ acao: 'carregar', config: projeto.config } satisfies SelecionarProjetoDialogResult);
+  }
+
+  editar(projeto: SavedProject) {
+    this.dialogRef.close({ acao: 'editar', projeto } satisfies SelecionarProjetoDialogResult);
+  }
+
+  async duplicar(projeto: SavedProject) {
+    try {
+      const copia = await this.fileRepo.duplicateProject(projeto);
+      this.dialogRef.close({ acao: 'editar', projeto: copia } satisfies SelecionarProjetoDialogResult);
+    } catch (error) {
+      console.error('Erro ao duplicar o projeto:', error);
+      this.statusAcao.set('Não foi possível duplicar o projeto. Verifique se os áudios estão disponíveis.');
+    }
+  }
+
+  async baixarProjeto(projeto: SavedProject) {
+    const nomesArquivos = projeto.config.canais.map(canal => canal.arquivo);
+    await this.bundleService.exportarParaZip(projeto.config, nomesArquivos);
   }
 
   async deletar(projeto: SavedProject) {

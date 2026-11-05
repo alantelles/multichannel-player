@@ -34,6 +34,17 @@
     border-radius: 4px;
     &:hover { background: #2a2a32; }
   }
+
+  .btn-projetos-salvos {
+    background: #394740;
+    border: 1px solid #52635a;
+    color: #e8eee8;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-weight: 600;
+    &:hover { background: #45554c; }
+  }
 }
 .grid-criador {
   display: flex;
@@ -226,6 +237,18 @@
     font-size: 14px;
     display: inline-block;
     &:hover { background: #0b7dda; }
+  }
+}
+
+@media (max-width: 700px) {
+  .header-acoes {
+    flex-wrap: wrap;
+    gap: 10px;
+
+    h2 { flex: 1 1 100%; order: 2; }
+    .btn-voltar { order: 1; }
+    .btn-projetos-salvos { margin-left: auto; order: 1; }
+    .import-container { flex: 1 1 100%; order: 3; margin-left: 0; }
   }
 }
 
