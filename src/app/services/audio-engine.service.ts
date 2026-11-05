@@ -73,6 +73,7 @@ export class AudioEngineService {
   
   public canais = signal<CanalAudio[]>([]);
   public masterVolume = signal<number>(0);
+  public masterMuted = signal<boolean>(false);
   private readonly masterBus = new Tone.Volume(0);
   private loopId!: any;
   private offset?: number;
@@ -557,6 +558,11 @@ export class AudioEngineService {
   public alterarVolumeMaster(db: number) {
     this.masterVolume.set(db);
     this.masterBus.volume.rampTo(db, 0.05);
+  }
+  public alternarMuteMaster() {
+    const novoEstado = !this.masterMuted();
+    this.masterMuted.set(novoEstado);
+    this.masterBus.mute = novoEstado;
   }
   public alternarSolo(canal: CanalAudio) {
     const novoEstadoSolo = !canal.isSoloed();

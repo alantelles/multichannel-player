@@ -38,6 +38,7 @@ vi.mock('tone', () => {
   }
   class VolumeMock {
     volume = { rampTo: vi.fn() };
+    mute = false;
     connect = vi.fn();
     dispose = vi.fn();
   }
@@ -230,6 +231,19 @@ describe('AudioEngineService', () => {
 
     expect(service.masterVolume()).toBe(-6);
     expect(masterBus.volume.rampTo).toHaveBeenCalledWith(-6, 0.05);
+  });
+
+  it('toggles mute on the shared master bus', () => {
+    service.alternarMuteMaster();
+    const masterBus = (service as unknown as { masterBus: InstanceType<typeof Tone.Volume> }).masterBus;
+
+    expect(service.masterMuted()).toBe(true);
+    expect(masterBus.mute).toBe(true);
+
+    service.alternarMuteMaster();
+
+    expect(service.masterMuted()).toBe(false);
+    expect(masterBus.mute).toBe(false);
   });
 
   it('resolves marker references and optionally appends the full-song marker', async () => {

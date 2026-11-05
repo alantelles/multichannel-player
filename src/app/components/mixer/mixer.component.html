@@ -123,7 +123,7 @@
             <div class="channel-strip master-strip" aria-label="Bus master">
               <div class="strip-channel-name-container">
                 <strong class="strip-channel-name">MASTER</strong>
-                <span class="master-level fader-level fader-level-vertical" style="background: #ffb74d;">{{ audio.masterVolume() }} dB</span>
+                <span class="master-level fader-level fader-level-vertical" style="background: #ffb74d;">{{ audio.masterVolume() }}</span>
               </div>
 
               <div class="fader-functions">
@@ -142,6 +142,16 @@
                       class="strip-slider master-slider" />
                   </div>
                 </div>
+              </div>
+
+              <div class="strip-button-group">
+                <button (click)="audio.alternarMuteMaster()"
+                  [style.background]="audio.masterMuted() ? '#dc3545' : '#6b4c1d'"
+                  [attr.aria-label]="audio.masterMuted() ? 'Desmutar master' : 'Silenciar master'"
+                  [attr.aria-pressed]="audio.masterMuted()"
+                  class="strip-button">
+                  {{ audio.masterMuted() ? '🔇 MUTE' : '🔊 MUTE' }}
+                </button>
               </div>
 
               <div class="master-destination">Saída do navegador</div>
