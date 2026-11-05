@@ -52,6 +52,7 @@ describe('MixerComponent', () => {
       volumeNode: {} as CanalAudio['volumeNode'],
       channelNode: {} as CanalAudio['channelNode'],
       volumeSignal: signal(0),
+      panSignal: signal(0),
       isMuted: signal(false),
       isSoloed: signal(false),
       saidaAtiva: signal('Master')
@@ -64,6 +65,20 @@ describe('MixerComponent', () => {
     expect(masterSlider).not.toBeNull();
     expect(firstStrip.classList.contains('master-strip')).toBe(true);
     expect(masterSlider.getAttribute('aria-label')).toBe('Volume master em decibéis');
+    expect(fixture.nativeElement.querySelector('.master-strip .pan-slider')).toBeNull();
+    const panSlider = fixture.nativeElement.querySelector('.channel-strip:not(.master-strip) .pan-slider') as HTMLInputElement;
+    expect(panSlider).not.toBeNull();
+    expect(panSlider.min).toBe('-50');
+    expect(panSlider.max).toBe('50');
+    expect(component.formatarPan(-1)).toBe('L 50');
+    expect(component.formatarPan(0)).toBe('0');
+    expect(component.formatarPan(1)).toBe('R 50');
+    const alterarPan = vi.spyOn(audio, 'alterarPan').mockImplementation(() => {});
+    panSlider.value = '25';
+    panSlider.dispatchEvent(new Event('input'));
+    expect(alterarPan).toHaveBeenCalledWith(audio.canais()[0], 0.5);
+    panSlider.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    expect(alterarPan).toHaveBeenNthCalledWith(2, audio.canais()[0], 0);
     const masterName = fixture.nativeElement.querySelector('.master-strip .strip-channel-name') as HTMLElement;
     expect(masterName.classList.contains('channel-reset-control')).toBe(true);
 
@@ -99,6 +114,7 @@ describe('MixerComponent', () => {
       volumeNode: {} as CanalAudio['volumeNode'],
       channelNode: {} as CanalAudio['channelNode'],
       volumeSignal: signal(-12),
+      panSignal: signal(0),
       isMuted: signal(false),
       isSoloed: signal(false),
       saidaAtiva: signal('Master')
@@ -124,6 +140,7 @@ describe('MixerComponent', () => {
       volumeNode: {} as CanalAudio['volumeNode'],
       channelNode: {} as CanalAudio['channelNode'],
       volumeSignal: signal(-12),
+      panSignal: signal(0),
       isMuted: signal(false),
       isSoloed: signal(false),
       saidaAtiva: signal('Master')
@@ -149,6 +166,42 @@ describe('MixerComponent', () => {
     expect(secondTap.defaultPrevented).toBe(true);
   });
 
+  it('resets a channel pan on a mobile double-tap', () => {
+    const audio = TestBed.inject(AudioEngineService);
+    const channel = {
+      id: 'test-track',
+      nome: 'Test track',
+      arquivo: 'test.mp3',
+      player: {} as CanalAudio['player'],
+      volumeNode: {} as CanalAudio['volumeNode'],
+      channelNode: {} as CanalAudio['channelNode'],
+      volumeSignal: signal(0),
+      panSignal: signal(0.5),
+      isMuted: signal(false),
+      isSoloed: signal(false),
+      saidaAtiva: signal('Master')
+    } satisfies CanalAudio;
+    audio.canais.set([channel]);
+    fixture.detectChanges();
+    const alterarPan = vi.spyOn(audio, 'alterarPan').mockImplementation(() => {});
+    const panSlider = fixture.nativeElement.querySelector('.pan-slider') as HTMLInputElement;
+    const criarToque = (timestamp: number) => {
+      const event = new Event('touchend', { bubbles: true, cancelable: true });
+      Object.defineProperties(event, {
+        changedTouches: { value: { length: 1 } },
+        timeStamp: { value: timestamp }
+      });
+      return event;
+    };
+
+    panSlider.dispatchEvent(criarToque(100));
+    const secondTap = criarToque(250);
+    panSlider.dispatchEvent(secondTap);
+
+    expect(alterarPan).toHaveBeenCalledWith(channel, 0);
+    expect(secondTap.defaultPrevented).toBe(true);
+  });
+
   it('renders a master mute button with its current accessible state', () => {
     const audio = TestBed.inject(AudioEngineService);
     const alternarMuteMaster = vi.spyOn(audio, 'alternarMuteMaster');
@@ -160,6 +213,7 @@ describe('MixerComponent', () => {
       volumeNode: {} as CanalAudio['volumeNode'],
       channelNode: {} as CanalAudio['channelNode'],
       volumeSignal: signal(0),
+      panSignal: signal(0),
       isMuted: signal(false),
       isSoloed: signal(false),
       saidaAtiva: signal('Master')

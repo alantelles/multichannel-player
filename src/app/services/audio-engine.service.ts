@@ -28,6 +28,7 @@ export interface CanalAudioConfig {
   arquivo: string;
   muted?: boolean;
   volume?: number;
+  pan?: number;
 }
 
 export interface CanalAudio extends CanalAudioConfig {
@@ -36,6 +37,7 @@ export interface CanalAudio extends CanalAudioConfig {
   channelNode: Tone.Channel;
   // Signals para atualizar a interface do Angular em tempo real
   volumeSignal: any;  // Armazena o valor em dB (-60 a +6)
+  panSignal: any;
   isMuted: any;       // Booleano para o botão de Mute
   isSoloed: any;
   saidaAtiva: any;    // String ou número indicando o canal de saída física
@@ -336,7 +338,9 @@ export class AudioEngineService {
         const player = new Tone.Player({ url: urlCompleta, autostart: false });
         const volumeNode = new Tone.Volume(0); // 0dB = Volume original
         const channelNode = new Tone.Channel();
+        const pan = canal.pan || 0;
         channelNode.mute = canal.muted || false;
+        channelNode.pan.value = pan;
         volumeNode.volume.rampTo(canal.volume || 0, 0.05);
         player.chain(volumeNode, channelNode, this.masterBus);
         
@@ -346,6 +350,7 @@ export class AudioEngineService {
           volumeNode: volumeNode,
           channelNode: channelNode,
           volumeSignal: signal(canal.volume || 0),       // Slider começa no meio (0 dB)
+          panSignal: signal(pan),
           isMuted: signal(canal.muted),        // Desmutado por padrão
           isSoloed: signal(false),
           saidaAtiva: signal('Master')   // Roteamento padrão
@@ -554,6 +559,11 @@ export class AudioEngineService {
     canal.volumeSignal.set(db);
     // O Tone.js usa escala logarítmica para volume (dB). -60 é silêncio absoluto.
     canal.volumeNode.volume.rampTo(db, 0.05); // Suaviza em 50ms para não dar estalo (pop)
+  }
+  public alterarPan(canal: CanalAudio, pan: number) {
+    const panLimitado = Math.max(-1, Math.min(1, pan));
+    canal.panSignal.set(panLimitado);
+    canal.channelNode.pan.rampTo(panLimitado, 0.05);
   }
   public alterarVolumeMaster(db: number) {
     this.masterVolume.set(db);

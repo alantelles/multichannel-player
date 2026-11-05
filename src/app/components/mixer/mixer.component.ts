@@ -30,6 +30,7 @@ export class MixerComponent implements OnInit {
   private clickTimer: any = null;
   private readonly DOUBLE_CLICK_DELAY = 250; // tempo em ms para aguardar o 2º clique
   private lastVolumeResetTap: { targetId: string; timestamp: number } | null = null;
+  private lastPanResetTap: { targetId: string; timestamp: number } | null = null;
   private readonly DOUBLE_TAP_DELAY = 350;
   visualizacaoSequencia = signal<boolean>(true);
 
@@ -173,6 +174,31 @@ export class MixerComponent implements OnInit {
   atualizarVolumeRange(canal: any, event: Event) {
     const input = event.target as HTMLInputElement;
     this.audio.alterarVolume(canal, Number(input.value));
+  }
+
+  atualizarPanRange(canal: CanalAudio, event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.audio.alterarPan(canal, Number(input.value) / 50);
+  }
+
+  formatarPan(pan: number): string {
+    const valor = Math.round(Math.abs(pan) * 50);
+    if (valor === 0) return '0';
+    return pan < 0 ? `L ${valor}` : `R ${valor}`;
+  }
+
+  resetarPanNoDuploToque(canal: CanalAudio, event: TouchEvent) {
+    if (event.changedTouches.length !== 1) return;
+
+    const previousTap = this.lastPanResetTap;
+    if (previousTap?.targetId === canal.id && event.timeStamp - previousTap.timestamp <= this.DOUBLE_TAP_DELAY) {
+      event.preventDefault();
+      this.lastPanResetTap = null;
+      this.audio.alterarPan(canal, 0);
+      return;
+    }
+
+    this.lastPanResetTap = { targetId: canal.id, timestamp: event.timeStamp };
   }
 
   atualizarVolumeMaster(event: Event) {

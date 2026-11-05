@@ -185,6 +185,18 @@
                   </div>
                 </div>
 
+                <label class="pan-control">
+                  <span>PAN {{ formatarPan(canal.panSignal()) }}</span>
+                  <input type="range" min="-50" max="50" step="1"
+                    [value]="canal.panSignal() * 50"
+                    (input)="atualizarPanRange(canal, $event)"
+                    (dblclick)="audio.alterarPan(canal, 0)"
+                    (touchend)="resetarPanNoDuploToque(canal, $event)"
+                    [attr.aria-label]="'Pan do canal ' + canal.nome"
+                    [attr.aria-valuetext]="formatarPan(canal.panSignal())"
+                    class="pan-slider" />
+                </label>
+
                 <div class="strip-button-group">
                   <button (click)="audio.alternarMute(canal)"
                     [style.background]="canal.isMuted() ? '#dc3545' : '#444'"

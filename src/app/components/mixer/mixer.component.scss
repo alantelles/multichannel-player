@@ -320,6 +320,46 @@
   }
 }
 
+.pan-control {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+  color: #26c6da;
+  font-size: 10px;
+  line-height: 1;
+
+  @include mobile-vertical {
+    width: 75%;
+    align-self: center;
+    min-width: 0;
+  }
+}
+
+.pan-slider {
+  width: 100%;
+  height: 14px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: #26c6da;
+
+  @include mobile-vertical {
+    height: 24px;
+    touch-action: pan-x;
+
+    &::-webkit-slider-thumb {
+      width: 24px;
+      height: 24px;
+    }
+
+    &::-moz-range-thumb {
+      width: 24px;
+      height: 24px;
+    }
+  }
+}
+
 .barra-compassos {
   display: flex;
   width: 100%;

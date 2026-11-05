@@ -46,6 +46,7 @@ vi.mock('tone', () => {
     connect = vi.fn();
   }
   class ChannelMock {
+    pan = { value: 0, rampTo: vi.fn() };
     mute = false;
     solo = false;
     disconnect = vi.fn();
@@ -305,12 +306,15 @@ describe('AudioEngineService', () => {
     const channel = createChannel();
 
     service.alterarVolume(channel, -12);
+    service.alterarPan(channel, 0.35);
     service.alternarSolo(channel);
     service.alternarMute(channel);
     service.alterarSaidaFisica(channel, 1);
 
     expect(channel.volumeSignal()).toBe(-12);
     expect(channel.volumeNode.volume.rampTo).toHaveBeenCalledWith(-12, 0.05);
+    expect(channel.panSignal()).toBe(0.35);
+    expect(channel.channelNode.pan.rampTo).toHaveBeenCalledWith(0.35, 0.05);
     expect(channel.isSoloed()).toBe(true);
     expect(channel.channelNode.solo).toBe(true);
     expect(channel.isMuted()).toBe(true);
@@ -463,6 +467,7 @@ describe('AudioEngineService', () => {
       } as unknown as Tone.Player,
       volumeNode: { volume: { rampTo: vi.fn() }, dispose: vi.fn() } as unknown as Tone.Volume,
       channelNode: {
+        pan: { value: 0, rampTo: vi.fn() },
         mute: false,
         solo: false,
         disconnect: vi.fn(),
@@ -470,6 +475,7 @@ describe('AudioEngineService', () => {
         dispose: vi.fn()
       } as unknown as Tone.Channel,
       volumeSignal: signal(0),
+      panSignal: signal(0),
       isMuted: signal(false),
       isSoloed: signal(false),
       saidaAtiva: signal('Master')
