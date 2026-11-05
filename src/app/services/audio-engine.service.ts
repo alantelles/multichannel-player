@@ -76,6 +76,11 @@ export class AudioEngineService {
   public canais = signal<CanalAudio[]>([]);
   public masterVolume = signal<number>(0);
   public masterMuted = signal<boolean>(false);
+  public masterEqEnabled = signal<boolean>(false);
+  public masterEqLow = signal<number>(0);
+  public masterEqMid = signal<number>(0);
+  public masterEqHigh = signal<number>(0);
+  private readonly masterEq = new Tone.EQ3(0, 0, 0);
   private readonly masterBus = new Tone.Volume(0);
   private loopId!: any;
   private offset?: number;
@@ -160,6 +165,7 @@ export class AudioEngineService {
   });
 
   constructor() {
+    this.masterEq.connect(this.masterBus);
     this.masterBus.connect(Tone.Destination);
     effect(() => {
       const config = this.latencySettings.activeConfig();
@@ -342,7 +348,7 @@ export class AudioEngineService {
         channelNode.mute = canal.muted || false;
         channelNode.pan.value = pan;
         volumeNode.volume.rampTo(canal.volume || 0, 0.05);
-        player.chain(volumeNode, channelNode, this.masterBus);
+        player.chain(volumeNode, channelNode, this.masterEq);
         
         const novoCanal: CanalAudio = {
           ...canal,
@@ -569,6 +575,21 @@ export class AudioEngineService {
     this.masterVolume.set(db);
     this.masterBus.volume.rampTo(db, 0.05);
   }
+  public alternarEqMaster() {
+    const enabled = !this.masterEqEnabled();
+    this.masterEqEnabled.set(enabled);
+    this.masterEq.low.rampTo(enabled ? this.masterEqLow() : 0, 0.05);
+    this.masterEq.mid.rampTo(enabled ? this.masterEqMid() : 0, 0.05);
+    this.masterEq.high.rampTo(enabled ? this.masterEqHigh() : 0, 0.05);
+  }
+  public alterarEqMaster(banda: 'low' | 'mid' | 'high', db: number) {
+    const ganho = Math.max(-12, Math.min(12, db));
+    const parametro = this.masterEq[banda];
+    parametro.rampTo(this.masterEqEnabled() ? ganho : 0, 0.05);
+    if (banda === 'low') this.masterEqLow.set(ganho);
+    if (banda === 'mid') this.masterEqMid.set(ganho);
+    if (banda === 'high') this.masterEqHigh.set(ganho);
+  }
   public alternarMuteMaster() {
     const novoEstado = !this.masterMuted();
     this.masterMuted.set(novoEstado);
@@ -594,7 +615,7 @@ export class AudioEngineService {
     void indiceSaida;
     canal.saidaAtiva.set('Master');
     canal.channelNode.disconnect();
-    canal.channelNode.connect(this.masterBus);
+    canal.channelNode.connect(this.masterEq);
   }
 
   dispararTrechoInstantaneamente(trechoId: string) {

@@ -11,6 +11,7 @@ import {
 } from '../selecionar-projeto-dialog/selecionar-projeto-dialog.component';
 import { ProjectNavigationService } from '../../services/project-navigation.service';
 import { ConfirmacaoDialogService } from '../../services/confirmacao-dialog.service';
+import { FxDialogComponent } from '../fx-dialog/fx-dialog.component';
 
 @Component({
   selector: 'app-mixer',
@@ -50,6 +51,15 @@ export class MixerComponent implements OnInit {
         const jsonString = JSON.stringify(resultado.config);
         this.audio.carregarProjetoPorJSON(jsonString);
       }
+    });
+  }
+
+  abrirFxMaster(): void {
+    this.dialog.open(FxDialogComponent, {
+      width: 'min(92vw, 340px)',
+      maxWidth: '340px',
+      ariaLabel: 'Efeitos do master',
+      autoFocus: 'button.effect-toggle',
     });
   }
 

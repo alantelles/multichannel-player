@@ -42,6 +42,13 @@ vi.mock('tone', () => {
     connect = vi.fn();
     dispose = vi.fn();
   }
+  class EQ3Mock {
+    low = { rampTo: vi.fn() };
+    mid = { rampTo: vi.fn() };
+    high = { rampTo: vi.fn() };
+    connect = vi.fn();
+    dispose = vi.fn();
+  }
   class GainMock {
     connect = vi.fn();
   }
@@ -59,6 +66,7 @@ vi.mock('tone', () => {
     Destination: {},
     Player: PlayerMock,
     Volume: VolumeMock,
+    EQ3: EQ3Mock,
     Gain: GainMock,
     Channel: ChannelMock,
     start: toneMocks.start,
@@ -216,14 +224,48 @@ describe('AudioEngineService', () => {
     ] }));
 
     const masterBus = (service as unknown as { masterBus: InstanceType<typeof Tone.Volume> }).masterBus;
+    const masterEq = (service as unknown as { masterEq: InstanceType<typeof Tone.EQ3> }).masterEq;
 
     expect(masterBus.connect).toHaveBeenCalledOnce();
     expect(masterBus.connect).toHaveBeenCalledWith(Tone.Destination);
+    expect(masterEq.connect).toHaveBeenCalledWith(masterBus);
     expect(service.canais()).toHaveLength(2);
     service.canais().forEach(channel => {
-      expect(channel.player.chain).toHaveBeenCalledWith(channel.volumeNode, channel.channelNode, masterBus);
+      expect(channel.player.chain).toHaveBeenCalledWith(channel.volumeNode, channel.channelNode, masterEq);
       expect(channel.player.chain).not.toHaveBeenCalledWith(channel.volumeNode, channel.channelNode, Tone.Destination);
     });
+  });
+
+  it('controls the master EQ gains and bypass', () => {
+    const masterEq = (service as unknown as { masterEq: InstanceType<typeof Tone.EQ3> }).masterEq;
+
+    service.alterarEqMaster('low', 6);
+    service.alterarEqMaster('mid', -4);
+    service.alterarEqMaster('high', 18);
+
+    expect(masterEq.low.rampTo).toHaveBeenNthCalledWith(1, 0, 0.05);
+    expect(masterEq.mid.rampTo).toHaveBeenCalledWith(0, 0.05);
+    expect(masterEq.high.rampTo).toHaveBeenCalledWith(0, 0.05);
+    expect(service.masterEqLow()).toBe(6);
+    expect(service.masterEqMid()).toBe(-4);
+    expect(service.masterEqHigh()).toBe(12);
+
+    service.alternarEqMaster();
+    expect(service.masterEqEnabled()).toBe(true);
+    expect(masterEq.low.rampTo).toHaveBeenLastCalledWith(6, 0.05);
+    expect(masterEq.mid.rampTo).toHaveBeenLastCalledWith(-4, 0.05);
+
+    service.alternarEqMaster();
+    expect(service.masterEqEnabled()).toBe(false);
+    expect(masterEq.low.rampTo).toHaveBeenLastCalledWith(0, 0.05);
+
+    service.alterarEqMaster('low', 3);
+    expect(service.masterEqLow()).toBe(3);
+    expect(masterEq.low.rampTo).toHaveBeenLastCalledWith(0, 0.05);
+
+    service.alternarEqMaster();
+    expect(service.masterEqEnabled()).toBe(true);
+    expect(masterEq.low.rampTo).toHaveBeenLastCalledWith(3, 0.05);
   });
 
   it('updates the shared master bus volume in decibels', () => {
@@ -321,7 +363,7 @@ describe('AudioEngineService', () => {
     expect(channel.channelNode.mute).toBe(true);
     expect(channel.saidaAtiva()).toBe('Master');
     expect(channel.channelNode.disconnect).toHaveBeenCalledOnce();
-    expect(channel.channelNode.connect).toHaveBeenCalledWith((service as unknown as { masterBus: InstanceType<typeof Tone.Gain> }).masterBus);
+    expect(channel.channelNode.connect).toHaveBeenCalledWith((service as unknown as { masterEq: InstanceType<typeof Tone.EQ3> }).masterEq);
   });
 
   it('reports progress only while playing', () => {

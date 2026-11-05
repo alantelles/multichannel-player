@@ -148,6 +148,12 @@
               </div>
 
               <div class="strip-button-group">
+                <button type="button" (click)="abrirFxMaster()"
+                  [class.fx-active]="audio.masterEqEnabled()"
+                  [attr.aria-label]="audio.masterEqEnabled() ? 'Abrir efeitos master, EQ3 ligado' : 'Abrir efeitos master'"
+                  class="strip-button fx-button">
+                  FX
+                </button>
                 <button (click)="audio.alternarMuteMaster()"
                   [style.background]="audio.masterMuted() ? '#dc3545' : '#6b4c1d'"
                   [attr.aria-label]="audio.masterMuted() ? 'Desmutar master' : 'Silenciar master'"

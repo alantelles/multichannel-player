@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { provideRouter } from '@angular/router';
+import { MatDialog } from '@angular/material/dialog';
 import { AudioEngineService, CanalAudio } from '../../services/audio-engine.service';
 import { ConfirmacaoDialogService } from '../../services/confirmacao-dialog.service';
 
@@ -13,9 +14,16 @@ vi.mock('tone', () => {
     mute = false;
     connect = vi.fn();
   }
+  class EQ3Mock {
+    low = { rampTo: vi.fn() };
+    mid = { rampTo: vi.fn() };
+    high = { rampTo: vi.fn() };
+    connect = vi.fn();
+  }
 
   return {
     Volume: VolumeMock,
+    EQ3: EQ3Mock,
     Destination: {},
     context,
     Transport: { bpm: { value: 120 }, timeSignature: 4 },
@@ -63,6 +71,7 @@ describe('MixerComponent', () => {
     const firstStrip = fixture.nativeElement.querySelector('.strips-container')?.firstElementChild as HTMLElement;
 
     expect(masterSlider).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.master-eq')).toBeNull();
     expect(firstStrip.classList.contains('master-strip')).toBe(true);
     expect(masterSlider.getAttribute('aria-label')).toBe('Volume master em decibéis');
     expect(fixture.nativeElement.querySelector('.master-strip .pan-slider')).toBeNull();
@@ -219,12 +228,41 @@ describe('MixerComponent', () => {
       saidaAtiva: signal('Master')
     }]);
     fixture.detectChanges();
-    const masterMuteButton = fixture.nativeElement.querySelector('.master-strip button') as HTMLButtonElement;
+    const masterMuteButton = fixture.nativeElement.querySelector('.master-strip .strip-button:not(.fx-button)') as HTMLButtonElement;
 
     expect(masterMuteButton.getAttribute('aria-label')).toBe('Silenciar master');
     expect(masterMuteButton.getAttribute('aria-pressed')).toBe('false');
     masterMuteButton.click();
     expect(alternarMuteMaster).toHaveBeenCalledOnce();
+  });
+
+  it('opens the master effects dialog from the FX button next to mute', () => {
+    const audio = TestBed.inject(AudioEngineService);
+    audio.canais.set([{
+      id: 'test-track',
+      nome: 'Test track',
+      arquivo: 'test.mp3',
+      player: {} as CanalAudio['player'],
+      volumeNode: {} as CanalAudio['volumeNode'],
+      channelNode: {} as CanalAudio['channelNode'],
+      volumeSignal: signal(0),
+      panSignal: signal(0),
+      isMuted: signal(false),
+      isSoloed: signal(false),
+      saidaAtiva: signal('Master')
+    }]);
+    fixture.detectChanges();
+    const openDialog = vi.spyOn(MatDialog.prototype, 'open');
+    const fxButton = fixture.nativeElement.querySelector('.master-strip .fx-button') as HTMLButtonElement;
+    const muteButton = fixture.nativeElement.querySelector('.master-strip .strip-button:not(.fx-button)') as HTMLButtonElement;
+
+    expect(fxButton.textContent.trim()).toBe('FX');
+    expect(fxButton.nextElementSibling).toBe(muteButton);
+    fxButton.click();
+
+    expect(openDialog).toHaveBeenCalledOnce();
+    expect(openDialog.mock.calls[0][1]).toMatchObject({ ariaLabel: 'Efeitos do master' });
+    openDialog.mockRestore();
   });
 
   it('allows leaving without confirmation when playback is stopped', async () => {

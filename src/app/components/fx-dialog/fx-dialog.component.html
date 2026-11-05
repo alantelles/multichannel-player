@@ -1,0 +1,15 @@
+<section class="fx-dialog">
+  <header class="fx-header">
+    <div>
+      <span class="fx-eyebrow">MASTER</span>
+      <h2 mat-dialog-title>Efeitos</h2>
+    </div>
+    <button class="close-button" type="button" aria-label="Fechar efeitos" (click)="fechar()">×</button>
+  </header>
+
+  <div mat-dialog-content class="fx-effects">
+    @for (effectComponent of effectComponents; track effectComponent) {
+      <ng-container *ngComponentOutlet="effectComponent"></ng-container>
+    }
+  </div>
+</section>

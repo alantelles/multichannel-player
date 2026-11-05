@@ -225,6 +225,31 @@
   background: #302719;
   color: #ffb74d;
   border-top-color: #ffb74d;
+
+  .strip-button-group {
+    flex-direction: column;
+    gap: 6px;
+
+    @include mobile-vertical {
+      flex-direction: row;
+    }
+  }
+
+  .strip-button {
+    flex: 1;
+    min-width: 0;
+    padding-inline: 6px;
+  }
+}
+
+.fx-button {
+  color: #f2f2ed;
+  background: #414441;
+
+  &.fx-active {
+    color: #171a16;
+    background: #c9ef74;
+  }
 }
 
 .trechos {
