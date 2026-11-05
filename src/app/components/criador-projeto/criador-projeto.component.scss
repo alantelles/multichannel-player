@@ -126,7 +126,8 @@
   align-items: center;
   margin-bottom: 15px;  
   width: 100%;
-  .btn-adicionar { background: #2196f3; color: white; border: none; padding: 8px 16px; font-weight: bold; cursor: pointer; border-radius: 4px; }
+  .btn-adicionar { background: #c9ef74; color: #14200f; border: none; padding: 8px 16px; font-weight: bold; cursor: pointer; border-radius: 4px; }
+  .btn-adicionar:hover { background: #d7f694; }
 }
 
 .item-trecho {
@@ -228,15 +229,15 @@
 .import-container {
   margin-left: auto;
   .btn-importar-label {
-    background: #2196f3;
-    color: white;
+    background: #c9ef74;
+    color: #14200f;
     padding: 10px 16px;
     border-radius: 4px;
     font-weight: bold;
     cursor: pointer;
     font-size: 14px;
     display: inline-block;
-    &:hover { background: #0b7dda; }
+    &:hover { background: #d7f694; }
   }
 }
 
