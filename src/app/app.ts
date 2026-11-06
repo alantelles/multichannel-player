@@ -19,6 +19,16 @@ export class App {
     this.menuAberto.set(false);
   }
 
+  protected fecharMenuAoClicarFora(event: MouseEvent): void {
+    if (!this.menuAberto()) return;
+    if (typeof window.matchMedia === 'function' && !window.matchMedia('(max-width: 640px)').matches) return;
+
+    const alvo = event.target;
+    if (!(alvo instanceof Element) || alvo.closest('#main-navigation, .menu-toggle')) return;
+
+    this.fecharMenu();
+  }
+
   protected alternarInversao(): void {
     this.paginaInvertida.update(invertida => !invertida);
     this.overlayContainer.getContainerElement().classList.toggle('is-inverted', this.paginaInvertida());

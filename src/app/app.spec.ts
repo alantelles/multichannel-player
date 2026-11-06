@@ -46,4 +46,17 @@ describe('App', () => {
     expect(document.querySelector('.cdk-overlay-container')?.classList.contains('is-inverted')).toBe(true);
     expect(navigation?.classList.contains('is-open')).toBe(false);
   });
+
+  it('closes the mobile navigation when clicking outside it', () => {
+    vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true })));
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    app['menuAberto'].set(true);
+    const outsideTarget = document.createElement('main');
+
+    app['fecharMenuAoClicarFora']({ target: outsideTarget } as unknown as MouseEvent);
+
+    expect(app['menuAberto']()).toBe(false);
+    vi.unstubAllGlobals();
+  });
 });

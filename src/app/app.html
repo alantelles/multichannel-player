@@ -1,4 +1,4 @@
-<div class="app-container" [class.is-inverted]="paginaInvertida()">
+<div class="app-container" [class.is-inverted]="paginaInvertida()" (click)="fecharMenuAoClicarFora($event)">
 	<header class="app-header">
 		<a class="brand" routerLink="/" (click)="fecharMenu()">Multichannel Player</a>
 
