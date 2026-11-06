@@ -130,6 +130,9 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
       width: '90%',
       maxWidth: '680px',
       data: { origem: 'criador' },
+      autoFocus: window.matchMedia('(max-width: 600px)').matches
+        ? '.dialog-header h2'
+        : 'input[type="search"]',
     });
 
     dialogRef.afterClosed().subscribe((resultado: SelecionarProjetoDialogResult | undefined) => {

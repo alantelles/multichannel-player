@@ -43,7 +43,10 @@ export class MixerComponent implements OnInit {
     const dialogRef = this.dialog.open(SelecionarProjetoDialogComponent, {
       width: '90%',
       maxWidth: '680px',
-      data: { origem: 'mixer' }
+      data: { origem: 'mixer' },
+      autoFocus: window.matchMedia('(max-width: 600px)').matches
+        ? '.dialog-header h2'
+        : 'input[type="search"]'
     });
 
     dialogRef.afterClosed().subscribe((resultado: SelecionarProjetoDialogResult | undefined) => {
