@@ -6,6 +6,7 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { FileRepositoryService } from '../../services/file-repository.service';
 import { BundleProjectService } from '../../services/bundle-project.service';
 import { ProjectNavigationService } from '../../services/project-navigation.service';
+import { NotificacaoService } from '../../services/notificacao.service';
 import { SavedProject } from '../../services/db.service';
 import {
   DetalhesProjetoDialogComponent,
@@ -23,6 +24,7 @@ export class AdminProjetosComponent implements OnInit {
   private readonly fileRepository = inject(FileRepositoryService);
   private readonly bundleService = inject(BundleProjectService);
   private readonly projectNavigation = inject(ProjectNavigationService);
+  private readonly notificacao = inject(NotificacaoService);
   private readonly dialog = inject(MatDialog);
   private readonly router = inject(Router);
 
@@ -60,6 +62,7 @@ export class AdminProjetosComponent implements OnInit {
 
     if (!arquivo.name.toLowerCase().endsWith('.zip')) {
       this.statusImportacao.set('Selecione um arquivo de projeto ZIP.');
+      this.notificacao.erro('Selecione um arquivo de projeto ZIP válido.');
       return;
     }
 
@@ -67,9 +70,11 @@ export class AdminProjetosComponent implements OnInit {
     try {
       await this.bundleService.importarEInstalarZip(arquivo, this.statusImportacao);
       await this.carregarProjetos();
+      this.notificacao.sucesso('Projeto ZIP importado e salvo no banco local.');
     } catch (error) {
       console.error('Erro ao importar projeto ZIP:', error);
       this.statusImportacao.set('Não foi possível importar o ZIP. Verifique se o arquivo contém um projeto válido.');
+      this.notificacao.erro('Não foi possível importar o projeto ZIP.');
     }
   }
 

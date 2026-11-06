@@ -1,10 +1,11 @@
 import { Component, signal } from '@angular/core';
 import { OverlayContainer } from '@angular/cdk/overlay';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, MatSnackBarModule],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })

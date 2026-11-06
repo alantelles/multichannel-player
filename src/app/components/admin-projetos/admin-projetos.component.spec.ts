@@ -5,6 +5,7 @@ import { vi } from 'vitest';
 import { FileRepositoryService } from '../../services/file-repository.service';
 import { BundleProjectService } from '../../services/bundle-project.service';
 import { ProjectNavigationService } from '../../services/project-navigation.service';
+import { NotificacaoService } from '../../services/notificacao.service';
 import { AdminProjetosComponent } from './admin-projetos.component';
 
 describe('AdminProjetosComponent', () => {
@@ -18,6 +19,7 @@ describe('AdminProjetosComponent', () => {
       status.set('Projeto importado e salvo no banco local!');
     }),
   };
+  const notificacao = { sucesso: vi.fn(), erro: vi.fn() };
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -31,6 +33,7 @@ describe('AdminProjetosComponent', () => {
         { provide: FileRepositoryService, useValue: fileRepository },
         { provide: BundleProjectService, useValue: bundleService },
         { provide: ProjectNavigationService, useValue: { queueProject: vi.fn() } },
+        { provide: NotificacaoService, useValue: notificacao },
         { provide: MatDialog, useValue: { open: vi.fn() } },
         provideRouter([]),
       ],
@@ -51,6 +54,7 @@ describe('AdminProjetosComponent', () => {
     expect(bundleService.importarEInstalarZip).toHaveBeenCalledWith(arquivo, component.statusImportacao);
     expect(fileRepository.getProjects).toHaveBeenCalledTimes(2);
     expect(component.statusImportacao()).toBe('Projeto importado e salvo no banco local!');
+    expect(notificacao.sucesso).toHaveBeenCalledWith('Projeto ZIP importado e salvo no banco local.');
     expect(input.value).toBe('');
   });
 
@@ -61,6 +65,7 @@ describe('AdminProjetosComponent', () => {
 
     expect(bundleService.importarEInstalarZip).not.toHaveBeenCalled();
     expect(component.statusImportacao()).toBe('Selecione um arquivo de projeto ZIP.');
+    expect(notificacao.erro).toHaveBeenCalledWith('Selecione um arquivo de projeto ZIP válido.');
     expect(input.value).toBe('');
   });
 

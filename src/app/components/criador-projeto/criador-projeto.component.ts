@@ -10,6 +10,7 @@ import { SavedProject } from '../../services/db.service';
 import { BundleProjectService } from '../../services/bundle-project.service';
 import { Marker } from '../../models/marker';
 import { ProjectNavigationService } from '../../services/project-navigation.service';
+import { NotificacaoService } from '../../services/notificacao.service';
 import {
   SelecionarProjetoDialogComponent,
   SelecionarProjetoDialogResult,
@@ -58,6 +59,7 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
   private dialog = inject(MatDialog);
   private router = inject(Router);
   private projectNavigation = inject(ProjectNavigationService);
+  private readonly notificacao = inject(NotificacaoService);
   bundleService = inject(BundleProjectService);
   statusImportacao = signal<string>('');
   private projetoEmEdicaoId: number | null = null;
@@ -201,7 +203,13 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
 
     if (nomeArquivo.endsWith('.zip')) {
       this.statusImportacao.set('Carregando arquivo de projeto ZIP...');
-      this.bundleService.importarEInstalarZip(arquivo, this.statusImportacao);
+      void this.bundleService.importarEInstalarZip(arquivo, this.statusImportacao)
+        .then(() => this.notificacao.sucesso('Projeto ZIP importado e salvo no banco local.'))
+        .catch(error => {
+          console.error('Erro ao importar projeto ZIP:', error);
+          this.statusImportacao.set('Não foi possível importar o ZIP. Verifique se o arquivo contém um projeto válido.');
+          this.notificacao.erro('Não foi possível importar o projeto ZIP.');
+        });
     } else if (nomeArquivo.endsWith('.json')) {
       this.importarJsonProjeto(event);
     } else {
@@ -226,6 +234,7 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
       } catch (err) {
         console.error('Erro ao processar o arquivo JSON de projeto:', err);
         alert('Formato de JSON inválido para ProjectConfig.');
+        this.notificacao.erro('O arquivo JSON do projeto é inválido.');
         return;
       }
 
@@ -287,10 +296,12 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
         this.projetoEmEdicaoId = resultado.id;
         this.nomeProjeto.set(resultado.config.nomeProjeto);
         this.statusImportacao.set('Projeto carregado e salvo no banco local.');
+        this.notificacao.sucesso(`Projeto "${nomeFinal}" importado e salvo.`);
         setTimeout(() => this.statusImportacao.set(''), 3000);
       } catch (error) {
         console.error('Erro ao salvar o projeto importado:', error);
         this.statusImportacao.set('Projeto carregado, mas não foi possível salvar no banco local.');
+        this.notificacao.erro('O projeto foi carregado, mas não pôde ser salvo no banco local.');
       }
     };
 
@@ -329,10 +340,12 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
       this.projetoEmEdicaoId = resultado.id;
       this.nomeProjeto.set(resultado.config.nomeProjeto);
       this.statusImportacao.set('Projeto salvo no banco local.');
+      this.notificacao.sucesso(`Projeto "${resultado.config.nomeProjeto}" salvo no banco local.`);
       setTimeout(() => this.statusImportacao.set(''), 3000);
     } catch (error) {
       console.error('Erro ao salvar o projeto:', error);
       this.statusImportacao.set('Não foi possível salvar o projeto no banco local.');
+      this.notificacao.erro('Não foi possível salvar o projeto no banco local.');
     }
   }
 

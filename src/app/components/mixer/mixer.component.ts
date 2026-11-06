@@ -12,6 +12,7 @@ import {
 import { ProjectNavigationService } from '../../services/project-navigation.service';
 import { ConfirmacaoDialogService } from '../../services/confirmacao-dialog.service';
 import { FxDialogComponent } from '../fx-dialog/fx-dialog.component';
+import { NotificacaoService } from '../../services/notificacao.service';
 
 @Component({
   selector: 'app-mixer',
@@ -25,6 +26,7 @@ export class MixerComponent implements OnInit {
   protected audio = inject(AudioEngineService);
   private dialog = inject(MatDialog);
   private readonly confirmacaoDialog = inject(ConfirmacaoDialogService);
+  private readonly notificacao = inject(NotificacaoService);
   private projectNavigation = inject(ProjectNavigationService);
   fileRepository = inject(FileRepositoryService);
   // Timer para controlar o atraso do clique simples
@@ -52,7 +54,7 @@ export class MixerComponent implements OnInit {
     dialogRef.afterClosed().subscribe((resultado: SelecionarProjetoDialogResult | undefined) => {
       if (resultado?.acao === 'carregar') {
         const jsonString = JSON.stringify(resultado.config);
-        this.audio.carregarProjetoPorJSON(jsonString);
+        void this.carregarProjeto(jsonString, resultado.config.nomeProjeto);
       }
     });
   }
@@ -102,7 +104,16 @@ export class MixerComponent implements OnInit {
     this.visualizacaoSequencia.set(estadoVisualizacao === 'true');
     const projetoPendente = this.projectNavigation.consumePendingProject();
     if (projetoPendente) {
-      void this.audio.carregarProjetoPorJSON(JSON.stringify(projetoPendente));
+      void this.carregarProjeto(JSON.stringify(projetoPendente), projetoPendente.nomeProjeto);
+    }
+  }
+
+  private async carregarProjeto(jsonString: string, nomeProjeto: string): Promise<void> {
+    const carregado = await this.audio.carregarProjetoPorJSON(jsonString);
+    if (carregado) {
+      this.notificacao.sucesso(`Projeto "${nomeProjeto}" carregado. ${this.audio.canais().length} faixas prontas.`);
+    } else {
+      this.notificacao.erro('Não foi possível carregar as faixas do projeto.');
     }
   }
   toggleVisualizacaoSequencia() {

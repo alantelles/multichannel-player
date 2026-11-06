@@ -4,6 +4,7 @@ import { provideRouter } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { AudioEngineService, CanalAudio } from '../../services/audio-engine.service';
 import { ConfirmacaoDialogService } from '../../services/confirmacao-dialog.service';
+import { NotificacaoService } from '../../services/notificacao.service';
 
 import { MixerComponent } from './mixer.component';
 
@@ -34,11 +35,13 @@ vi.mock('tone', () => {
 describe('MixerComponent', () => {
   let component: MixerComponent;
   let fixture: ComponentFixture<MixerComponent>;
+  const notificacao = { sucesso: vi.fn(), erro: vi.fn() };
 
   beforeEach(async () => {
+    vi.clearAllMocks();
     await TestBed.configureTestingModule({
       imports: [MixerComponent],
-      providers: [provideRouter([])],
+      providers: [provideRouter([]), { provide: NotificacaoService, useValue: notificacao }],
     }).compileComponents();
 
     fixture = TestBed.createComponent(MixerComponent);
@@ -48,6 +51,16 @@ describe('MixerComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('notifies when all project tracks finish loading', async () => {
+    const audio = TestBed.inject(AudioEngineService);
+    vi.spyOn(audio, 'carregarProjetoPorJSON').mockResolvedValue(true);
+
+    await component['carregarProjeto']('{"nomeProjeto":"Ensaio"}', 'Ensaio');
+
+    expect(notificacao.sucesso).toHaveBeenCalledWith('Projeto "Ensaio" carregado. 0 faixas prontas.');
+    expect(notificacao.erro).not.toHaveBeenCalled();
   });
 
   it('renders the highlighted master fader and forwards its value', () => {

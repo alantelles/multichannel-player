@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { FileRepositoryService } from '../../services/file-repository.service';
 import { BundleProjectService } from '../../services/bundle-project.service';
+import { NotificacaoService } from '../../services/notificacao.service';
 
 import { CriadorProjetoComponent } from './criador-projeto.component';
 
@@ -25,6 +26,7 @@ describe('CriadorProjetoComponent', () => {
     saveProject: vi.fn(async (config: { nomeProjeto: string }) => ({ id: 1, config })),
   };
   const bundleService = { importarEInstalarZip: vi.fn() };
+  const notificacao = { sucesso: vi.fn(), erro: vi.fn() };
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -33,6 +35,7 @@ describe('CriadorProjetoComponent', () => {
       providers: [
         { provide: FileRepositoryService, useValue: fileRepository },
         { provide: BundleProjectService, useValue: bundleService },
+        { provide: NotificacaoService, useValue: notificacao },
         provideRouter([]),
       ],
     }).compileComponents();
@@ -77,6 +80,7 @@ describe('CriadorProjetoComponent', () => {
       pastaBase: 'ensaio',
     }));
     expect(component.statusImportacao()).toBe('Projeto carregado e salvo no banco local.');
+    expect(notificacao.sucesso).toHaveBeenCalledWith('Projeto "ensaio" importado e salvo.');
     expect(downloadSpy).not.toHaveBeenCalled();
   });
 
@@ -90,6 +94,7 @@ describe('CriadorProjetoComponent', () => {
       bpm: 120,
     }), undefined);
     expect(component.statusImportacao()).toBe('Projeto salvo no banco local.');
+    expect(notificacao.sucesso).toHaveBeenCalledWith('Projeto "Sem Nome" salvo no banco local.');
     expect(downloadSpy).not.toHaveBeenCalled();
   });
 

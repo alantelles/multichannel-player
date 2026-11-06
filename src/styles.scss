@@ -50,3 +50,16 @@ html, body {
 .cdk-overlay-container.is-inverted .cdk-overlay-popover {
   transform: rotate(180deg);
 }
+
+.task-snackbar .mdc-snackbar__surface {
+  background-color: #183a34 !important;
+}
+
+.task-snackbar .mdc-snackbar__label,
+.task-snackbar .mat-mdc-button {
+  color: #fff !important;
+}
+
+.task-snackbar-error .mdc-snackbar__surface {
+  background-color: #7f1d1d !important;
+}
