@@ -43,7 +43,19 @@
       @for (projeto of projetos(); track projeto.id) {
         <article class="project-row">
           <div class="project-name">
-            <strong>{{ projeto.nomeProjeto }}</strong>
+            <div class="project-title">
+              <button
+                type="button"
+                class="favorite-button"
+                [class.is-favorite]="projeto.favorito"
+                [attr.aria-pressed]="projeto.favorito === true"
+                [attr.aria-label]="projeto.favorito ? 'Remover ' + projeto.nomeProjeto + ' dos favoritos' : 'Adicionar ' + projeto.nomeProjeto + ' aos favoritos'"
+                [title]="projeto.favorito ? 'Remover dos favoritos' : 'Adicionar aos favoritos'"
+                (click)="alternarFavorito(projeto)">
+                <span aria-hidden="true">{{ projeto.favorito ? '★' : '☆' }}</span>
+              </button>
+              <strong>{{ projeto.nomeProjeto }}</strong>
+            </div>
             <span>{{ projeto.pastaBase || 'Sem pasta base' }}</span>
           </div>
           <div class="project-config">

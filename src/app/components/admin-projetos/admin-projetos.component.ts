@@ -46,6 +46,12 @@ export class AdminProjetosComponent implements OnInit {
     await this.carregarProjetos();
   }
 
+  async alternarFavorito(projeto: SavedProject): Promise<void> {
+    if (projeto.id === undefined) return;
+    await this.fileRepository.toggleProjectFavorite(projeto.id);
+    await this.carregarProjetos();
+  }
+
   async importarZip(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const arquivo = input.files?.[0];

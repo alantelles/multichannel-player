@@ -50,6 +50,12 @@ export class SelecionarProjetoDialogComponent implements OnInit {
     await this.carregarLista();
   }
 
+  async alternarFavorito(projeto: SavedProject) {
+    if (projeto.id === undefined) return;
+    await this.fileRepo.toggleProjectFavorite(projeto.id);
+    await this.carregarLista();
+  }
+
   selecionar(projeto: SavedProject) {
     this.dialogRef.close({ acao: 'carregar', config: projeto.config } satisfies SelecionarProjetoDialogResult);
   }

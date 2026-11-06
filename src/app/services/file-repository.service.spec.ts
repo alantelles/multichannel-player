@@ -8,6 +8,7 @@ describe('FileRepositoryService', () => {
   let savedProjects: SavedProject[];
   const projectTable = {
     toArray: vi.fn(async () => savedProjects),
+    get: vi.fn(async (id: number) => savedProjects.find(project => project.id === id)),
     add: vi.fn(async (project: SavedProject) => {
       const id = savedProjects.length + 1;
       savedProjects.push({ ...project, id });
@@ -91,6 +92,7 @@ describe('FileRepositoryService', () => {
       id: 7,
       nomeProjeto: 'Ensaio',
       pastaBase: 'ensaio',
+      favorito: true,
       config: { nomeProjeto: 'Ensaio', pastaBase: 'ensaio', bpm: 96, timeSignature: 4, canais: [] },
     });
 
@@ -104,7 +106,26 @@ describe('FileRepositoryService', () => {
 
     expect(saved).toMatchObject({ id: 7, config: { nomeProjeto: 'Ensaio', bpm: 110 } });
     expect(savedProjects).toHaveLength(1);
+    expect(savedProjects[0].favorito).toBe(true);
     expect(projectTable.put).toHaveBeenCalled();
+  });
+
+  it('toggles a project favorite and lists favorites before other projects', async () => {
+    savedProjects.push(
+      { id: 1, nomeProjeto: 'Zebra', pastaBase: '', config: { nomeProjeto: 'Zebra', pastaBase: '', bpm: 96, timeSignature: 4, canais: [] } },
+      { id: 2, nomeProjeto: 'Alfa', pastaBase: '', favorito: true, config: { nomeProjeto: 'Alfa', pastaBase: '', bpm: 96, timeSignature: 4, canais: [] } },
+      { id: 3, nomeProjeto: 'Beta', pastaBase: '', config: { nomeProjeto: 'Beta', pastaBase: '', bpm: 96, timeSignature: 4, canais: [] } },
+    );
+
+    await service.toggleProjectFavorite(3);
+
+    expect(savedProjects.find(project => project.id === 3)?.favorito).toBe(true);
+    expect((await service.getProjects()).map(project => project.nomeProjeto)).toEqual(['Alfa', 'Beta', 'Zebra']);
+
+    await service.toggleProjectFavorite(2);
+
+    expect(savedProjects.find(project => project.id === 2)?.favorito).toBe(false);
+    expect((await service.getProjects()).map(project => project.nomeProjeto)).toEqual(['Beta', 'Alfa', 'Zebra']);
   });
 
   it('duplicates project settings and keeps the original audio folder', async () => {

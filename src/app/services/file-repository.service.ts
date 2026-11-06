@@ -51,10 +51,14 @@ export class FileRepositoryService {
       }
 
       const configSalva: ProjectConfig = { ...config, nomeProjeto };
+      const projetoExistente = projectId === undefined
+        ? undefined
+        : projetos.find(projeto => projeto.id === projectId);
       const item: SavedProject = {
         ...(projectId ? { id: projectId } : {}),
         nomeProjeto,
         pastaBase: configSalva.pastaBase,
+        favorito: projetoExistente?.favorito ?? false,
         dataModificacao: new Date(),
         config: configSalva,
       };
@@ -67,17 +71,28 @@ export class FileRepositoryService {
   }
 
   async getProjects(filtro: string = ''): Promise<SavedProject[]> {
-    if (!filtro || filtro.trim() === '') {
-      return await this.db.projects.orderBy('nomeProjeto').toArray();
-    }
+    const projetos = !filtro || filtro.trim() === ''
+      ? await this.db.projects.toArray()
+      : await this.db.projects
+        .filter(p =>
+          p.nomeProjeto.toLowerCase().includes(filtro.toLowerCase()) ||
+          p.pastaBase.toLowerCase().includes(filtro.toLowerCase())
+        )
+        .toArray();
 
-    const termoLower = filtro.toLowerCase();
-    return await this.db.projects
-      .filter(p => 
-        p.nomeProjeto.toLowerCase().includes(termoLower) || 
-        p.pastaBase.toLowerCase().includes(termoLower)
-      )
-      .toArray();
+    return projetos.sort((a, b) =>
+      Number(Boolean(b.favorito)) - Number(Boolean(a.favorito)) ||
+      a.nomeProjeto.localeCompare(b.nomeProjeto)
+    );
+  }
+
+  async toggleProjectFavorite(projectId: number): Promise<void> {
+    await this.db.transaction('rw', this.db.projects, async () => {
+      const projeto = await this.db.projects.get(projectId);
+      if (!projeto) return;
+
+      await this.db.projects.put({ ...projeto, favorito: !projeto.favorito });
+    });
   }
 
   async duplicateProject(project: SavedProject): Promise<SavedProject> {

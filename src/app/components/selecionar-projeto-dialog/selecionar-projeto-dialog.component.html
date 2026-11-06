@@ -42,6 +42,16 @@
                   <span>{{ item.config.bpm }} BPM</span>
                 </div>
                 <div class="acoes">
+                  <button
+                    type="button"
+                    class="btn-favorito"
+                    [class.is-favorite]="item.favorito"
+                    [attr.aria-pressed]="item.favorito === true"
+                    [attr.aria-label]="item.favorito ? 'Remover ' + item.nomeProjeto + ' dos favoritos' : 'Adicionar ' + item.nomeProjeto + ' aos favoritos'"
+                    [title]="item.favorito ? 'Remover dos favoritos' : 'Adicionar aos favoritos'"
+                    (click)="alternarFavorito(item)">
+                    <span aria-hidden="true">{{ item.favorito ? '★' : '☆' }}</span>
+                  </button>
                   @if (origem === 'criador') {
                     <button type="button" class="btn-download" (click)="baixarProjeto(item)" [attr.aria-label]="'Baixar projeto ' + item.nomeProjeto" title="Baixar projeto completo em ZIP">
                       <span aria-hidden="true">↓</span> ZIP
