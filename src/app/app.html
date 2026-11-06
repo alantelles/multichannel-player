@@ -1,4 +1,4 @@
-<div class="app-container">
+<div class="app-container" [class.is-inverted]="paginaInvertida()">
 	<header class="app-header">
 		<a class="brand" routerLink="/" (click)="fecharMenu()">Multichannel Player</a>
 
@@ -23,6 +23,13 @@
 			<a routerLink="/criar-projeto" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="fecharMenu()">Criar projeto</a>
 			<a routerLink="/projetos" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="fecharMenu()">Admin de projetos</a>
 			<a routerLink="/configuracoes" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="fecharMenu()">Configurações</a>
+			<button
+				class="page-inversion-toggle"
+				type="button"
+				[attr.aria-pressed]="paginaInvertida()"
+				(click)="alternarInversao()">
+				{{ paginaInvertida() ? 'Restaurar tela' : 'Inverter tela' }}
+			</button>
 		</nav>
 	</header>
 
