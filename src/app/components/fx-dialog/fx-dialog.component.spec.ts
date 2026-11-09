@@ -12,8 +12,7 @@ describe('FxDialogComponent', () => {
     masterEqMid: signal(0),
     masterEqHigh: signal(0),
     masterMaximizerEnabled: signal(false),
-    masterMaximizerMakeupGain: signal(9.7),
-    masterMaximizerThreshold: signal(-10),
+    masterMaximizerThreshold: signal(-8),
     alternarEqMaster: vi.fn(),
     alterarEqMaster: vi.fn(),
     alternarMaximizerMaster: vi.fn(),
@@ -48,8 +47,12 @@ describe('FxDialogComponent', () => {
         'Ganho high do EQ3 master',
         'Threshold do limiter master em dBFS',
       ]);
-    expect(fixture.nativeElement.textContent).toContain('Makeup +9.7 dB');
-    expect(fixture.nativeElement.textContent).toContain('Saída: −0,3 dBFS');
+    expect(fixture.nativeElement.textContent).not.toContain('Makeup');
+    expect(fixture.nativeElement.textContent).not.toContain('−0,3 dBFS');
+    const maximizerSlider = sliders[3] as HTMLInputElement;
+    expect(maximizerSlider.min).toBe('-25');
+    expect(maximizerSlider.max).toBe('0');
+    expect(maximizerSlider.value).toBe('-8');
     expect(fixture.nativeElement.querySelector('.eq-bands + *')).toBeNull();
     expect(fixture.nativeElement.querySelectorAll('.effect-toggle')[0].getAttribute('aria-pressed')).toBe('false');
     expect(fixture.nativeElement.querySelectorAll('.effect-toggle')[1].getAttribute('aria-pressed')).toBe('false');

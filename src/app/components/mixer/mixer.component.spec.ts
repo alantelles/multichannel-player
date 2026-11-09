@@ -32,12 +32,18 @@ vi.mock('tone', () => {
     connect = vi.fn();
     disconnect = vi.fn();
   }
+  class CompressorMock {
+    threshold = { rampTo: vi.fn() };
+    connect = vi.fn();
+    disconnect = vi.fn();
+  }
 
   return {
     Volume: VolumeMock,
     EQ3: EQ3Mock,
     Gain: GainMock,
     Limiter: LimiterMock,
+    Compressor: CompressorMock,
     Destination: {},
     context,
     Transport: { bpm: { value: 120 }, timeSignature: 4 },

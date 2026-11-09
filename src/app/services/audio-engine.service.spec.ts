@@ -60,6 +60,12 @@ vi.mock('tone', () => {
     connect = vi.fn();
     disconnect = vi.fn();
   }
+  class CompressorMock {
+    threshold = { rampTo: vi.fn() };
+    connect = vi.fn();
+    disconnect = vi.fn();
+    constructor(readonly options: Record<string, number>) {}
+  }
   class ChannelMock {
     pan = { value: 0, rampTo: vi.fn() };
     mute = false;
@@ -77,6 +83,7 @@ vi.mock('tone', () => {
     EQ3: EQ3Mock,
     Gain: GainMock,
     Limiter: LimiterMock,
+    Compressor: CompressorMock,
     Channel: ChannelMock,
     start: toneMocks.start,
     loaded: toneMocks.loaded,
@@ -282,20 +289,30 @@ describe('AudioEngineService', () => {
       masterEq: InstanceType<typeof Tone.EQ3>;
       masterBus: InstanceType<typeof Tone.Volume>;
       masterMaximizerGainNode: InstanceType<typeof Tone.Gain>;
-      masterMaximizerLimiter: InstanceType<typeof Tone.Limiter>;
+      masterMaximizerLimiter: InstanceType<typeof Tone.Compressor> & { options: Record<string, number> };
     };
 
-    expect(service.masterMaximizerThreshold()).toBe(-10);
-    expect(service.masterMaximizerMakeupGain()).toBe(9.7);
+    expect(service.masterMaximizerThreshold()).toBe(-8);
+    expect(service.masterMaximizerMakeupGain()).toBe(7.7);
+    expect(nodes.masterMaximizerLimiter.options).toEqual({
+      threshold: -8,
+      ratio: 20,
+      attack: 0.003,
+      release: 0.05,
+      knee: 0,
+    });
+
+    service.alterarMaximizerMasterThreshold(0);
+    expect(service.masterMaximizerMakeupGain()).toBe(-0.3);
 
     service.alterarMaximizerMasterThreshold(-5);
     expect(service.masterMaximizerMakeupGain()).toBe(4.7);
     expect(nodes.masterMaximizerGainNode.gain.rampTo).toHaveBeenCalledWith(4.7, 0.05);
 
-    service.alterarMaximizerMasterThreshold(-20);
-    expect(service.masterMaximizerThreshold()).toBe(-12);
-    expect(service.masterMaximizerMakeupGain()).toBe(11.7);
-    expect(nodes.masterMaximizerLimiter.threshold.rampTo).toHaveBeenCalledWith(-12, 0.05);
+    service.alterarMaximizerMasterThreshold(-30);
+    expect(service.masterMaximizerThreshold()).toBe(-25);
+    expect(service.masterMaximizerMakeupGain()).toBe(24.7);
+    expect(nodes.masterMaximizerLimiter.threshold.rampTo).toHaveBeenCalledWith(-25, 0.05);
 
     service.alternarMaximizerMaster();
     expect(service.masterMaximizerEnabled()).toBe(true);

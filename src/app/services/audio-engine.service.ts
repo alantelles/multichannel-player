@@ -80,15 +80,21 @@ export class AudioEngineService {
   public masterEqLow = signal<number>(0);
   public masterEqMid = signal<number>(0);
   public masterEqHigh = signal<number>(0);
-  private readonly masterMaximizerCeilingDb = -0.3;
+  private readonly masterMaximizerCeilingDb = -0.5;
   public masterMaximizerEnabled = signal<boolean>(false);
-  public masterMaximizerThreshold = signal<number>(-10);
+  public masterMaximizerThreshold = signal<number>(-0.1);
   public readonly masterMaximizerMakeupGain = computed(() =>
     Number((this.masterMaximizerCeilingDb - this.masterMaximizerThreshold()).toFixed(1))
   );
   private readonly masterEq = new Tone.EQ3(0, 0, 0);
   private readonly masterMaximizerGainNode = new Tone.Gain(this.masterMaximizerMakeupGain(), 'decibels');
-  private readonly masterMaximizerLimiter = new Tone.Limiter(this.masterMaximizerThreshold());
+  private readonly masterMaximizerLimiter = new Tone.Compressor({
+    threshold: this.masterMaximizerThreshold(),
+    ratio: 20,
+    attack: 0.003,
+    release: 0.05,
+    knee: 0,
+  });
   private readonly masterBus = new Tone.Volume(0);
   private loopId!: any;
   private offset?: number;
@@ -615,7 +621,7 @@ export class AudioEngineService {
     this.masterEq.connect(this.masterBus);
   }
   public alterarMaximizerMasterThreshold(db: number) {
-    const threshold = Math.max(-12, Math.min(0, db));
+    const threshold = Math.max(-25, Math.min(0, db));
     this.masterMaximizerThreshold.set(threshold);
     this.masterMaximizerLimiter.threshold.rampTo(threshold, 0.05);
     this.masterMaximizerGainNode.gain.rampTo(this.masterMaximizerMakeupGain(), 0.05);
