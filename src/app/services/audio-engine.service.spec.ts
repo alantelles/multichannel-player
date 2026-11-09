@@ -47,10 +47,18 @@ vi.mock('tone', () => {
     mid = { rampTo: vi.fn() };
     high = { rampTo: vi.fn() };
     connect = vi.fn();
+    disconnect = vi.fn();
     dispose = vi.fn();
   }
   class GainMock {
+    gain = { rampTo: vi.fn() };
     connect = vi.fn();
+    disconnect = vi.fn();
+  }
+  class LimiterMock {
+    threshold = { rampTo: vi.fn() };
+    connect = vi.fn();
+    disconnect = vi.fn();
   }
   class ChannelMock {
     pan = { value: 0, rampTo: vi.fn() };
@@ -68,6 +76,7 @@ vi.mock('tone', () => {
     Volume: VolumeMock,
     EQ3: EQ3Mock,
     Gain: GainMock,
+    Limiter: LimiterMock,
     Channel: ChannelMock,
     start: toneMocks.start,
     loaded: toneMocks.loaded,
@@ -266,6 +275,37 @@ describe('AudioEngineService', () => {
     service.alternarEqMaster();
     expect(service.masterEqEnabled()).toBe(true);
     expect(masterEq.low.rampTo).toHaveBeenLastCalledWith(3, 0.05);
+  });
+
+  it('routes the master through the limiter and calculates makeup gain to a fixed ceiling', () => {
+    const nodes = service as unknown as {
+      masterEq: InstanceType<typeof Tone.EQ3>;
+      masterBus: InstanceType<typeof Tone.Volume>;
+      masterMaximizerGainNode: InstanceType<typeof Tone.Gain>;
+      masterMaximizerLimiter: InstanceType<typeof Tone.Limiter>;
+    };
+
+    expect(service.masterMaximizerThreshold()).toBe(-10);
+    expect(service.masterMaximizerMakeupGain()).toBe(9.7);
+
+    service.alterarMaximizerMasterThreshold(-5);
+    expect(service.masterMaximizerMakeupGain()).toBe(4.7);
+    expect(nodes.masterMaximizerGainNode.gain.rampTo).toHaveBeenCalledWith(4.7, 0.05);
+
+    service.alterarMaximizerMasterThreshold(-20);
+    expect(service.masterMaximizerThreshold()).toBe(-12);
+    expect(service.masterMaximizerMakeupGain()).toBe(11.7);
+    expect(nodes.masterMaximizerLimiter.threshold.rampTo).toHaveBeenCalledWith(-12, 0.05);
+
+    service.alternarMaximizerMaster();
+    expect(service.masterMaximizerEnabled()).toBe(true);
+    expect(nodes.masterEq.connect).toHaveBeenLastCalledWith(nodes.masterMaximizerLimiter);
+    expect(nodes.masterMaximizerLimiter.connect).toHaveBeenCalledWith(nodes.masterMaximizerGainNode);
+    expect(nodes.masterMaximizerGainNode.connect).toHaveBeenCalledWith(nodes.masterBus);
+
+    service.alternarMaximizerMaster();
+    expect(service.masterMaximizerEnabled()).toBe(false);
+    expect(nodes.masterEq.connect).toHaveBeenLastCalledWith(nodes.masterBus);
   });
 
   it('updates the shared master bus volume in decibels', () => {

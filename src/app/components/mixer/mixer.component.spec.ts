@@ -20,11 +20,24 @@ vi.mock('tone', () => {
     mid = { rampTo: vi.fn() };
     high = { rampTo: vi.fn() };
     connect = vi.fn();
+    disconnect = vi.fn();
+  }
+  class GainMock {
+    gain = { rampTo: vi.fn() };
+    connect = vi.fn();
+    disconnect = vi.fn();
+  }
+  class LimiterMock {
+    threshold = { rampTo: vi.fn() };
+    connect = vi.fn();
+    disconnect = vi.fn();
   }
 
   return {
     Volume: VolumeMock,
     EQ3: EQ3Mock,
+    Gain: GainMock,
+    Limiter: LimiterMock,
     Destination: {},
     context,
     Transport: { bpm: { value: 120 }, timeSignature: 4 },

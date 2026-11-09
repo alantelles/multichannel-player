@@ -80,7 +80,15 @@ export class AudioEngineService {
   public masterEqLow = signal<number>(0);
   public masterEqMid = signal<number>(0);
   public masterEqHigh = signal<number>(0);
+  private readonly masterMaximizerCeilingDb = -0.3;
+  public masterMaximizerEnabled = signal<boolean>(false);
+  public masterMaximizerThreshold = signal<number>(-10);
+  public readonly masterMaximizerMakeupGain = computed(() =>
+    Number((this.masterMaximizerCeilingDb - this.masterMaximizerThreshold()).toFixed(1))
+  );
   private readonly masterEq = new Tone.EQ3(0, 0, 0);
+  private readonly masterMaximizerGainNode = new Tone.Gain(this.masterMaximizerMakeupGain(), 'decibels');
+  private readonly masterMaximizerLimiter = new Tone.Limiter(this.masterMaximizerThreshold());
   private readonly masterBus = new Tone.Volume(0);
   private loopId!: any;
   private offset?: number;
@@ -589,6 +597,28 @@ export class AudioEngineService {
     if (banda === 'low') this.masterEqLow.set(ganho);
     if (banda === 'mid') this.masterEqMid.set(ganho);
     if (banda === 'high') this.masterEqHigh.set(ganho);
+  }
+  public alternarMaximizerMaster() {
+    const enabled = !this.masterMaximizerEnabled();
+    this.masterMaximizerEnabled.set(enabled);
+    this.masterEq.disconnect();
+    this.masterMaximizerGainNode.disconnect();
+    this.masterMaximizerLimiter.disconnect();
+
+    if (enabled) {
+      this.masterEq.connect(this.masterMaximizerLimiter);
+      this.masterMaximizerLimiter.connect(this.masterMaximizerGainNode);
+      this.masterMaximizerGainNode.connect(this.masterBus);
+      return;
+    }
+
+    this.masterEq.connect(this.masterBus);
+  }
+  public alterarMaximizerMasterThreshold(db: number) {
+    const threshold = Math.max(-12, Math.min(0, db));
+    this.masterMaximizerThreshold.set(threshold);
+    this.masterMaximizerLimiter.threshold.rampTo(threshold, 0.05);
+    this.masterMaximizerGainNode.gain.rampTo(this.masterMaximizerMakeupGain(), 0.05);
   }
   public alternarMuteMaster() {
     const novoEstado = !this.masterMuted();
