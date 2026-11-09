@@ -173,6 +173,7 @@
       
       <span class="badge-index">#{{ i + 1 }}</span>
       <input type="text" [(ngModel)]="trecho.nome" class="input-inline-nome">
+      <button type="button" (click)="duplicarTrecho(i)" class="btn-duplicar" [attr.aria-label]="'Duplicar marcador ' + trecho.nome" title="Duplicar marcador">Duplicar</button>
       <button (click)="removerTrecho(i)" class="btn-remover">Remover</button>
     </div>
 

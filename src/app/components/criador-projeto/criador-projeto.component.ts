@@ -506,6 +506,25 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
     this.trechosForm.update(lista => lista.filter((_, i) => i !== index));
   }
 
+  duplicarTrecho(index: number) {
+    this.trechosForm.update(lista => {
+      const trecho = lista[index];
+      if (!trecho) return lista;
+
+      const nomeBase = `${trecho.nome.trim() || 'Marcador'} - cópia`;
+      const idsExistentes = new Set(lista.map(item => computarId(item.nome)));
+      let nome = nomeBase;
+      let numeroCopia = 2;
+      while (idsExistentes.has(computarId(nome))) {
+        nome = `${nomeBase} ${numeroCopia++}`;
+      }
+
+      const novaLista = [...lista];
+      novaLista.splice(index + 1, 0, { ...trecho, nome });
+      return novaLista;
+    });
+  }
+
   construirProjetoConfig(): ProjectConfig {
     const markersFormatados: Marker[] = this.trechosForm().map((t, index) => {
       const idGerado = computarId(t.nome) || `marker-${index}`;

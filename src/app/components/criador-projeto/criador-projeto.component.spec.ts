@@ -51,6 +51,36 @@ describe('CriadorProjetoComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Criar/Editar Projeto');
   });
 
+  it('duplicates a marker directly below it with the same settings and a unique name', () => {
+    component.trechosForm.set([
+      { nome: 'Refrão', compassoInicio: 8, compassosDuracao: 4, maxPlays: 2, nextMarker: 'final', referencia: '', modoDisparo: 'bloco' },
+      { nome: 'Final', compassoInicio: 12, compassosDuracao: 4, maxPlays: 0, nextMarker: '', referencia: '', modoDisparo: 'compasso' },
+    ]);
+
+    component.duplicarTrecho(0);
+
+    expect(component.trechosForm()).toEqual([
+      { nome: 'Refrão', compassoInicio: 8, compassosDuracao: 4, maxPlays: 2, nextMarker: 'final', referencia: '', modoDisparo: 'bloco' },
+      { nome: 'Refrão - cópia', compassoInicio: 8, compassosDuracao: 4, maxPlays: 2, nextMarker: 'final', referencia: '', modoDisparo: 'bloco' },
+      { nome: 'Final', compassoInicio: 12, compassosDuracao: 4, maxPlays: 0, nextMarker: '', referencia: '', modoDisparo: 'compasso' },
+    ]);
+  });
+
+  it('generates another unique marker name when duplicating the same marker repeatedly', () => {
+    component.trechosForm.set([
+      { nome: 'Verso', compassoInicio: 0, compassosDuracao: 8, maxPlays: 0, nextMarker: '', referencia: '', modoDisparo: 'bloco' },
+    ]);
+
+    component.duplicarTrecho(0);
+    component.duplicarTrecho(0);
+
+    expect(component.trechosForm().map(trecho => trecho.nome)).toEqual([
+      'Verso',
+      'Verso - cópia 2',
+      'Verso - cópia',
+    ]);
+  });
+
   it('saves an imported JSON project locally without downloading it', async () => {
     const config = {
       bpm: 96,
