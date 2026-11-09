@@ -1,6 +1,6 @@
 {
   "configVersion": 1,
-  "timestamp": 1794251069395,
+  "timestamp": 1794265635334,
   "index": "/multichannel-player/index.html",
   "assetGroups": [
     {
@@ -11,19 +11,19 @@
         "ignoreVary": true
       },
       "urls": [
-        "/multichannel-player/chunk-B0u9wQ0E.js",
-        "/multichannel-player/chunk-BOSqtBwS.js",
-        "/multichannel-player/chunk-BSfUSXdD.js",
-        "/multichannel-player/chunk-Bm80YcXs.js",
-        "/multichannel-player/chunk-CdWmM4h-.js",
-        "/multichannel-player/chunk-CtL3g1YU.js",
-        "/multichannel-player/chunk-DHQB_Q3I.js",
-        "/multichannel-player/chunk-DjGAJxq9.js",
+        "/multichannel-player/chunk--pc-P47B.js",
+        "/multichannel-player/chunk-B6LRvWPB.js",
+        "/multichannel-player/chunk-BQx_Cp1w.js",
+        "/multichannel-player/chunk-BbMQ0H3k.js",
+        "/multichannel-player/chunk-CXTXUzDe.js",
+        "/multichannel-player/chunk-DdKmn__K.js",
+        "/multichannel-player/chunk-DhAhDhVI.js",
+        "/multichannel-player/chunk-DmNlznWT.js",
         "/multichannel-player/favicon.ico",
         "/multichannel-player/index.html",
-        "/multichannel-player/main-7GLI7YDL.js",
+        "/multichannel-player/main-JYKJFYIL.js",
         "/multichannel-player/manifest.webmanifest",
-        "/multichannel-player/styles-Q4TGJ742.css"
+        "/multichannel-player/styles-SNR4LNH6.css"
       ],
       "patterns": []
     },
@@ -49,14 +49,14 @@
   ],
   "dataGroups": [],
   "hashTable": {
-    "/multichannel-player/chunk-B0u9wQ0E.js": "ade30ed27e8c4c457227b7c573a6f40dfa8cad05",
-    "/multichannel-player/chunk-BOSqtBwS.js": "ca1034144cd3c7e7e67cf14dc7232b3fb3e886c5",
-    "/multichannel-player/chunk-BSfUSXdD.js": "0a99657374181fd076d91e910476df82f67a6ea2",
-    "/multichannel-player/chunk-Bm80YcXs.js": "e424f4f50a1840d4d523c2aabd2775ced90e9531",
-    "/multichannel-player/chunk-CdWmM4h-.js": "dff71998683cbd17d4d3ad4efeef893632b380d9",
-    "/multichannel-player/chunk-CtL3g1YU.js": "b07e1b1ec8f679a840852c129acc52859e6e7a17",
-    "/multichannel-player/chunk-DHQB_Q3I.js": "e17a00b05615a30fb76be72f78631aa24fb6a2ba",
-    "/multichannel-player/chunk-DjGAJxq9.js": "656f3d2806031b92a10d59fb80f08c7452c185d8",
+    "/multichannel-player/chunk--pc-P47B.js": "18d9fb5cc8c655f63b9304a4ae618a115c4a3d0c",
+    "/multichannel-player/chunk-B6LRvWPB.js": "8e0e6d825f7c7baa9b3f543069cb247b4ad09036",
+    "/multichannel-player/chunk-BQx_Cp1w.js": "739da19f6acdaaa8363a67a253ae3920c626bb2a",
+    "/multichannel-player/chunk-BbMQ0H3k.js": "5258ecabbea42ec2a67e40fce055beef5d4a0c23",
+    "/multichannel-player/chunk-CXTXUzDe.js": "3db77dd5115b653810f64f1683b9545e016d1153",
+    "/multichannel-player/chunk-DdKmn__K.js": "40dfcd8213c6fd1cc48e871afcf2e49762a9eebf",
+    "/multichannel-player/chunk-DhAhDhVI.js": "5d8a0b9362ebe737fe63a95ff482bfeef3a59365",
+    "/multichannel-player/chunk-DmNlznWT.js": "b85edc9d6151fbb5154483c8e5ba4bf703d247f8",
     "/multichannel-player/favicon.ico": "9c39f434fe1261f68c5e3eefdf734630d99c5670",
     "/multichannel-player/icons/icon-128x128.png": "f912963bdc6d5a38d8f1dd0afbaab2ce8d657acb",
     "/multichannel-player/icons/icon-144x144.png": "b155fd5f2fd5d2ea7760721063003c4cd95fd783",
@@ -66,10 +66,10 @@
     "/multichannel-player/icons/icon-512x512.png": "1de182f76f7329dfa8f9fcdd1fdcdd695bea6a99",
     "/multichannel-player/icons/icon-72x72.png": "aa88a6096bd973be7f6d7a5489bfa6bc2463f8c4",
     "/multichannel-player/icons/icon-96x96.png": "7fb8f59c30ce2ff12c700321a0b39e14b3dc8f95",
-    "/multichannel-player/index.html": "be7fe2aa3c9d9c9b4eaacd3630543d924c701fd2",
-    "/multichannel-player/main-7GLI7YDL.js": "008f0eb170df3c5a27414b1f2d19aae622801c74",
+    "/multichannel-player/index.html": "c518ffe19a1e3d191751c842734f13a9714f3de9",
+    "/multichannel-player/main-JYKJFYIL.js": "8af2d04c0845623545f18881a0d97f193e1d05d5",
     "/multichannel-player/manifest.webmanifest": "43841d0a599ea8e9ac222ab13fab6340249faaa2",
-    "/multichannel-player/styles-Q4TGJ742.css": "f0f15446036728a45df082e64b8aa8dc80d76e1f"
+    "/multichannel-player/styles-SNR4LNH6.css": "8d4ab6c318e9986f324d4ef46c85aa310a6c9881"
   },
   "navigationUrls": [
     {
