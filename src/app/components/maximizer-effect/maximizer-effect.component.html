@@ -20,4 +20,9 @@
       aria-label="Threshold do limiter master em dBFS"
       (input)="atualizarThreshold($event)" />
   </label>
+  <div class="effect-actions" role="group" aria-label="Ações do maximizer">
+    <button type="button" (click)="resetar()">Reset</button>
+    <button type="button" (click)="usarSalvo()">Usar salvo</button>
+  </div>
+  <p class="action-message" aria-live="polite">{{ actionMessage() }}</p>
 </section>

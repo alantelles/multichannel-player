@@ -114,6 +114,7 @@ describe('AudioEngineService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.removeItem('multichannel-player:master-effects');
     toneMocks.context.state = 'running';
     toneMocks.context.currentTime = 12;
     toneMocks.context.lookAhead = 0;
@@ -284,6 +285,102 @@ describe('AudioEngineService', () => {
     expect(masterEq.low.rampTo).toHaveBeenLastCalledWith(3, 0.05);
   });
 
+  it('saves, restores, and resets master effects including individual modules', () => {
+    const storageKey = 'multichannel-player:master-effects';
+    localStorage.removeItem(storageKey);
+    service.alterarEqMaster('low', 5);
+    service.alterarEqMaster('mid', -3);
+    service.alternarEqMaster();
+    service.alterarMaximizerMasterThreshold(-6);
+    service.alternarMaximizerMaster();
+    service.alterarVolumeMaster(-6);
+
+    expect(service.salvarEfeitosMaster()).toBe(true);
+    service.resetarEqMaster();
+    service.resetarMaximizerMaster();
+    expect(service.masterEqEnabled()).toBe(true);
+    expect(service.masterEqLow()).toBe(0);
+    expect(service.masterMaximizerEnabled()).toBe(true);
+    expect(service.masterMaximizerThreshold()).toBe(-0.1);
+
+    expect(service.usarEfeitosMasterSalvos()).toBe(true);
+    expect(service.masterEqEnabled()).toBe(true);
+    expect(service.masterEqLow()).toBe(5);
+    expect(service.masterEqMid()).toBe(-3);
+    expect(service.masterMaximizerEnabled()).toBe(true);
+    expect(service.masterMaximizerThreshold()).toBe(-6);
+    expect(service.masterVolume()).toBe(-6);
+
+    service.alterarEqMaster('low', 9);
+    service.alterarMaximizerMasterThreshold(-2);
+    expect(service.usarEqMasterSalvo()).toBe(true);
+    expect(service.masterEqLow()).toBe(5);
+    expect(service.masterMaximizerThreshold()).toBe(-2);
+    expect(service.usarMaximizerMasterSalvo()).toBe(true);
+    expect(service.masterMaximizerThreshold()).toBe(-6);
+  });
+
+  it('bypasses all master effects without changing their individual enabled states', () => {
+    const nodes = service as unknown as {
+      masterEq: InstanceType<typeof Tone.EQ3>;
+      masterMaximizerLimiter: InstanceType<typeof Tone.Compressor>;
+    };
+    service.alterarEqMaster('low', 5);
+    service.alternarEqMaster();
+    service.alternarMaximizerMaster();
+
+    service.alternarBypassEfeitosMaster();
+
+    expect(service.masterEffectsBypassed()).toBe(true);
+    expect(service.masterEqEnabled()).toBe(true);
+    expect(service.masterMaximizerEnabled()).toBe(true);
+    expect(nodes.masterEq.low.rampTo).toHaveBeenLastCalledWith(0, 0.05);
+
+    service.alternarBypassEfeitosMaster();
+
+    expect(service.masterEffectsBypassed()).toBe(false);
+    expect(nodes.masterEq.low.rampTo).toHaveBeenLastCalledWith(5, 0.05);
+    expect(nodes.masterMaximizerLimiter.connect).toHaveBeenCalled();
+  });
+
+  it('does not change effect state when no valid saved preset exists', () => {
+    localStorage.removeItem('multichannel-player:master-effects');
+
+    expect(service.usarEfeitosMasterSalvos()).toBe(false);
+    expect(service.usarEqMasterSalvo()).toBe(false);
+    expect(service.usarMaximizerMasterSalvo()).toBe(false);
+    expect(service.masterEqLow()).toBe(0);
+    expect(service.masterMaximizerThreshold()).toBe(-0.1);
+  });
+
+  it('loads saved master volume and effects when the service starts', () => {
+    localStorage.setItem('multichannel-player:master-effects', JSON.stringify({
+      volume: -7,
+      eq: { enabled: true, low: 4, mid: -2, high: 1 },
+      maximizer: { enabled: true, threshold: -5 },
+    }));
+
+    const restoredService = TestBed.runInInjectionContext(() => new AudioEngineService());
+
+    expect(restoredService.masterVolume()).toBe(-7);
+    expect(restoredService.masterEqEnabled()).toBe(true);
+    expect(restoredService.masterEqLow()).toBe(4);
+    expect(restoredService.masterMaximizerEnabled()).toBe(true);
+    expect(restoredService.masterMaximizerThreshold()).toBe(-5);
+  });
+
+  it('loads legacy saved effects without a volume using the default master level', () => {
+    localStorage.setItem('multichannel-player:master-effects', JSON.stringify({
+      eq: { enabled: false, low: 0, mid: 0, high: 0 },
+      maximizer: { enabled: false, threshold: -0.1 },
+    }));
+
+    const restoredService = TestBed.runInInjectionContext(() => new AudioEngineService());
+
+    expect(restoredService.masterVolume()).toBe(0);
+    expect(restoredService.masterEqEnabled()).toBe(false);
+  });
+
   it('routes the master through the limiter and calculates makeup gain to a fixed ceiling', () => {
     const nodes = service as unknown as {
       masterEq: InstanceType<typeof Tone.EQ3>;
@@ -292,10 +389,10 @@ describe('AudioEngineService', () => {
       masterMaximizerLimiter: InstanceType<typeof Tone.Compressor> & { options: Record<string, number> };
     };
 
-    expect(service.masterMaximizerThreshold()).toBe(-8);
-    expect(service.masterMaximizerMakeupGain()).toBe(7.7);
+    expect(service.masterMaximizerThreshold()).toBe(-0.1);
+    expect(service.masterMaximizerMakeupGain()).toBe(-0.4);
     expect(nodes.masterMaximizerLimiter.options).toEqual({
-      threshold: -8,
+      threshold: -0.1,
       ratio: 20,
       attack: 0.003,
       release: 0.05,
@@ -303,15 +400,15 @@ describe('AudioEngineService', () => {
     });
 
     service.alterarMaximizerMasterThreshold(0);
-    expect(service.masterMaximizerMakeupGain()).toBe(-0.3);
+    expect(service.masterMaximizerMakeupGain()).toBe(-0.5);
 
     service.alterarMaximizerMasterThreshold(-5);
-    expect(service.masterMaximizerMakeupGain()).toBe(4.7);
-    expect(nodes.masterMaximizerGainNode.gain.rampTo).toHaveBeenCalledWith(4.7, 0.05);
+    expect(service.masterMaximizerMakeupGain()).toBe(4.5);
+    expect(nodes.masterMaximizerGainNode.gain.rampTo).toHaveBeenCalledWith(4.5, 0.05);
 
     service.alterarMaximizerMasterThreshold(-30);
     expect(service.masterMaximizerThreshold()).toBe(-25);
-    expect(service.masterMaximizerMakeupGain()).toBe(24.7);
+    expect(service.masterMaximizerMakeupGain()).toBe(24.5);
     expect(nodes.masterMaximizerLimiter.threshold.rampTo).toHaveBeenCalledWith(-25, 0.05);
 
     service.alternarMaximizerMaster();

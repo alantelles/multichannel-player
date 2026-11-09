@@ -22,6 +22,19 @@ export interface ProjectConfig {
 export interface LoadedProject extends ProjectConfig {
   canais: CanalAudio[];
 }
+interface MasterEffectsConfig {
+  volume: number;
+  eq: {
+    enabled: boolean;
+    low: number;
+    mid: number;
+    high: number;
+  };
+  maximizer: {
+    enabled: boolean;
+    threshold: number;
+  };
+}
 export interface CanalAudioConfig {
   id: string;
   nome: string;
@@ -61,6 +74,12 @@ const processarMarkers = (markers: Marker[]): Marker[] => {
   providedIn: 'root'
 })
 export class AudioEngineService {
+  private readonly masterEffectsStorageKey = 'multichannel-player:master-effects';
+  private readonly defaultMasterEffects: MasterEffectsConfig = {
+    volume: 0,
+    eq: { enabled: false, low: 0, mid: 0, high: 0 },
+    maximizer: { enabled: false, threshold: -0.1 },
+  };
   public isReady = signal<boolean>(false);
   public isPlaying = signal<boolean>(false);
   public isFullyLoaded = signal<boolean>(false);
@@ -76,6 +95,7 @@ export class AudioEngineService {
   public canais = signal<CanalAudio[]>([]);
   public masterVolume = signal<number>(0);
   public masterMuted = signal<boolean>(false);
+  public masterEffectsBypassed = signal<boolean>(false);
   public masterEqEnabled = signal<boolean>(false);
   public masterEqLow = signal<number>(0);
   public masterEqMid = signal<number>(0);
@@ -181,6 +201,7 @@ export class AudioEngineService {
   constructor() {
     this.masterEq.connect(this.masterBus);
     this.masterBus.connect(Tone.Destination);
+    this.usarEfeitosMasterSalvos();
     effect(() => {
       const config = this.latencySettings.activeConfig();
       this.aplicarConfiguracaoLatencia(config.lookaheadMs, config.offsetMs);
@@ -589,29 +610,129 @@ export class AudioEngineService {
     this.masterVolume.set(db);
     this.masterBus.volume.rampTo(db, 0.05);
   }
+  public salvarEfeitosMaster(): boolean {
+    try {
+      localStorage.setItem(this.masterEffectsStorageKey, JSON.stringify(this.obterEfeitosMaster()));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  public usarEfeitosMasterSalvos(): boolean {
+    const config = this.lerEfeitosMasterSalvos();
+    if (!config) return false;
+    this.aplicarEfeitosMaster(config);
+    return true;
+  }
+  public usarEqMasterSalvo(): boolean {
+    const config = this.lerEfeitosMasterSalvos();
+    if (!config) return false;
+    this.aplicarEqMaster(config.eq);
+    return true;
+  }
+  public usarMaximizerMasterSalvo(): boolean {
+    const config = this.lerEfeitosMasterSalvos();
+    if (!config) return false;
+    this.aplicarMaximizerMaster(config.maximizer);
+    return true;
+  }
+  public alternarBypassEfeitosMaster(): void {
+    this.masterEffectsBypassed.update(bypassed => !bypassed);
+    this.definirEqMasterEnabled(this.masterEqEnabled());
+    this.atualizarRoteamentoMaximizer();
+  }
+  public resetarEqMaster(): void {
+    this.aplicarEqMaster({ ...this.defaultMasterEffects.eq, enabled: this.masterEqEnabled() });
+  }
+  public resetarMaximizerMaster(): void {
+    this.aplicarMaximizerMaster({ ...this.defaultMasterEffects.maximizer, enabled: this.masterMaximizerEnabled() });
+  }
+  private obterEfeitosMaster(): MasterEffectsConfig {
+    return {
+      volume: this.masterVolume(),
+      eq: {
+        enabled: this.masterEqEnabled(),
+        low: this.masterEqLow(),
+        mid: this.masterEqMid(),
+        high: this.masterEqHigh(),
+      },
+      maximizer: {
+        enabled: this.masterMaximizerEnabled(),
+        threshold: this.masterMaximizerThreshold(),
+      },
+    };
+  }
+  private lerEfeitosMasterSalvos(): MasterEffectsConfig | null {
+    try {
+      const serialized = localStorage.getItem(this.masterEffectsStorageKey);
+      if (!serialized) return null;
+      const config: unknown = JSON.parse(serialized);
+      if (!config || typeof config !== 'object') return null;
+      const candidate = config as Partial<MasterEffectsConfig>;
+      const eq = candidate.eq;
+      const maximizer = candidate.maximizer;
+      const volume = candidate.volume === undefined ? 0 : candidate.volume;
+      if (
+        !Number.isFinite(volume) ||
+        !eq || typeof eq.enabled !== 'boolean' ||
+        !Number.isFinite(eq.low) || !Number.isFinite(eq.mid) || !Number.isFinite(eq.high) ||
+        !maximizer || typeof maximizer.enabled !== 'boolean' || !Number.isFinite(maximizer.threshold)
+      ) return null;
+      return {
+        volume: Math.max(-40, Math.min(9, volume)),
+        eq: { enabled: eq.enabled, low: eq.low!, mid: eq.mid!, high: eq.high! },
+        maximizer: { enabled: maximizer.enabled, threshold: maximizer.threshold! },
+      };
+    } catch {
+      return null;
+    }
+  }
+  private aplicarEfeitosMaster(config: MasterEffectsConfig): void {
+    this.alterarVolumeMaster(config.volume);
+    this.aplicarEqMaster(config.eq);
+    this.aplicarMaximizerMaster(config.maximizer);
+  }
+  private aplicarEqMaster(config: MasterEffectsConfig['eq']): void {
+    this.alterarEqMaster('low', config.low);
+    this.alterarEqMaster('mid', config.mid);
+    this.alterarEqMaster('high', config.high);
+    this.definirEqMasterEnabled(config.enabled);
+  }
+  private aplicarMaximizerMaster(config: MasterEffectsConfig['maximizer']): void {
+    this.alterarMaximizerMasterThreshold(config.threshold);
+    this.definirMaximizerMasterEnabled(config.enabled);
+  }
   public alternarEqMaster() {
-    const enabled = !this.masterEqEnabled();
+    this.definirEqMasterEnabled(!this.masterEqEnabled());
+  }
+  private definirEqMasterEnabled(enabled: boolean): void {
     this.masterEqEnabled.set(enabled);
-    this.masterEq.low.rampTo(enabled ? this.masterEqLow() : 0, 0.05);
-    this.masterEq.mid.rampTo(enabled ? this.masterEqMid() : 0, 0.05);
-    this.masterEq.high.rampTo(enabled ? this.masterEqHigh() : 0, 0.05);
+    const active = enabled && !this.masterEffectsBypassed();
+    this.masterEq.low.rampTo(active ? this.masterEqLow() : 0, 0.05);
+    this.masterEq.mid.rampTo(active ? this.masterEqMid() : 0, 0.05);
+    this.masterEq.high.rampTo(active ? this.masterEqHigh() : 0, 0.05);
   }
   public alterarEqMaster(banda: 'low' | 'mid' | 'high', db: number) {
     const ganho = Math.max(-12, Math.min(12, db));
     const parametro = this.masterEq[banda];
-    parametro.rampTo(this.masterEqEnabled() ? ganho : 0, 0.05);
+    parametro.rampTo(this.masterEqEnabled() && !this.masterEffectsBypassed() ? ganho : 0, 0.05);
     if (banda === 'low') this.masterEqLow.set(ganho);
     if (banda === 'mid') this.masterEqMid.set(ganho);
     if (banda === 'high') this.masterEqHigh.set(ganho);
   }
   public alternarMaximizerMaster() {
-    const enabled = !this.masterMaximizerEnabled();
+    this.definirMaximizerMasterEnabled(!this.masterMaximizerEnabled());
+  }
+  private definirMaximizerMasterEnabled(enabled: boolean): void {
     this.masterMaximizerEnabled.set(enabled);
+    this.atualizarRoteamentoMaximizer();
+  }
+  private atualizarRoteamentoMaximizer(): void {
     this.masterEq.disconnect();
     this.masterMaximizerGainNode.disconnect();
     this.masterMaximizerLimiter.disconnect();
 
-    if (enabled) {
+    if (this.masterMaximizerEnabled() && !this.masterEffectsBypassed()) {
       this.masterEq.connect(this.masterMaximizerLimiter);
       this.masterMaximizerLimiter.connect(this.masterMaximizerGainNode);
       this.masterMaximizerGainNode.connect(this.masterBus);

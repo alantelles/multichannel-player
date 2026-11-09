@@ -41,4 +41,9 @@
       <span class="band-name">HI</span>
     </label>
   </div>
+  <div class="effect-actions" role="group" aria-label="Ações do EQ3">
+    <button type="button" (click)="resetar()">Reset</button>
+    <button type="button" (click)="usarSalvo()">Usar salvo</button>
+  </div>
+  <p class="action-message" aria-live="polite">{{ actionMessage() }}</p>
 </section>

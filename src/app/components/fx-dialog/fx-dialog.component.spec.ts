@@ -7,6 +7,7 @@ import { FxDialogComponent } from './fx-dialog.component';
 describe('FxDialogComponent', () => {
   let fixture: ComponentFixture<FxDialogComponent>;
   const audio = {
+    masterEffectsBypassed: signal(false),
     masterEqEnabled: signal(false),
     masterEqLow: signal(0),
     masterEqMid: signal(0),
@@ -17,6 +18,13 @@ describe('FxDialogComponent', () => {
     alterarEqMaster: vi.fn(),
     alternarMaximizerMaster: vi.fn(),
     alterarMaximizerMasterThreshold: vi.fn(),
+    salvarEfeitosMaster: vi.fn(() => true),
+    usarEfeitosMasterSalvos: vi.fn(() => true),
+    alternarBypassEfeitosMaster: vi.fn(() => audio.masterEffectsBypassed.update(value => !value)),
+    resetarEqMaster: vi.fn(),
+    usarEqMasterSalvo: vi.fn(() => true),
+    resetarMaximizerMaster: vi.fn(),
+    usarMaximizerMasterSalvo: vi.fn(() => true),
   };
   const dialogRef = { close: vi.fn() };
 
@@ -53,7 +61,7 @@ describe('FxDialogComponent', () => {
     expect(maximizerSlider.min).toBe('-25');
     expect(maximizerSlider.max).toBe('0');
     expect(maximizerSlider.value).toBe('-8');
-    expect(fixture.nativeElement.querySelector('.eq-bands + *')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.eq-bands + .effect-actions')).not.toBeNull();
     expect(fixture.nativeElement.querySelectorAll('.effect-toggle')[0].getAttribute('aria-pressed')).toBe('false');
     expect(fixture.nativeElement.querySelectorAll('.effect-toggle')[1].getAttribute('aria-pressed')).toBe('false');
   });
@@ -80,6 +88,30 @@ describe('FxDialogComponent', () => {
 
     expect(audio.alternarEqMaster).toHaveBeenCalledOnce();
     expect(audio.alterarEqMaster).toHaveBeenCalledWith('mid', 5);
+  });
+
+  it('shows rack-wide save and bypass plus per-module save and reset actions', () => {
+    const rackButtons = fixture.nativeElement.querySelectorAll('.rack-actions button') as NodeListOf<HTMLButtonElement>;
+    const moduleButtons = fixture.nativeElement.querySelectorAll('.effect-actions button') as NodeListOf<HTMLButtonElement>;
+
+    expect(Array.from(rackButtons).map(button => button.textContent.trim()))
+      .toEqual(['Salvar', 'Usar salvo', 'Desligar efeitos']);
+    expect(moduleButtons).toHaveLength(4);
+    rackButtons[0].click();
+    rackButtons[1].click();
+    rackButtons[2].click();
+    moduleButtons[0].click();
+    moduleButtons[1].click();
+    moduleButtons[2].click();
+    moduleButtons[3].click();
+
+    expect(audio.salvarEfeitosMaster).toHaveBeenCalledOnce();
+    expect(audio.usarEfeitosMasterSalvos).toHaveBeenCalledOnce();
+    expect(audio.alternarBypassEfeitosMaster).toHaveBeenCalledOnce();
+    expect(audio.resetarEqMaster).toHaveBeenCalledOnce();
+    expect(audio.usarEqMasterSalvo).toHaveBeenCalledOnce();
+    expect(audio.resetarMaximizerMaster).toHaveBeenCalledOnce();
+    expect(audio.usarMaximizerMasterSalvo).toHaveBeenCalledOnce();
   });
 
   it('closes from the dialog close button', () => {

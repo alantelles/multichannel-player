@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { AudioEngineService } from '../../services/audio-engine.service';
 
 @Component({
@@ -8,9 +8,21 @@ import { AudioEngineService } from '../../services/audio-engine.service';
 })
 export class Eq3EffectComponent {
   protected readonly audio = inject(AudioEngineService);
+  protected readonly actionMessage = signal('');
 
   atualizarGanho(banda: 'low' | 'mid' | 'high', event: Event): void {
     const input = event.target as HTMLInputElement;
     this.audio.alterarEqMaster(banda, Number(input.value));
+  }
+
+  resetar(): void {
+    this.audio.resetarEqMaster();
+    this.actionMessage.set('EQ3 restaurado.');
+  }
+
+  usarSalvo(): void {
+    this.actionMessage.set(this.audio.usarEqMasterSalvo()
+      ? 'Ajustes salvos aplicados ao EQ3.'
+      : 'Nenhum ajuste salvo encontrado.');
   }
 }
