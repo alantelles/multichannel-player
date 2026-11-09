@@ -144,14 +144,17 @@
     margin-bottom: 10px;
     
     .input-inline-nome { background: transparent; border: none; border-bottom: 1px solid #444; color: #fff; font-size: 16px; font-weight: bold; width: 60%; }
-    .btn-duplicar { background: transparent; border: 1px solid #52635a; color: #c9ef74; cursor: pointer; padding: 5px 9px; border-radius: 4px; }
-    .btn-duplicar:hover { background: #26332c; }
-    .btn-remover { background: transparent; border: none; color: #f44336; cursor: pointer; margin-left: auto; }
+    .acoes-trecho { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+    .btn-duplicar, .btn-remover { min-height: 32px; padding: 5px 9px; border-radius: 4px; cursor: pointer; font: inherit; font-size: 12px; font-weight: 700; }
+    .btn-duplicar { background: #2a2a32; border: 1px solid #444; color: #ffca28; }
+    .btn-duplicar:hover { background: #383840; }
+    .btn-remover { background: #351f20; border: 1px solid #743c3c; color: #ff7961; }
+    .btn-remover:hover { background: #482526; }
     @include mobile-vertical {
       flex-direction: column;
       align-items: flex-start;
       .input-inline-nome { width: 100%; }
-      .btn-remover { margin-left: 0; margin-top: 10px; }
+      .acoes-trecho { margin-left: 0; }
     }
   }
 }
@@ -244,6 +247,44 @@
 }
 
 @media (max-width: 700px) {
+  .item-trecho .topo-trecho {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+
+    .input-inline-nome { width: 100%; min-width: 0; }
+    .acoes-trecho { grid-column: 1 / -1; justify-content: flex-end; margin-left: 0; }
+  }
+
+  .item-trecho .campos-trecho-grid .grupo-param-trecho {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 10px;
+
+    > div { min-width: 0; }
+    label { min-height: 26px; font-size: 10px; line-height: 1.2; }
+    input, select { min-height: 34px; padding: 5px; font-size: 13px; }
+  }
+
+  .item-trecho .campos-trecho-grid .grupo-param-numerico {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-areas: 'inicio max duracao';
+
+    .campo-inicio { grid-area: inicio; }
+    .campo-max-plays { grid-area: max; }
+    .campo-duracao { grid-area: duracao; }
+  }
+
+  .item-trecho .campos-trecho-grid .grupo-param-opcoes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas: 'proximo proximo' 'referencia modo';
+
+    .campo-proximo-marker { grid-area: proximo; }
+    .campo-referencia { grid-area: referencia; }
+    .campo-modo-disparo { grid-area: modo; }
+  }
+
   .header-acoes {
     flex-wrap: wrap;
     gap: 10px;

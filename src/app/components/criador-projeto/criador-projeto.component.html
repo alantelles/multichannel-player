@@ -173,31 +173,33 @@
       
       <span class="badge-index">#{{ i + 1 }}</span>
       <input type="text" [(ngModel)]="trecho.nome" class="input-inline-nome">
-      <button type="button" (click)="duplicarTrecho(i)" class="btn-duplicar" [attr.aria-label]="'Duplicar marcador ' + trecho.nome" title="Duplicar marcador">Duplicar</button>
-      <button (click)="removerTrecho(i)" class="btn-remover">Remover</button>
+      <div class="acoes-trecho">
+        <button type="button" (click)="duplicarTrecho(i)" class="btn-duplicar" [attr.aria-label]="'Duplicar marcador ' + trecho.nome" title="Duplicar marcador">Duplicar</button>
+        <button type="button" (click)="removerTrecho(i)" class="btn-remover">Remover</button>
+      </div>
     </div>
 
     <div class="campos-trecho-grid">
-      <div class="grupo-param-trecho">
-        <div>
+      <div class="grupo-param-trecho grupo-param-numerico">
+        <div class="campo-inicio">
           <label>Comp. Início:</label>
           <input [disabled]="!!trecho.referencia" type="number" [(ngModel)]="trecho.compassoInicio">
         </div>
-        <div>
+        <div class="campo-duracao">
           <label>Duração (Comp.):</label>
           <input [disabled]="!!trecho.referencia" type="number" [(ngModel)]="trecho.compassosDuracao">
         </div>
-        <div>
+        <div class="campo-max-plays">
           <label>Max Plays (Loop):</label>
           <input [disabled]="!!trecho.referencia" type="number" [(ngModel)]="trecho.maxPlays">
         </div>
       </div>
-      <div class="grupo-param-trecho">
-        <div>
+      <div class="grupo-param-trecho grupo-param-opcoes">
+        <div class="campo-proximo-marker">
           <label>ID Próximo Marker:</label>
           <input type="text" [(ngModel)]="trecho.nextMarker" placeholder="Ex: refrao-1">
         </div>
-        <div>
+        <div class="campo-referencia">
           <label>Referência</label>
           <select [(ngModel)]="trecho.referencia">
             <option value="">-- Nenhuma --</option>
@@ -206,7 +208,7 @@
             }
           </select>
         </div>
-        <div>
+        <div class="campo-modo-disparo">
           <label>Modo de Disparo</label>
           <select [(ngModel)]="trecho.modoDisparo">
             <option value="bloco">Bloco</option>
