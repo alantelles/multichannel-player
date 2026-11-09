@@ -1,0 +1,21 @@
+<section class="confirmation-dialog">
+  <header class="dialog-header">
+    <span class="dialog-symbol" [class.danger-symbol]="data.aparencia === 'perigo'" aria-hidden="true">!</span>
+    <h2 mat-dialog-title id="confirmation-title">{{ data.titulo }}</h2>
+  </header>
+
+  <div mat-dialog-content>
+    <p id="confirmation-message">{{ data.mensagem }}</p>
+  </div>
+
+  <footer mat-dialog-actions align="end">
+    <button type="button" class="cancel-button" (click)="cancelar()">{{ data.textoCancelamento }}</button>
+    <button
+      type="button"
+      class="confirm-button"
+      [class.danger-button]="data.aparencia === 'perigo'"
+      (click)="confirmar()">
+      {{ data.textoConfirmacao }}
+    </button>
+  </footer>
+</section>

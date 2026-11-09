@@ -1,23 +1,23 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { AudioEngineService, ProjectConfig } from '../../services/audio-engine.service'; // Ajuste o caminho se o seu arquivo tiver .service no nome
+import { AudioEngineService, CanalAudio } from '../../services/audio-engine.service';
 import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { AdicionarArquivosProjetoComponent } from '../adicionar-arquivos-projeto/adicionar-arquivos-projeto.component';
 import { FileRepositoryService } from '../../services/file-repository.service';
-import { RouterLink } from "@angular/router";
 import { CommonModule } from '@angular/common';
 import { Marker } from '../../models/marker';
 import {
   SelecionarProjetoDialogComponent,
   SelecionarProjetoDialogResult,
 } from '../selecionar-projeto-dialog/selecionar-projeto-dialog.component';
-import { LatencyModalComponent } from '../latency-modal/latency-modal.component';
 import { ProjectNavigationService } from '../../services/project-navigation.service';
+import { ConfirmacaoDialogService } from '../../services/confirmacao-dialog.service';
+import { FxDialogComponent } from '../fx-dialog/fx-dialog.component';
+import { NotificacaoService } from '../../services/notificacao.service';
 
 @Component({
   selector: 'app-mixer',
   standalone: true,
-  imports: [FormsModule, MatDialogModule, RouterLink, CommonModule, LatencyModalComponent],
+  imports: [FormsModule, MatDialogModule, CommonModule],
   templateUrl: './mixer.component.html', // ou mixer.component.html dependendo de como foi gerado
   styleUrl: './mixer.component.scss'     // ou mixer.component.scss
 })
@@ -25,58 +25,46 @@ export class MixerComponent implements OnInit {
   // Injeta o serviço corrigido usando a sintaxe moderna inject()
   protected audio = inject(AudioEngineService);
   private dialog = inject(MatDialog);
+  private readonly confirmacaoDialog = inject(ConfirmacaoDialogService);
+  private readonly notificacao = inject(NotificacaoService);
   private projectNavigation = inject(ProjectNavigationService);
   fileRepository = inject(FileRepositoryService);
   // Timer para controlar o atraso do clique simples
   private clickTimer: any = null;
   private readonly DOUBLE_CLICK_DELAY = 250; // tempo em ms para aguardar o 2º clique
+  private lastVolumeResetTap: { targetId: string; timestamp: number } | null = null;
+  private lastPanResetTap: { targetId: string; timestamp: number } | null = null;
+  private readonly DOUBLE_TAP_DELAY = 350;
   visualizacaoSequencia = signal<boolean>(true);
 
-  exibirModalLatencia = signal<boolean>(false);
-
-  abrirConfiguracoes(): void {
-    this.exibirModalLatencia.set(true);
-  }
-
-  fecharConfiguracoes(): void {
-    this.exibirModalLatencia.set(false);
-  }
   isFullSong(): boolean {
     return this.audio.trechoAtivo()?.id === 'full-audio';
   }
-  // 🎯 NOVO: Lê o arquivo JSON de configuração mapeado pelo usuário
-  onConfigSelecionada(event: Event) {
-    const input = event.target as HTMLInputElement;
-    if (input.files && input.files.length > 0) {
-      const arquivoConfig = input.files[0];
-      const reader = new FileReader();
 
-      reader.onload = async (e: any) => {
-        const conteudoTexto = e.target.result;
-        const loaded = await this.audio.carregarProjetoPorJSON(conteudoTexto);
-        if (!loaded) {
-          return;
-        }
-        const config: ProjectConfig = JSON.parse(conteudoTexto);
-        this.fileRepository.saveProject(config); // 🎯 Salva no IndexedDB
-      };
-
-      reader.readAsText(arquivoConfig);
-    }
-  }
-  
   abrirModalProjetosSalvos() {
     const dialogRef = this.dialog.open(SelecionarProjetoDialogComponent, {
       width: '90%',
       maxWidth: '680px',
-      data: { origem: 'mixer' }
+      data: { origem: 'mixer' },
+      autoFocus: window.matchMedia('(max-width: 600px)').matches
+        ? '.dialog-header h2'
+        : 'input[type="search"]'
     });
 
     dialogRef.afterClosed().subscribe((resultado: SelecionarProjetoDialogResult | undefined) => {
       if (resultado?.acao === 'carregar') {
         const jsonString = JSON.stringify(resultado.config);
-        this.audio.carregarProjetoPorJSON(jsonString);
+        void this.carregarProjeto(jsonString, resultado.config.nomeProjeto);
       }
+    });
+  }
+
+  abrirFxMaster(): void {
+    this.dialog.open(FxDialogComponent, {
+      width: 'min(92vw, 340px)',
+      maxWidth: '340px',
+      ariaLabel: 'Efeitos do master',
+      autoFocus: 'button.effect-toggle',
     });
   }
 
@@ -116,7 +104,16 @@ export class MixerComponent implements OnInit {
     this.visualizacaoSequencia.set(estadoVisualizacao === 'true');
     const projetoPendente = this.projectNavigation.consumePendingProject();
     if (projetoPendente) {
-      void this.audio.carregarProjetoPorJSON(JSON.stringify(projetoPendente));
+      void this.carregarProjeto(JSON.stringify(projetoPendente), projetoPendente.nomeProjeto);
+    }
+  }
+
+  private async carregarProjeto(jsonString: string, nomeProjeto: string): Promise<void> {
+    const carregado = await this.audio.carregarProjetoPorJSON(jsonString);
+    if (carregado) {
+      this.notificacao.sucesso(`Projeto "${nomeProjeto}" carregado. ${this.audio.canais().length} faixas prontas.`);
+    } else {
+      this.notificacao.erro('Não foi possível carregar as faixas do projeto.');
     }
   }
   toggleVisualizacaoSequencia() {
@@ -162,24 +159,6 @@ export class MixerComponent implements OnInit {
 
     return '#818181';
   }
-  adicionarArquivosLocal() {
-    const dialogRef = this.dialog.open(AdicionarArquivosProjetoComponent, {
-      width: '500px', disableClose: true
-    });
-    dialogRef.componentInstance.aoFechar.subscribe(() => dialogRef.close());
-    
-    dialogRef.componentInstance.aoConfirmar.subscribe(async dados => {
-      console.log('Dados recebidos no Mixer:', dados);
-      await this.fileRepository.saveFiles(dados.pastaBase, dados.arquivos);
-      dialogRef.close();
-    });
-  }
-
-  setAudioRepository(novaUrl: string) {
-    this.fileRepository.onlineRepositoryUrl.set(novaUrl);
-    localStorage.setItem('audioRepository', novaUrl);
-  }
-
   backgroundColorPlayButton(): string {
     if (this.audio.isFullyLoaded()) {
       return this.audio.isPlaying() ? '#dc3545' : '#28a745'
@@ -195,9 +174,79 @@ export class MixerComponent implements OnInit {
   alternarPlay() {
     this.audio.togglePlay();
   }
+
+  async confirmarSaida(): Promise<boolean> {
+    if (!this.audio.isPlaying()) {
+      return true;
+    }
+
+    const confirmou = await this.confirmacaoDialog.confirmar({
+      titulo: 'Interromper reprodução?',
+      mensagem: 'O player está tocando. Ao sair do mixer, a reprodução será interrompida.',
+      textoConfirmacao: 'Parar e sair',
+      textoCancelamento: 'Continuar tocando',
+      aparencia: 'perigo',
+    });
+    if (!confirmou) {
+      return false;
+    }
+
+    await this.audio.togglePlay();
+    return true;
+  }
+
   atualizarVolumeRange(canal: any, event: Event) {
     const input = event.target as HTMLInputElement;
     this.audio.alterarVolume(canal, Number(input.value));
+  }
+
+  atualizarPanRange(canal: CanalAudio, event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.audio.alterarPan(canal, Number(input.value) / 50);
+  }
+
+  formatarPan(pan: number): string {
+    const valor = Math.round(Math.abs(pan) * 50);
+    if (valor === 0) return '0';
+    return pan < 0 ? `L ${valor}` : `R ${valor}`;
+  }
+
+  resetarPanNoDuploToque(canal: CanalAudio, event: TouchEvent) {
+    if (event.changedTouches.length !== 1) return;
+
+    const previousTap = this.lastPanResetTap;
+    if (previousTap?.targetId === canal.id && event.timeStamp - previousTap.timestamp <= this.DOUBLE_TAP_DELAY) {
+      event.preventDefault();
+      this.lastPanResetTap = null;
+      this.audio.alterarPan(canal, 0);
+      return;
+    }
+
+    this.lastPanResetTap = { targetId: canal.id, timestamp: event.timeStamp };
+  }
+
+  atualizarVolumeMaster(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.audio.alterarVolumeMaster(Number(input.value));
+  }
+
+  resetarVolumeNoDuploToque(target: CanalAudio | 'master', event: TouchEvent) {
+    if (event.changedTouches.length !== 1) return;
+
+    const targetId = target === 'master' ? 'master' : `channel:${target.id}`;
+    const previousTap = this.lastVolumeResetTap;
+    if (previousTap?.targetId === targetId && event.timeStamp - previousTap.timestamp <= this.DOUBLE_TAP_DELAY) {
+      event.preventDefault();
+      this.lastVolumeResetTap = null;
+      if (target === 'master') {
+        this.audio.alterarVolumeMaster(0);
+      } else {
+        this.audio.alterarVolume(target, 0);
+      }
+      return;
+    }
+
+    this.lastVolumeResetTap = { targetId, timestamp: event.timeStamp };
   }
 
   selecionarSaidaFisica(canal: any, event: Event) {

@@ -126,7 +126,8 @@
   align-items: center;
   margin-bottom: 15px;  
   width: 100%;
-  .btn-adicionar { background: #2196f3; color: white; border: none; padding: 8px 16px; font-weight: bold; cursor: pointer; border-radius: 4px; }
+  .btn-adicionar { background: #c9ef74; color: #14200f; border: none; padding: 8px 16px; font-weight: bold; cursor: pointer; border-radius: 4px; }
+  .btn-adicionar:hover { background: #d7f694; }
 }
 
 .item-trecho {
@@ -143,12 +144,20 @@
     margin-bottom: 10px;
     
     .input-inline-nome { background: transparent; border: none; border-bottom: 1px solid #444; color: #fff; font-size: 16px; font-weight: bold; width: 60%; }
-    .btn-remover { background: transparent; border: none; color: #f44336; cursor: pointer; margin-left: auto; }
+    .acoes-trecho { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+    .btn-mover, .btn-duplicar, .btn-remover { min-height: 32px; padding: 5px 9px; border-radius: 4px; cursor: pointer; font: inherit; font-size: 12px; font-weight: 700; }
+    .btn-mover { min-width: 32px; background: #2a2a32; border: 1px solid #444; color: #e8eee8; font-size: 16px; line-height: 1; }
+    .btn-mover:hover:not(:disabled) { background: #383840; }
+    .btn-mover:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-duplicar { background: #2a2a32; border: 1px solid #444; color: #ffca28; }
+    .btn-duplicar:hover { background: #383840; }
+    .btn-remover { background: #351f20; border: 1px solid #743c3c; color: #ff7961; }
+    .btn-remover:hover { background: #482526; }
     @include mobile-vertical {
       flex-direction: column;
       align-items: flex-start;
       .input-inline-nome { width: 100%; }
-      .btn-remover { margin-left: 0; margin-top: 10px; }
+      .acoes-trecho { margin-left: 0; }
     }
   }
 }
@@ -228,19 +237,57 @@
 .import-container {
   margin-left: auto;
   .btn-importar-label {
-    background: #2196f3;
-    color: white;
+    background: #c9ef74;
+    color: #14200f;
     padding: 10px 16px;
     border-radius: 4px;
     font-weight: bold;
     cursor: pointer;
     font-size: 14px;
     display: inline-block;
-    &:hover { background: #0b7dda; }
+    &:hover { background: #d7f694; }
   }
 }
 
 @media (max-width: 700px) {
+  .item-trecho .topo-trecho {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+
+    .input-inline-nome { width: 100%; min-width: 0; }
+    .acoes-trecho { grid-column: 1 / -1; justify-content: flex-end; margin-left: 0; }
+  }
+
+  .item-trecho .campos-trecho-grid .grupo-param-trecho {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 10px;
+
+    > div { min-width: 0; }
+    label { min-height: 20px; margin-bottom: 1px; font-size: 11px; line-height: 1.2; }
+    input, select { min-height: 34px; padding: 5px; font-size: 14px; }
+  }
+
+  .item-trecho .campos-trecho-grid .grupo-param-numerico {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-areas: 'inicio max duracao';
+
+    .campo-inicio { grid-area: inicio; }
+    .campo-max-plays { grid-area: max; }
+    .campo-duracao { grid-area: duracao; }
+  }
+
+  .item-trecho .campos-trecho-grid .grupo-param-opcoes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas: 'proximo proximo' 'referencia modo';
+
+    .campo-proximo-marker { grid-area: proximo; }
+    .campo-referencia { grid-area: referencia; }
+    .campo-modo-disparo { grid-area: modo; }
+  }
+
   .header-acoes {
     flex-wrap: wrap;
     gap: 10px;
@@ -254,6 +301,19 @@
 
 .item-trecho.border-canal {
   border-left: 3px solid #ffca28;
+}
+
+.btn-download-canal {
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  border: 1px solid #52635a;
+  border-radius: 4px;
+  background: #394740;
+  color: #e8eee8;
+  cursor: pointer;
+
+  &:hover:not(:disabled) { background: #45554c; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 
 .channel-badge {

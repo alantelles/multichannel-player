@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { FileRepositoryService } from '../../services/file-repository.service';
 import { BundleProjectService } from '../../services/bundle-project.service';
+import { NotificacaoService } from '../../services/notificacao.service';
 
 import { CriadorProjetoComponent } from './criador-projeto.component';
 
@@ -21,9 +22,11 @@ describe('CriadorProjetoComponent', () => {
   const fileRepository = {
     getDirectories: vi.fn().mockResolvedValue([]),
     getFiles: vi.fn().mockResolvedValue([]),
+    getFileUrl: vi.fn(),
     saveProject: vi.fn(async (config: { nomeProjeto: string }) => ({ id: 1, config })),
   };
   const bundleService = { importarEInstalarZip: vi.fn() };
+  const notificacao = { sucesso: vi.fn(), erro: vi.fn() };
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -32,6 +35,7 @@ describe('CriadorProjetoComponent', () => {
       providers: [
         { provide: FileRepositoryService, useValue: fileRepository },
         { provide: BundleProjectService, useValue: bundleService },
+        { provide: NotificacaoService, useValue: notificacao },
         provideRouter([]),
       ],
     }).compileComponents();
@@ -44,7 +48,81 @@ describe('CriadorProjetoComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('Salvar Projeto');
+    expect(fixture.nativeElement.textContent).toContain('Criar/Editar Projeto');
+  });
+
+  it('moves a marker up or down by one position and ignores list boundaries', () => {
+    component.trechosForm.set([
+      { nome: 'Intro', compassoInicio: 0, compassosDuracao: 4, maxPlays: 0, nextMarker: '', referencia: '', modoDisparo: 'bloco' },
+      { nome: 'Verso', compassoInicio: 4, compassosDuracao: 8, maxPlays: 0, nextMarker: '', referencia: '', modoDisparo: 'bloco' },
+      { nome: 'Refrão', compassoInicio: 12, compassosDuracao: 8, maxPlays: 0, nextMarker: '', referencia: '', modoDisparo: 'bloco' },
+    ]);
+
+    component.moverTrecho(1, -1);
+    expect(component.trechosForm().map(trecho => trecho.nome)).toEqual(['Verso', 'Intro', 'Refrão']);
+
+    component.moverTrecho(0, -1);
+    expect(component.trechosForm().map(trecho => trecho.nome)).toEqual(['Verso', 'Intro', 'Refrão']);
+
+    component.moverTrecho(1, 1);
+    expect(component.trechosForm().map(trecho => trecho.nome)).toEqual(['Verso', 'Refrão', 'Intro']);
+
+    component.moverTrecho(2, 1);
+    expect(component.trechosForm().map(trecho => trecho.nome)).toEqual(['Verso', 'Refrão', 'Intro']);
+  });
+
+  it('scrolls the moved marker into view after the list updates', () => {
+    component.trechosForm.set([
+      { nome: 'Intro', compassoInicio: 0, compassosDuracao: 4, maxPlays: 0, nextMarker: '', referencia: '', modoDisparo: 'bloco' },
+      { nome: 'Verso', compassoInicio: 4, compassosDuracao: 8, maxPlays: 0, nextMarker: '', referencia: '', modoDisparo: 'bloco' },
+    ]);
+    const itemMovido = document.createElement('div');
+    itemMovido.className = 'item-trecho';
+    const botao = document.createElement('button');
+    itemMovido.append(botao);
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(itemMovido, 'scrollIntoView', { value: scrollIntoView });
+    document.body.append(itemMovido);
+    const requestFrame = vi.spyOn(window, 'requestAnimationFrame').mockImplementation(callback => {
+      callback(0);
+      return 1;
+    });
+
+    component.moverTrecho(1, -1, { currentTarget: botao } as unknown as Event);
+
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'nearest' });
+    itemMovido.remove();
+    requestFrame.mockRestore();
+  });
+
+  it('duplicates a marker directly below it with the same settings and a unique name', () => {
+    component.trechosForm.set([
+      { nome: 'Refrão', compassoInicio: 8, compassosDuracao: 4, maxPlays: 2, nextMarker: 'final', referencia: '', modoDisparo: 'bloco' },
+      { nome: 'Final', compassoInicio: 12, compassosDuracao: 4, maxPlays: 0, nextMarker: '', referencia: '', modoDisparo: 'compasso' },
+    ]);
+
+    component.duplicarTrecho(0);
+
+    expect(component.trechosForm()).toEqual([
+      { nome: 'Refrão', compassoInicio: 8, compassosDuracao: 4, maxPlays: 2, nextMarker: 'final', referencia: '', modoDisparo: 'bloco' },
+      { nome: 'Refrão - cópia', compassoInicio: 8, compassosDuracao: 4, maxPlays: 2, nextMarker: 'final', referencia: '', modoDisparo: 'bloco' },
+      { nome: 'Final', compassoInicio: 12, compassosDuracao: 4, maxPlays: 0, nextMarker: '', referencia: '', modoDisparo: 'compasso' },
+    ]);
+  });
+
+  it('generates another unique marker name when duplicating the same marker repeatedly', () => {
+    component.trechosForm.set([
+      { nome: 'Verso', compassoInicio: 0, compassosDuracao: 8, maxPlays: 0, nextMarker: '', referencia: '', modoDisparo: 'bloco' },
+    ]);
+
+    component.duplicarTrecho(0);
+    component.duplicarTrecho(0);
+
+    expect(component.trechosForm().map(trecho => trecho.nome)).toEqual([
+      'Verso',
+      'Verso - cópia 2',
+      'Verso - cópia',
+    ]);
   });
 
   it('saves an imported JSON project locally without downloading it', async () => {
@@ -76,6 +154,7 @@ describe('CriadorProjetoComponent', () => {
       pastaBase: 'ensaio',
     }));
     expect(component.statusImportacao()).toBe('Projeto carregado e salvo no banco local.');
+    expect(notificacao.sucesso).toHaveBeenCalledWith('Projeto "ensaio" importado e salvo.');
     expect(downloadSpy).not.toHaveBeenCalled();
   });
 
@@ -89,7 +168,31 @@ describe('CriadorProjetoComponent', () => {
       bpm: 120,
     }), undefined);
     expect(component.statusImportacao()).toBe('Projeto salvo no banco local.');
+    expect(notificacao.sucesso).toHaveBeenCalledWith('Projeto "Sem Nome" salvo no banco local.');
     expect(downloadSpy).not.toHaveBeenCalled();
+  });
+
+  it('checks and downloads a channel audio only when requested', async () => {
+    fileRepository.getFileUrl.mockResolvedValue({ url: 'blob:audio', fromCache: true });
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    component.pastaBase.set('ensaio');
+    const canal = { id: 'click', nome: 'Click', arquivo: 'click.wav' };
+
+    expect(fileRepository.getFileUrl).not.toHaveBeenCalled();
+    await component.baixarAudioCanal(canal);
+
+    expect(fileRepository.getFileUrl).toHaveBeenCalledWith('ensaio', 'click.wav');
+    expect(clickSpy).toHaveBeenCalledOnce();
+    expect(component.statusImportacao()).toBe('Download iniciado: click.wav');
+  });
+
+  it('reports a missing channel audio when the download returns 404', async () => {
+    fileRepository.getFileUrl.mockRejectedValue({ status: 404 });
+    component.pastaBase.set('ensaio');
+
+    await component.baixarAudioCanal({ id: 'click', nome: 'Click', arquivo: 'missing.wav' });
+
+    expect(component.statusImportacao()).toBe('Arquivo de áudio "missing.wav" não encontrado na pasta "ensaio".');
   });
 
   afterEach(() => {

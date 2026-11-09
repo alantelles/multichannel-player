@@ -1,0 +1,50 @@
+.effect-rack {
+  padding: 10px 12px 12px;
+  border: 2px solid #777a77;
+  border-radius: 10px;
+}
+
+.effect-header {
+  display: flex;
+  min-height: 26px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  border-radius: 10px;
+}
+
+.effect-header h3 {
+  margin: 0;
+  color: #ededeb;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.effect-toggle {
+  min-width: 46px;
+  height: 24px;
+  color: #c8cbc7;
+  background: #3a3b3a;
+  border: 1px solid #686b68;
+  border-radius: 2px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.effect-toggle.is-active {
+  color: #1d211e;
+  background: #c9ef74;
+  border-color: #c9ef74;
+}
+
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid #c9ef74;
+  outline-offset: 3px;
+}
+
+@media (max-width: 360px) {
+  .effect-rack { padding-inline: 8px; }
+}

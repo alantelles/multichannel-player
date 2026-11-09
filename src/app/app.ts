@@ -1,15 +1,37 @@
 import { Component, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { OverlayContainer } from '@angular/cdk/overlay';
+import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
-  standalone: true,
-  template: `<div class="app-container">
-    <router-outlet></router-outlet>
-  </div>
-  `
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, MatSnackBarModule],
+  templateUrl: './app.html',
+  styleUrl: './app.scss',
 })
 export class App {
-  protected readonly title = signal('multichannel-player');
+  protected readonly menuAberto = signal(false);
+  protected readonly paginaInvertida = signal(false);
+
+  constructor(private readonly overlayContainer: OverlayContainer) {}
+
+  protected fecharMenu(): void {
+    this.menuAberto.set(false);
+  }
+
+  protected fecharMenuAoClicarFora(event: MouseEvent): void {
+    if (!this.menuAberto()) return;
+    if (typeof window.matchMedia === 'function' && !window.matchMedia('(max-width: 640px)').matches) return;
+
+    const alvo = event.target;
+    if (!(alvo instanceof Element) || alvo.closest('#main-navigation, .menu-toggle')) return;
+
+    this.fecharMenu();
+  }
+
+  protected alternarInversao(): void {
+    this.paginaInvertida.update(invertida => !invertida);
+    this.overlayContainer.getContainerElement().classList.toggle('is-inverted', this.paginaInvertida());
+    this.fecharMenu();
+  }
 }

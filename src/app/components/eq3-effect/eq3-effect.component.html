@@ -1,0 +1,44 @@
+<section class="effect-rack" aria-labelledby="eq3-title">
+  <div class="effect-header">
+    <h3 id="eq3-title">EQ3</h3>
+    <button
+      class="effect-toggle"
+      [class.is-active]="audio.masterEqEnabled()"
+      type="button"
+      [attr.aria-pressed]="audio.masterEqEnabled()"
+      [attr.aria-label]="audio.masterEqEnabled() ? 'Desativar EQ3' : 'Ativar EQ3'"
+      (click)="audio.alternarEqMaster()">
+      {{ audio.masterEqEnabled() ? 'ON' : 'OFF' }}
+    </button>
+  </div>
+
+  <div class="eq-bands">
+    <label class="eq-band">
+      <span class="band-value">{{ audio.masterEqLow() }} <small>dB</small></span>
+      <input type="range" min="-12" max="12" step="1"
+        [value]="audio.masterEqLow()"
+        [attr.aria-valuetext]="audio.masterEqLow() + ' decibéis'"
+        aria-label="Ganho low do EQ3 master"
+        (input)="atualizarGanho('low', $event)" />
+      <span class="band-name">LOW</span>
+    </label>
+    <label class="eq-band">
+      <span class="band-value">{{ audio.masterEqMid() }} <small>dB</small></span>
+      <input type="range" min="-12" max="12" step="1"
+        [value]="audio.masterEqMid()"
+        [attr.aria-valuetext]="audio.masterEqMid() + ' decibéis'"
+        aria-label="Ganho mid do EQ3 master"
+        (input)="atualizarGanho('mid', $event)" />
+      <span class="band-name">MID</span>
+    </label>
+    <label class="eq-band">
+      <span class="band-value">{{ audio.masterEqHigh() }} <small>dB</small></span>
+      <input type="range" min="-12" max="12" step="1"
+        [value]="audio.masterEqHigh()"
+        [attr.aria-valuetext]="audio.masterEqHigh() + ' decibéis'"
+        aria-label="Ganho high do EQ3 master"
+        (input)="atualizarGanho('high', $event)" />
+      <span class="band-name">HI</span>
+    </label>
+  </div>
+</section>

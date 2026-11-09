@@ -1,0 +1,70 @@
+:host {
+  display: block;
+  color: #ecece8;
+  font-family: 'Aptos', 'Trebuchet MS', sans-serif;
+}
+
+.fx-dialog {
+  box-sizing: border-box;
+  width: min(100%, 340px);
+  padding: 18px;
+  background: #292a29;
+}
+
+.fx-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  border-radius: 10px;
+}
+
+.fx-eyebrow {
+  color: #a7aaa6;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+h2[mat-dialog-title] {
+  margin: 2px 0 0;
+  color: #f0f0eb;
+  font-size: 19px;
+  line-height: 1.2;
+}
+
+.close-button {
+  box-sizing: border-box;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  place-items: center;
+  padding: 0;
+  color: #c8cbc7;
+  background: transparent;
+  border: 1px solid #555955;
+  border-radius: 10px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 24px;
+  line-height: 1;
+
+  &:focus-visible {
+    outline: 2px solid #c9ef74;
+    outline-offset: 3px;
+  }
+}
+
+.fx-effects[mat-dialog-content] {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+}
+
+@media (max-width: 360px) {
+  .fx-dialog { padding: 14px; }
+}

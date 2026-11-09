@@ -1,0 +1,76 @@
+<main class="admin-page">
+  <header class="page-header">
+    <div class="heading">
+      <a routerLink="/" class="back-link">← Mixer</a>
+      <span class="eyebrow">BIBLIOTECA LOCAL</span>
+      <h1>Admin de projetos</h1>
+      <p>Consulte configurações, canais e marcadores dos projetos salvos.</p>
+    </div>
+    <div class="header-tools">
+      <label class="import-button" for="project-zip-file">
+        <span aria-hidden="true">↑</span> Importar ZIP
+      </label>
+      <input id="project-zip-file" class="file-input" type="file" accept=".zip,application/zip,application/x-zip-compressed" (change)="importarZip($event)" />
+      <div class="project-total" aria-live="polite">
+        <strong>{{ projetos().length }}</strong>
+        <span>{{ projetos().length === 1 ? 'projeto' : 'projetos' }}</span>
+      </div>
+    </div>
+  </header>
+
+  <section class="project-list" aria-label="Projetos salvos">
+    @if (statusImportacao()) {
+      <p class="import-status" role="status">{{ statusImportacao() }}</p>
+    }
+    <label class="search-box">
+      <span aria-hidden="true">⌕</span>
+      <input
+        type="search"
+        aria-label="Buscar projeto por nome ou pasta"
+        placeholder="Buscar por nome ou pasta..."
+        [ngModel]="filtro()"
+        (ngModelChange)="atualizarFiltro($event)" />
+    </label>
+
+    @if (carregando()) {
+      <p class="empty-state" role="status">Buscando projetos...</p>
+    } @else if (projetos().length === 0) {
+      <p class="empty-state">Nenhum projeto encontrado.</p>
+    } @else {
+      <div class="list-heading" aria-hidden="true">
+        <span>PROJETO</span><span>CONFIGURAÇÃO</span><span>CONTEÚDO</span><span></span>
+      </div>
+      @for (projeto of projetos(); track projeto.id) {
+        <article class="project-row">
+          <div class="project-name">
+            <div class="project-title">
+              <button
+                type="button"
+                class="favorite-button"
+                [class.is-favorite]="projeto.favorito"
+                [attr.aria-pressed]="projeto.favorito === true"
+                [attr.aria-label]="projeto.favorito ? 'Remover ' + projeto.nomeProjeto + ' dos favoritos' : 'Adicionar ' + projeto.nomeProjeto + ' aos favoritos'"
+                [title]="projeto.favorito ? 'Remover dos favoritos' : 'Adicionar aos favoritos'"
+                (click)="alternarFavorito(projeto)">
+                <span aria-hidden="true">{{ projeto.favorito ? '★' : '☆' }}</span>
+              </button>
+              <strong>{{ projeto.nomeProjeto }}</strong>
+            </div>
+            <span>{{ projeto.pastaBase || 'Sem pasta base' }}</span>
+          </div>
+          <div class="project-config">
+            <span class="bpm">{{ projeto.config.bpm }} <small>BPM</small></span>
+            <span>{{ projeto.config.timeSignature === 3 ? '6/8' : '4/4' }}</span>
+          </div>
+          <div class="project-content">
+            <span>{{ projeto.config.canais?.length || 0 }} canais</span>
+            <span>{{ projeto.config.markers?.length || 0 }} marcadores</span>
+          </div>
+          <button type="button" class="details-button" (click)="abrirDetalhes(projeto)">
+            Detalhes <span aria-hidden="true">→</span>
+          </button>
+        </article>
+      }
+    }
+  </section>
+</main>

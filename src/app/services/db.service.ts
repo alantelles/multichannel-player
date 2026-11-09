@@ -14,6 +14,7 @@ export interface SavedProject {
   id?: number;
   nomeProjeto: string;
   pastaBase: string;
+  favorito?: boolean;
   dataModificacao?: Date;
   config: ProjectConfig;
 }

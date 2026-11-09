@@ -38,9 +38,22 @@ vi.mock('tone', () => {
   }
   class VolumeMock {
     volume = { rampTo: vi.fn() };
+    mute = false;
+    connect = vi.fn();
     dispose = vi.fn();
   }
+  class EQ3Mock {
+    low = { rampTo: vi.fn() };
+    mid = { rampTo: vi.fn() };
+    high = { rampTo: vi.fn() };
+    connect = vi.fn();
+    dispose = vi.fn();
+  }
+  class GainMock {
+    connect = vi.fn();
+  }
   class ChannelMock {
+    pan = { value: 0, rampTo: vi.fn() };
     mute = false;
     solo = false;
     disconnect = vi.fn();
@@ -53,6 +66,8 @@ vi.mock('tone', () => {
     Destination: {},
     Player: PlayerMock,
     Volume: VolumeMock,
+    EQ3: EQ3Mock,
+    Gain: GainMock,
     Channel: ChannelMock,
     start: toneMocks.start,
     loaded: toneMocks.loaded,
@@ -202,6 +217,78 @@ describe('AudioEngineService', () => {
     expect(service.isFullyLoaded()).toBe(true);
   });
 
+  it('routes every track through one master bus before the browser destination', async () => {
+    await service.carregarProjetoPorJSON(projectJson({ canais: [
+      { id: 'first', nome: 'Primeira', arquivo: 'first.mp3' },
+      { id: 'second', nome: 'Segunda', arquivo: 'second.mp3' }
+    ] }));
+
+    const masterBus = (service as unknown as { masterBus: InstanceType<typeof Tone.Volume> }).masterBus;
+    const masterEq = (service as unknown as { masterEq: InstanceType<typeof Tone.EQ3> }).masterEq;
+
+    expect(masterBus.connect).toHaveBeenCalledOnce();
+    expect(masterBus.connect).toHaveBeenCalledWith(Tone.Destination);
+    expect(masterEq.connect).toHaveBeenCalledWith(masterBus);
+    expect(service.canais()).toHaveLength(2);
+    service.canais().forEach(channel => {
+      expect(channel.player.chain).toHaveBeenCalledWith(channel.volumeNode, channel.channelNode, masterEq);
+      expect(channel.player.chain).not.toHaveBeenCalledWith(channel.volumeNode, channel.channelNode, Tone.Destination);
+    });
+  });
+
+  it('controls the master EQ gains and bypass', () => {
+    const masterEq = (service as unknown as { masterEq: InstanceType<typeof Tone.EQ3> }).masterEq;
+
+    service.alterarEqMaster('low', 6);
+    service.alterarEqMaster('mid', -4);
+    service.alterarEqMaster('high', 18);
+
+    expect(masterEq.low.rampTo).toHaveBeenNthCalledWith(1, 0, 0.05);
+    expect(masterEq.mid.rampTo).toHaveBeenCalledWith(0, 0.05);
+    expect(masterEq.high.rampTo).toHaveBeenCalledWith(0, 0.05);
+    expect(service.masterEqLow()).toBe(6);
+    expect(service.masterEqMid()).toBe(-4);
+    expect(service.masterEqHigh()).toBe(12);
+
+    service.alternarEqMaster();
+    expect(service.masterEqEnabled()).toBe(true);
+    expect(masterEq.low.rampTo).toHaveBeenLastCalledWith(6, 0.05);
+    expect(masterEq.mid.rampTo).toHaveBeenLastCalledWith(-4, 0.05);
+
+    service.alternarEqMaster();
+    expect(service.masterEqEnabled()).toBe(false);
+    expect(masterEq.low.rampTo).toHaveBeenLastCalledWith(0, 0.05);
+
+    service.alterarEqMaster('low', 3);
+    expect(service.masterEqLow()).toBe(3);
+    expect(masterEq.low.rampTo).toHaveBeenLastCalledWith(0, 0.05);
+
+    service.alternarEqMaster();
+    expect(service.masterEqEnabled()).toBe(true);
+    expect(masterEq.low.rampTo).toHaveBeenLastCalledWith(3, 0.05);
+  });
+
+  it('updates the shared master bus volume in decibels', () => {
+    service.alterarVolumeMaster(-6);
+    const masterBus = (service as unknown as { masterBus: InstanceType<typeof Tone.Volume> }).masterBus;
+
+    expect(service.masterVolume()).toBe(-6);
+    expect(masterBus.volume.rampTo).toHaveBeenCalledWith(-6, 0.05);
+  });
+
+  it('toggles mute on the shared master bus', () => {
+    service.alternarMuteMaster();
+    const masterBus = (service as unknown as { masterBus: InstanceType<typeof Tone.Volume> }).masterBus;
+
+    expect(service.masterMuted()).toBe(true);
+    expect(masterBus.mute).toBe(true);
+
+    service.alternarMuteMaster();
+
+    expect(service.masterMuted()).toBe(false);
+    expect(masterBus.mute).toBe(false);
+  });
+
   it('resolves marker references and optionally appends the full-song marker', async () => {
     const original = marker('original', { inicio: '2m', duracao: '8m', nextMarker: 'next' });
     const alias = marker('alias', { nome: 'Alias', referencia: 'original', nextMarker: 'later' });
@@ -261,19 +348,22 @@ describe('AudioEngineService', () => {
     const channel = createChannel();
 
     service.alterarVolume(channel, -12);
+    service.alterarPan(channel, 0.35);
     service.alternarSolo(channel);
     service.alternarMute(channel);
     service.alterarSaidaFisica(channel, 1);
 
     expect(channel.volumeSignal()).toBe(-12);
     expect(channel.volumeNode.volume.rampTo).toHaveBeenCalledWith(-12, 0.05);
+    expect(channel.panSignal()).toBe(0.35);
+    expect(channel.channelNode.pan.rampTo).toHaveBeenCalledWith(0.35, 0.05);
     expect(channel.isSoloed()).toBe(true);
     expect(channel.channelNode.solo).toBe(true);
     expect(channel.isMuted()).toBe(true);
     expect(channel.channelNode.mute).toBe(true);
-    expect(channel.saidaAtiva()).toBe('Saída 2');
+    expect(channel.saidaAtiva()).toBe('Master');
     expect(channel.channelNode.disconnect).toHaveBeenCalledOnce();
-    expect(channel.channelNode.connect).toHaveBeenCalledWith(Tone.Destination, 0, 1);
+    expect(channel.channelNode.connect).toHaveBeenCalledWith((service as unknown as { masterEq: InstanceType<typeof Tone.EQ3> }).masterEq);
   });
 
   it('reports progress only while playing', () => {
@@ -419,6 +509,7 @@ describe('AudioEngineService', () => {
       } as unknown as Tone.Player,
       volumeNode: { volume: { rampTo: vi.fn() }, dispose: vi.fn() } as unknown as Tone.Volume,
       channelNode: {
+        pan: { value: 0, rampTo: vi.fn() },
         mute: false,
         solo: false,
         disconnect: vi.fn(),
@@ -426,6 +517,7 @@ describe('AudioEngineService', () => {
         dispose: vi.fn()
       } as unknown as Tone.Channel,
       volumeSignal: signal(0),
+      panSignal: signal(0),
       isMuted: signal(false),
       isSoloed: signal(false),
       saidaAtiva: signal('Master')

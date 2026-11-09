@@ -6,9 +6,11 @@ import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import * as Tone from 'tone';
 import { FileRepositoryService } from '../../services/file-repository.service';
+import { SavedProject } from '../../services/db.service';
 import { BundleProjectService } from '../../services/bundle-project.service';
 import { Marker } from '../../models/marker';
 import { ProjectNavigationService } from '../../services/project-navigation.service';
+import { NotificacaoService } from '../../services/notificacao.service';
 import {
   SelecionarProjetoDialogComponent,
   SelecionarProjetoDialogResult,
@@ -57,6 +59,7 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
   private dialog = inject(MatDialog);
   private router = inject(Router);
   private projectNavigation = inject(ProjectNavigationService);
+  private readonly notificacao = inject(NotificacaoService);
   bundleService = inject(BundleProjectService);
   statusImportacao = signal<string>('');
   private projetoEmEdicaoId: number | null = null;
@@ -107,6 +110,12 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
     } catch (error) {
       console.error('Erro ao carregar diretórios do IndexedDB:', error);
     }
+
+    const projeto = history.state?.['projeto'] as SavedProject | undefined;
+    if (projeto) {
+      this.preencherFormulario(projeto.config, projeto.id ?? null);
+      this.statusImportacao.set(`Editando ${projeto.nomeProjeto}`);
+    }
   }
 
   reordenarTrechos(event: CdkDragDrop<any[]>) {
@@ -118,11 +127,39 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
     });
   }
 
+  moverTrecho(index: number, deslocamento: -1 | 1, event?: Event) {
+    let moveu = false;
+    this.trechosForm.update(lista => {
+      const novoIndex = index + deslocamento;
+      if (index < 0 || index >= lista.length || novoIndex < 0 || novoIndex >= lista.length) {
+        return lista;
+      }
+
+      const novaLista = [...lista];
+      moveItemInArray(novaLista, index, novoIndex);
+      moveu = true;
+      return novaLista;
+    });
+
+    const elemento = event?.currentTarget as HTMLElement | null;
+    const itemMovido = elemento?.closest('.item-trecho');
+    if (moveu && itemMovido) {
+      requestAnimationFrame(() => {
+        if (itemMovido.isConnected) {
+          itemMovido.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      });
+    }
+  }
+
   abrirSeletorProjetos() {
     const dialogRef = this.dialog.open(SelecionarProjetoDialogComponent, {
       width: '90%',
       maxWidth: '680px',
       data: { origem: 'criador' },
+      autoFocus: window.matchMedia('(max-width: 600px)').matches
+        ? '.dialog-header h2'
+        : 'input[type="search"]',
     });
 
     dialogRef.afterClosed().subscribe((resultado: SelecionarProjetoDialogResult | undefined) => {
@@ -191,7 +228,13 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
 
     if (nomeArquivo.endsWith('.zip')) {
       this.statusImportacao.set('Carregando arquivo de projeto ZIP...');
-      this.bundleService.importarEInstalarZip(arquivo, this.statusImportacao);
+      void this.bundleService.importarEInstalarZip(arquivo, this.statusImportacao)
+        .then(() => this.notificacao.sucesso('Projeto ZIP importado e salvo no banco local.'))
+        .catch(error => {
+          console.error('Erro ao importar projeto ZIP:', error);
+          this.statusImportacao.set('Não foi possível importar o ZIP. Verifique se o arquivo contém um projeto válido.');
+          this.notificacao.erro('Não foi possível importar o projeto ZIP.');
+        });
     } else if (nomeArquivo.endsWith('.json')) {
       this.importarJsonProjeto(event);
     } else {
@@ -216,6 +259,7 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
       } catch (err) {
         console.error('Erro ao processar o arquivo JSON de projeto:', err);
         alert('Formato de JSON inválido para ProjectConfig.');
+        this.notificacao.erro('O arquivo JSON do projeto é inválido.');
         return;
       }
 
@@ -277,10 +321,12 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
         this.projetoEmEdicaoId = resultado.id;
         this.nomeProjeto.set(resultado.config.nomeProjeto);
         this.statusImportacao.set('Projeto carregado e salvo no banco local.');
+        this.notificacao.sucesso(`Projeto "${nomeFinal}" importado e salvo.`);
         setTimeout(() => this.statusImportacao.set(''), 3000);
       } catch (error) {
         console.error('Erro ao salvar o projeto importado:', error);
         this.statusImportacao.set('Projeto carregado, mas não foi possível salvar no banco local.');
+        this.notificacao.erro('O projeto foi carregado, mas não pôde ser salvo no banco local.');
       }
     };
 
@@ -319,10 +365,12 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
       this.projetoEmEdicaoId = resultado.id;
       this.nomeProjeto.set(resultado.config.nomeProjeto);
       this.statusImportacao.set('Projeto salvo no banco local.');
+      this.notificacao.sucesso(`Projeto "${resultado.config.nomeProjeto}" salvo no banco local.`);
       setTimeout(() => this.statusImportacao.set(''), 3000);
     } catch (error) {
       console.error('Erro ao salvar o projeto:', error);
       this.statusImportacao.set('Não foi possível salvar o projeto no banco local.');
+      this.notificacao.erro('Não foi possível salvar o projeto no banco local.');
     }
   }
 
@@ -384,6 +432,32 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
       console.error('Erro ao salvar mídia de canal:', error);
     } finally {
       this.carregandoCanais.set(false);
+    }
+  }
+
+  async baixarAudioCanal(canal: CanalAudio) {
+    const pasta = this.pastaBase().trim();
+    const nomeArquivo = canal.arquivo.trim();
+
+    if (!pasta || !nomeArquivo) {
+      this.statusImportacao.set('Defina a pasta base e o arquivo de áudio do canal antes de baixar.');
+      return;
+    }
+
+    try {
+      const resultado = await this.fileRepository.getFileUrl(pasta, nomeArquivo);
+      const link = document.createElement('a');
+      link.href = resultado.url;
+      link.download = nomeArquivo;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(resultado.url), 1000);
+      this.statusImportacao.set(`Download iniciado: ${nomeArquivo}`);
+    } catch (error) {
+      console.error(`Erro ao baixar o áudio ${nomeArquivo}:`, error);
+      const erroHttp = error as { status?: number };
+      this.statusImportacao.set(erroHttp.status === 404
+        ? `Arquivo de áudio "${nomeArquivo}" não encontrado na pasta "${pasta}".`
+        : `Não foi possível baixar o arquivo de áudio "${nomeArquivo}".`);
     }
   }
 
@@ -455,6 +529,25 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
 
   removerTrecho(index: number) {
     this.trechosForm.update(lista => lista.filter((_, i) => i !== index));
+  }
+
+  duplicarTrecho(index: number) {
+    this.trechosForm.update(lista => {
+      const trecho = lista[index];
+      if (!trecho) return lista;
+
+      const nomeBase = `${trecho.nome.trim() || 'Marcador'} - cópia`;
+      const idsExistentes = new Set(lista.map(item => computarId(item.nome)));
+      let nome = nomeBase;
+      let numeroCopia = 2;
+      while (idsExistentes.has(computarId(nome))) {
+        nome = `${nomeBase} ${numeroCopia++}`;
+      }
+
+      const novaLista = [...lista];
+      novaLista.splice(index + 1, 0, { ...trecho, nome });
+      return novaLista;
+    });
   }
 
   construirProjetoConfig(): ProjectConfig {

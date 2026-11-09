@@ -28,30 +28,9 @@
   <div class="carregador">
   <!-- mixer.component.html -->
   <div class="painel-configuracao">
-    <!-- Botão de Configurações no Header/Mixer -->
-    <button class="btn-config" (click)="abrirConfiguracoes()">
-      ⚙️ Configurações
+    <button class="botao-basico botao-projetos-salvos" type="button" (click)="abrirModalProjetosSalvos()">
+      💾 Projetos salvos
     </button>
-
-    <!-- Modal de Latência condicional -->
-    @if (exibirModalLatencia()) {
-      <app-latency-modal (fechar)="fecharConfiguracoes()"></app-latency-modal>
-    }
-    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #aaa;">📁 Repositório áudios online:</label>
-    <input type="text" class="ordinary-text-input" [(ngModel)]="fileRepository.onlineRepositoryUrl" (ngModelChange)="setAudioRepository($event)" placeholder="URL do repositório de áudios" />
-    
-    <div style="display: flex; gap: 8px; margin-top: 8px;">
-      <button class="botao-basico" (click)="adicionarArquivosLocal()">Adicionar áudios ao repositório local</button>
-      <!-- 🎯 BOTÃO NOVO -->
-      <button class="botao-basico" style="background-color: #0d6efd;" (click)="abrirModalProjetosSalvos()">
-        💾 Projetos Salvos
-      </button>
-    </div>
-
-    <label style="display: block; margin-top: 10px; margin-bottom: 5px; font-weight: bold; color: #aaa;">📂 Selecionar projeto:</label>
-    <input style="margin-bottom: 8px" type="file" accept=".json" (change)="onConfigSelecionada($event)" />
-    <button routerLink="/criar-projeto" class="botao-basico">Criar projeto</button>
-    
     <div style="margin-top: 8px; color: #ffc107; font-size: 14px;">⚡ Status: {{ audio.statusCarregamento() }}</div>
   </div>
     <div class="painel-arranjador">
@@ -108,81 +87,143 @@
   </div>
 
   @if (audio.canais().length > 0) {
-    
-    <div style="margin-bottom: 20px;">
-        <h3>Selecione o Próximo Bloco:</h3>
-        <div style="margin-bottom:8px;">
-          <button class="botao-basico view-mode" (click)="toggleVisualizacaoSequencia()">
-            {{ visualizacaoSequencia() ? 'Mostrar pads' : 'Mostrar sequência' }}
-          </button>
-        </div>
-      
-      <div
-        [class.trechos]="!visualizacaoSequencia()"
-        [class.visualizacao-sequencia]="visualizacaoSequencia()">
-        @for (trecho of audio.markers(); track trecho.id) {
-          <div class="trecho-trigger">
-            <button (click)="selecionarTrecho(trecho.id, $event)"
-              [style.background]="decidirCorTrecho(trecho)"
-              class="botao-basico botao-trecho"
-              [class.virada-rapida]="trecho.modoDisparo === 'compasso'"
-              [style.color]="(audio.trechoAtivo()?.id === trecho.id || audio.trechoAtivo()?.nextMarker === trecho.id || audio.proximoTrecho()?.id === trecho.id) ? '#000' : '#fff'">
-            <span *ngIf="trecho.modoDisparo === 'compasso'">⚡ </span>
-            {{ trecho.nome }}
-          </button>
+    <div class="paineis-deslizantes">
+      <section class="painel-slide" role="tabpanel" aria-label="Arranjador">
+        <div class="seletor-trechos" style="margin-bottom: 20px;">
+          <h3>Selecione o Próximo Bloco:</h3>
+          <div style="margin-bottom:8px;">
+            <button class="botao-basico view-mode" (click)="toggleVisualizacaoSequencia()">
+              {{ visualizacaoSequencia() ? 'Mostrar pads' : 'Mostrar sequência' }}
+            </button>
           </div>
-        }
-      </div>
-    </div>
 
-    <div class="mixer-container">
-      <h3>🎚️ Mixer</h3>
-      
-      <div class="strips-container">
-        @for (canal of audio.canais(); track canal.id) {
-          <div class="channel-strip">
-            
-            <div class="strip-channel-name-container">
-              <strong [title]="canal.nome" class="strip-channel-name">{{ canal.nome }}</strong>
-              <span class="fader-level fader-level-vertical">{{ canal.volumeSignal() }}</span>
-            </div>
+          <div
+            [class.trechos]="!visualizacaoSequencia()"
+            [class.visualizacao-sequencia]="visualizacaoSequencia()">
+            @for (trecho of audio.markers(); track trecho.id) {
+              <div class="trecho-trigger">
+                <button (click)="selecionarTrecho(trecho.id, $event)"
+                  [style.background]="decidirCorTrecho(trecho)"
+                  class="botao-basico botao-trecho"
+                  [class.virada-rapida]="trecho.modoDisparo === 'compasso'"
+                  [style.color]="(audio.trechoAtivo()?.id === trecho.id || audio.trechoAtivo()?.nextMarker === trecho.id || audio.proximoTrecho()?.id === trecho.id) ? '#000' : '#fff'">
+                  <span *ngIf="trecho.modoDisparo === 'compasso'">⚡ </span>
+                  {{ trecho.nome }}
+                </button>
+              </div>
+            }
+          </div>
+        </div>
+      </section>
 
-            <div class="fader-functions">
-              <div class="fader-indicators">
-                <div class="limits">              
-                  <span>+9</span>
-                  <span class="fader-level">{{ canal.volumeSignal() }}</span>
-                  <span>-40</span>
-                </div>
-                <div class="fader">
-                  <input type="range" min="-40" max="9" step="1"
-                      [value]="canal.volumeSignal()"
-                      (input)="atualizarVolumeRange(canal, $event)"
-                      class="strip-slider" />
+      <section class="painel-slide" role="tabpanel" aria-label="Mixer">
+        <div class="mixer-container">
+          <h3>🎚️ Mixer</h3>
+          <div class="strips-container">
+            <div class="channel-strip master-strip" aria-label="Bus master">
+              <div class="strip-channel-name-container">
+                <strong title="Duplo clique ou toque duplo para zerar o volume master"
+                  (dblclick)="audio.alterarVolumeMaster(0)"
+                  (touchend)="resetarVolumeNoDuploToque('master', $event)"
+                  class="strip-channel-name channel-reset-control">MASTER</strong>
+                <span class="master-level fader-level fader-level-vertical" style="background: #ffb74d;">{{ audio.masterVolume() }}</span>
+              </div>
+
+              <div class="fader-functions">
+                <div class="fader-indicators">
+                  <div class="limits">
+                    <span>+9</span>
+                    <span class="master-level fader-level" style="background: #ffb74d;">{{ audio.masterVolume() }}</span>
+                    <span>-40</span>
+                  </div>
+                  <div class="fader">
+                    <input type="range" min="-40" max="9" step="1"
+                      [value]="audio.masterVolume()"
+                      (input)="atualizarVolumeMaster($event)"
+                      aria-label="Volume master em decibéis"
+                      style="accent-color: #ffb74d;"
+                      class="strip-slider master-slider" />
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div class="strip-button-group">
-              <button (click)="audio.alternarMute(canal)"
-                      [style.background]="canal.isMuted() ? '#dc3545' : '#444'"
-                      class="strip-button">
-                {{ canal.isMuted() ? '🔇 MUTE' : '🔊 MUTE' }}
-              </button>
-              <button (click)="audio.alternarSolo(canal)"
-                      [style.background]="canal.isSoloed() ? '#770' : '#444'"
-                      class="strip-button">
-                {{ canal.isSoloed() ? '❗️ SOLO' : '⚠️ SOLO' }}
-              </button>
-            </div>
+              <div class="strip-button-group">
+                <button type="button" (click)="abrirFxMaster()"
+                  [class.fx-active]="audio.masterEqEnabled()"
+                  [attr.aria-label]="audio.masterEqEnabled() ? 'Abrir efeitos master, EQ3 ligado' : 'Abrir efeitos master'"
+                  class="strip-button fx-button">
+                  FX
+                </button>
+                <button (click)="audio.alternarMuteMaster()"
+                  [style.background]="audio.masterMuted() ? '#dc3545' : '#6b4c1d'"
+                  [attr.aria-label]="audio.masterMuted() ? 'Desmutar master' : 'Silenciar master'"
+                  [attr.aria-pressed]="audio.masterMuted()"
+                  class="strip-button">
+                  {{ audio.masterMuted() ? '🔇 MUTE' : '🔊 MUTE' }}
+                </button>
+              </div>
 
-            <div class="below-buttons">
-              Destino: <span style="color: #ffc107; font-weight: bold;">{{ canal.saidaAtiva() }}</span>
+              <div class="master-destination">Saída do navegador</div>
             </div>
+            @for (canal of audio.canais(); track canal.id) {
+              <div class="channel-strip">
+                <div class="strip-channel-name-container">
+                  <strong [title]="canal.nome + ' (duplo clique ou toque duplo para zerar o volume)'"
+                    (dblclick)="audio.alterarVolume(canal, 0)"
+                    (touchend)="resetarVolumeNoDuploToque(canal, $event)"
+                    class="strip-channel-name channel-reset-control">{{ canal.nome }}</strong>
+                  <span class="fader-level fader-level-vertical">{{ canal.volumeSignal() }}</span>
+                </div>
 
+                <div class="fader-functions">
+                  <div class="fader-indicators">
+                    <div class="limits">
+                      <span>+9</span>
+                      <span class="fader-level">{{ canal.volumeSignal() }}</span>
+                      <span>-40</span>
+                    </div>
+                    <div class="fader">
+                      <input type="range" min="-40" max="9" step="1"
+                        [value]="canal.volumeSignal()"
+                        (input)="atualizarVolumeRange(canal, $event)"
+                        class="strip-slider" />
+                    </div>
+                  </div>
+                </div>
+
+                <label class="pan-control">
+                  <span>PAN {{ formatarPan(canal.panSignal()) }}</span>
+                  <input type="range" min="-50" max="50" step="1"
+                    [value]="canal.panSignal() * 50"
+                    (input)="atualizarPanRange(canal, $event)"
+                    (dblclick)="audio.alterarPan(canal, 0)"
+                    (touchend)="resetarPanNoDuploToque(canal, $event)"
+                    [attr.aria-label]="'Pan do canal ' + canal.nome"
+                    [attr.aria-valuetext]="formatarPan(canal.panSignal())"
+                    class="pan-slider" />
+                </label>
+
+                <div class="strip-button-group">
+                  <button (click)="audio.alternarMute(canal)"
+                    [style.background]="canal.isMuted() ? '#dc3545' : '#444'"
+                    class="strip-button">
+                    {{ canal.isMuted() ? '🔇 MUTE' : '🔊 MUTE' }}
+                  </button>
+                  <button (click)="audio.alternarSolo(canal)"
+                    [style.background]="canal.isSoloed() ? '#770' : '#444'"
+                    class="strip-button">
+                    {{ canal.isSoloed() ? '❗️ SOLO' : '⚠️ SOLO' }}
+                  </button>
+                </div>
+
+                <div class="below-buttons">
+                  Destino: <span style="color: #ffc107; font-weight: bold;">{{ canal.saidaAtiva() }}</span>
+                </div>
+              </div>
+            }
           </div>
-        }
-      </div>
+        </div>
+      </section>
     </div>
   }
 </div>

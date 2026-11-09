@@ -7,7 +7,7 @@
       Projetos salvos
     </button>
     <div class="import-container">
-      <label for="input-json-import" class="btn-importar-label">📂 Carregar projeto</label>
+      <label for="input-json-import" class="btn-importar-label">📂 Importar projeto</label>
       <!-- 🎯 ATUALIZADO: Aceita .zip, .json, application/octet-stream e variações de ZIP -->
       <input 
         id="input-json-import" 
@@ -144,6 +144,9 @@
                [class.btn-disabled]="!pastaBase()"
                title="Subir arquivo de fora para o banco">Upload</label>
         <input *ngIf="pastaBase()" [id]="'file-ch-' + idx" type="file" (change)="uploadAudioCanal($event, idx)" accept="audio/*" style="display: none;">
+        <button type="button" class="btn-download-canal" (click)="baixarAudioCanal(canal)" [disabled]="!pastaBase() || !canal.arquivo" [attr.aria-label]="'Baixar áudio do canal ' + canal.nome" title="Baixar o áudio deste canal">
+          ↓ Baixar
+        </button>
       </div>
       <small *ngIf="arquivosDaPastaAtiva().length === 0 && pastaBase()" style="color: #666; font-size: 10px; margin-top: 2px; display: block;">
         * Nenhuma track encontrada fisicamente na pasta base "{{ pastaBase() }}".
@@ -170,30 +173,35 @@
       
       <span class="badge-index">#{{ i + 1 }}</span>
       <input type="text" [(ngModel)]="trecho.nome" class="input-inline-nome">
-      <button (click)="removerTrecho(i)" class="btn-remover">Remover</button>
+      <div class="acoes-trecho">
+        <button type="button" (click)="moverTrecho(i, -1, $event)" class="btn-mover" [disabled]="i === 0" [attr.aria-label]="'Mover marcador ' + trecho.nome + ' para cima'" title="Mover para cima">↑</button>
+        <button type="button" (click)="moverTrecho(i, 1, $event)" class="btn-mover" [disabled]="i === trechosForm().length - 1" [attr.aria-label]="'Mover marcador ' + trecho.nome + ' para baixo'" title="Mover para baixo">↓</button>
+        <button type="button" (click)="duplicarTrecho(i)" class="btn-duplicar" [attr.aria-label]="'Duplicar marcador ' + trecho.nome" title="Duplicar marcador">Duplicar</button>
+        <button type="button" (click)="removerTrecho(i)" class="btn-remover">Remover</button>
+      </div>
     </div>
 
     <div class="campos-trecho-grid">
-      <div class="grupo-param-trecho">
-        <div>
+      <div class="grupo-param-trecho grupo-param-numerico">
+        <div class="campo-inicio">
           <label>Comp. Início:</label>
           <input [disabled]="!!trecho.referencia" type="number" [(ngModel)]="trecho.compassoInicio">
         </div>
-        <div>
+        <div class="campo-duracao">
           <label>Duração (Comp.):</label>
           <input [disabled]="!!trecho.referencia" type="number" [(ngModel)]="trecho.compassosDuracao">
         </div>
-        <div>
+        <div class="campo-max-plays">
           <label>Max Plays (Loop):</label>
           <input [disabled]="!!trecho.referencia" type="number" [(ngModel)]="trecho.maxPlays">
         </div>
       </div>
-      <div class="grupo-param-trecho">
-        <div>
+      <div class="grupo-param-trecho grupo-param-opcoes">
+        <div class="campo-proximo-marker">
           <label>ID Próximo Marker:</label>
           <input type="text" [(ngModel)]="trecho.nextMarker" placeholder="Ex: refrao-1">
         </div>
-        <div>
+        <div class="campo-referencia">
           <label>Referência</label>
           <select [(ngModel)]="trecho.referencia">
             <option value="">-- Nenhuma --</option>
@@ -202,7 +210,7 @@
             }
           </select>
         </div>
-        <div>
+        <div class="campo-modo-disparo">
           <label>Modo de Disparo</label>
           <select [(ngModel)]="trecho.modoDisparo">
             <option value="bloco">Bloco</option>

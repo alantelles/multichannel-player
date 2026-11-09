@@ -28,6 +28,7 @@ export interface CanalAudioConfig {
   arquivo: string;
   muted?: boolean;
   volume?: number;
+  pan?: number;
 }
 
 export interface CanalAudio extends CanalAudioConfig {
@@ -36,6 +37,7 @@ export interface CanalAudio extends CanalAudioConfig {
   channelNode: Tone.Channel;
   // Signals para atualizar a interface do Angular em tempo real
   volumeSignal: any;  // Armazena o valor em dB (-60 a +6)
+  panSignal: any;
   isMuted: any;       // Booleano para o botão de Mute
   isSoloed: any;
   saidaAtiva: any;    // String ou número indicando o canal de saída física
@@ -72,6 +74,14 @@ export class AudioEngineService {
   public timeSignature = signal<number>(4); // 4/4 por padrão
   
   public canais = signal<CanalAudio[]>([]);
+  public masterVolume = signal<number>(0);
+  public masterMuted = signal<boolean>(false);
+  public masterEqEnabled = signal<boolean>(false);
+  public masterEqLow = signal<number>(0);
+  public masterEqMid = signal<number>(0);
+  public masterEqHigh = signal<number>(0);
+  private readonly masterEq = new Tone.EQ3(0, 0, 0);
+  private readonly masterBus = new Tone.Volume(0);
   private loopId!: any;
   private offset?: number;
   public sampleRate = signal<number>(Tone.context.sampleRate);
@@ -155,6 +165,8 @@ export class AudioEngineService {
   });
 
   constructor() {
+    this.masterEq.connect(this.masterBus);
+    this.masterBus.connect(Tone.Destination);
     effect(() => {
       const config = this.latencySettings.activeConfig();
       this.aplicarConfiguracaoLatencia(config.lookaheadMs, config.offsetMs);
@@ -332,9 +344,11 @@ export class AudioEngineService {
         const player = new Tone.Player({ url: urlCompleta, autostart: false });
         const volumeNode = new Tone.Volume(0); // 0dB = Volume original
         const channelNode = new Tone.Channel();
+        const pan = canal.pan || 0;
         channelNode.mute = canal.muted || false;
+        channelNode.pan.value = pan;
         volumeNode.volume.rampTo(canal.volume || 0, 0.05);
-        player.chain(volumeNode, channelNode, Tone.Destination);
+        player.chain(volumeNode, channelNode, this.masterEq);
         
         const novoCanal: CanalAudio = {
           ...canal,
@@ -342,6 +356,7 @@ export class AudioEngineService {
           volumeNode: volumeNode,
           channelNode: channelNode,
           volumeSignal: signal(canal.volume || 0),       // Slider começa no meio (0 dB)
+          panSignal: signal(pan),
           isMuted: signal(canal.muted),        // Desmutado por padrão
           isSoloed: signal(false),
           saidaAtiva: signal('Master')   // Roteamento padrão
@@ -551,6 +566,35 @@ export class AudioEngineService {
     // O Tone.js usa escala logarítmica para volume (dB). -60 é silêncio absoluto.
     canal.volumeNode.volume.rampTo(db, 0.05); // Suaviza em 50ms para não dar estalo (pop)
   }
+  public alterarPan(canal: CanalAudio, pan: number) {
+    const panLimitado = Math.max(-1, Math.min(1, pan));
+    canal.panSignal.set(panLimitado);
+    canal.channelNode.pan.rampTo(panLimitado, 0.05);
+  }
+  public alterarVolumeMaster(db: number) {
+    this.masterVolume.set(db);
+    this.masterBus.volume.rampTo(db, 0.05);
+  }
+  public alternarEqMaster() {
+    const enabled = !this.masterEqEnabled();
+    this.masterEqEnabled.set(enabled);
+    this.masterEq.low.rampTo(enabled ? this.masterEqLow() : 0, 0.05);
+    this.masterEq.mid.rampTo(enabled ? this.masterEqMid() : 0, 0.05);
+    this.masterEq.high.rampTo(enabled ? this.masterEqHigh() : 0, 0.05);
+  }
+  public alterarEqMaster(banda: 'low' | 'mid' | 'high', db: number) {
+    const ganho = Math.max(-12, Math.min(12, db));
+    const parametro = this.masterEq[banda];
+    parametro.rampTo(this.masterEqEnabled() ? ganho : 0, 0.05);
+    if (banda === 'low') this.masterEqLow.set(ganho);
+    if (banda === 'mid') this.masterEqMid.set(ganho);
+    if (banda === 'high') this.masterEqHigh.set(ganho);
+  }
+  public alternarMuteMaster() {
+    const novoEstado = !this.masterMuted();
+    this.masterMuted.set(novoEstado);
+    this.masterBus.mute = novoEstado;
+  }
   public alternarSolo(canal: CanalAudio) {
     const novoEstadoSolo = !canal.isSoloed();
     
@@ -568,15 +612,10 @@ export class AudioEngineService {
   }
 
   public alterarSaidaFisica(canal: CanalAudio, indiceSaida: number) {
-    canal.saidaAtiva.set(`Saída ${indiceSaida + 1}`);
-    
-    // Desconecta das saídas atuais para não duplicar o som
+    void indiceSaida;
+    canal.saidaAtiva.set('Master');
     canal.channelNode.disconnect();
-
-    // Nota técnica: Para roteamento multicanais avançados (Ex: placas com 8 saídas),
-    // o Tone.js se conecta ao nó nativo da Web Audio API (AudioDestinationNode).
-    // Se sua interface tiver múltiplos canais, você faz assim:
-    canal.channelNode.connect(Tone.Destination, 0, indiceSaida);
+    canal.channelNode.connect(this.masterEq);
   }
 
   dispararTrechoInstantaneamente(trechoId: string) {

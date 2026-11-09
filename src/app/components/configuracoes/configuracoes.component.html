@@ -1,0 +1,103 @@
+<main class="settings-page">
+  <header class="page-header">
+    <div>
+      <a routerLink="/" class="back-link">← Mixer</a>
+      <span class="eyebrow">PREFERÊNCIAS DO PLAYER</span>
+      <h1>Configurações</h1>
+      <p>Latência de reprodução e fontes de áudio do multichannel player.</p>
+    </div>
+  </header>
+
+  <section class="settings-section" aria-labelledby="latency-title">
+    <div class="section-heading">
+      <div>
+        <span class="section-kicker">01 / ÁUDIO</span>
+        <h2 id="latency-title">Latência e performance</h2>
+        <p>Escolha o tempo de antecipação do motor de acordo com o dispositivo e o ambiente de uso.</p>
+      </div>
+    </div>
+
+    <fieldset class="profiles-grid">
+      <legend>Perfil de resposta do motor</legend>
+      @for (profile of profiles; track profile.key) {
+        <label class="profile-option" [class.active]="selectedKey() === profile.key">
+          <input
+            type="radio"
+            name="latency-profile"
+            [value]="profile.key"
+            [checked]="selectedKey() === profile.key"
+            (change)="selecionarPerfil(profile.key)" />
+          <span class="profile-copy">
+            <strong>{{ profile.label }}</strong>
+            <span>{{ profile.description }}</span>
+          </span>
+        </label>
+      }
+    </fieldset>
+
+    @if (selectedKey() === 'custom') {
+      <label class="range-setting" for="custom-lookahead">
+        <span>Ajuste fino de lookahead</span>
+        <strong>{{ customMs() }} ms</strong>
+        <input
+          id="custom-lookahead"
+          type="range"
+          min="25"
+          max="1000"
+          step="5"
+          [ngModel]="customMs()"
+          (ngModelChange)="customMs.set($event)" />
+      </label>
+    }
+
+    <div class="offset-setting">
+      <label for="offset-ms">Compensação de hardware</label>
+      <p>Ajuste em milissegundos para compensar atrasos de Bluetooth ou do driver de áudio.</p>
+      <div class="number-field">
+        <input id="offset-ms" type="number" [ngModel]="offsetMs()" (ngModelChange)="offsetMs.set($event)" />
+        <span>ms</span>
+      </div>
+    </div>
+
+    <div class="section-actions">
+      <button type="button" class="primary-button" (click)="salvarLatencia()">Aplicar latência</button>
+    </div>
+  </section>
+
+  <section class="settings-section" aria-labelledby="repository-title">
+    <div class="section-heading">
+      <div>
+        <span class="section-kicker">02 / BIBLIOTECA</span>
+        <h2 id="repository-title">Repositórios de áudio</h2>
+        <p>Configure a origem remota e gerencie arquivos disponíveis neste dispositivo.</p>
+      </div>
+    </div>
+
+    <div class="repository-setting">
+      <label for="remote-repository">Endereço do repositório remoto</label>
+      <p>Usado para buscar áudios que ainda não estão salvos localmente.</p>
+      <div class="url-controls">
+        <input
+          id="remote-repository"
+          type="url"
+          [ngModel]="remoteRepositoryUrl()"
+          (ngModelChange)="salvarRepositorioRemoto($event)"
+          placeholder="Ex.: audios/" />
+      </div>
+    </div>
+
+    <div class="local-repository">
+      <div>
+        <h3>Armazenamento local</h3>
+        <p>Adicione pistas ao banco local para usar em projetos sem novo download.</p>
+      </div>
+      <button type="button" class="secondary-button" (click)="abrirDialogoAudiosLocais()">
+        + Adicionar áudios
+      </button>
+    </div>
+  </section>
+
+  @if (status()) {
+    <p class="status-message" role="status">{{ status() }}</p>
+  }
+</main>

@@ -147,6 +147,7 @@
   }
 
   .btn-download,
+  .btn-favorito,
   .btn-duplicar,
   .btn-editar,
   .btn-carregar,
@@ -172,6 +173,19 @@
     background: #35433d;
     border-color: #4b5b52;
   }
+
+  .btn-favorito {
+    width: 34px;
+    padding: 0;
+    color: #a7b3ac;
+    background: transparent;
+    border-color: #506057;
+    font-size: 21px;
+    line-height: 1;
+  }
+
+  .btn-favorito.is-favorite { color: #f0c95d; }
+  .btn-favorito:hover { background: rgba(240, 201, 93, 0.1); }
 
   .btn-editar {
     padding: 0 10px;

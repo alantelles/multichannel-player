@@ -1,0 +1,100 @@
+:host {
+  display: block;
+  color: #f3f5ef;
+  font-family: 'Aptos', 'Trebuchet MS', sans-serif;
+}
+
+.confirmation-dialog {
+  box-sizing: border-box;
+  padding: 22px;
+  background: #17211f;
+}
+
+.dialog-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+}
+
+.dialog-symbol {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  place-items: center;
+  color: #14200f;
+  background: #c9ef74;
+  border-radius: 50%;
+  font-size: 19px;
+  font-weight: 900;
+}
+
+.danger-symbol {
+  color: #351712;
+  background: #f08a78;
+}
+
+h2[mat-dialog-title] {
+  margin: 4px 0 0;
+  color: #f3f5ef;
+  font-size: 20px;
+  font-weight: 750;
+  line-height: 1.25;
+}
+
+[mat-dialog-content] {
+  margin: 14px 0 0;
+  color: #bdc9c1;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+[mat-dialog-content] p {
+  margin: 0;
+}
+
+[mat-dialog-actions] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 22px 0 0;
+  padding: 0;
+}
+
+button {
+  min-height: 40px;
+  padding: 0 13px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+button:focus-visible {
+  outline: 2px solid #c9ef74;
+  outline-offset: 3px;
+}
+
+.cancel-button {
+  color: #dce5df;
+  background: #26332e;
+  border-color: #46564d;
+}
+
+.confirm-button {
+  color: #14200f;
+  background: #c9ef74;
+}
+
+.danger-button {
+  color: #351712;
+  background: #f08a78;
+}
+
+@media (max-width: 420px) {
+  .confirmation-dialog { padding: 18px; }
+  [mat-dialog-actions] { justify-content: stretch; }
+  button { flex: 1; }
+}
