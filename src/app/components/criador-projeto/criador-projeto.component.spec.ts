@@ -51,6 +51,50 @@ describe('CriadorProjetoComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Criar/Editar Projeto');
   });
 
+  it('moves a marker up or down by one position and ignores list boundaries', () => {
+    component.trechosForm.set([
+      { nome: 'Intro', compassoInicio: 0, compassosDuracao: 4, maxPlays: 0, nextMarker: '', referencia: '', modoDisparo: 'bloco' },
+      { nome: 'Verso', compassoInicio: 4, compassosDuracao: 8, maxPlays: 0, nextMarker: '', referencia: '', modoDisparo: 'bloco' },
+      { nome: 'Refrão', compassoInicio: 12, compassosDuracao: 8, maxPlays: 0, nextMarker: '', referencia: '', modoDisparo: 'bloco' },
+    ]);
+
+    component.moverTrecho(1, -1);
+    expect(component.trechosForm().map(trecho => trecho.nome)).toEqual(['Verso', 'Intro', 'Refrão']);
+
+    component.moverTrecho(0, -1);
+    expect(component.trechosForm().map(trecho => trecho.nome)).toEqual(['Verso', 'Intro', 'Refrão']);
+
+    component.moverTrecho(1, 1);
+    expect(component.trechosForm().map(trecho => trecho.nome)).toEqual(['Verso', 'Refrão', 'Intro']);
+
+    component.moverTrecho(2, 1);
+    expect(component.trechosForm().map(trecho => trecho.nome)).toEqual(['Verso', 'Refrão', 'Intro']);
+  });
+
+  it('scrolls the moved marker into view after the list updates', () => {
+    component.trechosForm.set([
+      { nome: 'Intro', compassoInicio: 0, compassosDuracao: 4, maxPlays: 0, nextMarker: '', referencia: '', modoDisparo: 'bloco' },
+      { nome: 'Verso', compassoInicio: 4, compassosDuracao: 8, maxPlays: 0, nextMarker: '', referencia: '', modoDisparo: 'bloco' },
+    ]);
+    const itemMovido = document.createElement('div');
+    itemMovido.className = 'item-trecho';
+    const botao = document.createElement('button');
+    itemMovido.append(botao);
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(itemMovido, 'scrollIntoView', { value: scrollIntoView });
+    document.body.append(itemMovido);
+    const requestFrame = vi.spyOn(window, 'requestAnimationFrame').mockImplementation(callback => {
+      callback(0);
+      return 1;
+    });
+
+    component.moverTrecho(1, -1, { currentTarget: botao } as unknown as Event);
+
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'nearest' });
+    itemMovido.remove();
+    requestFrame.mockRestore();
+  });
+
   it('duplicates a marker directly below it with the same settings and a unique name', () => {
     component.trechosForm.set([
       { nome: 'Refrão', compassoInicio: 8, compassosDuracao: 4, maxPlays: 2, nextMarker: 'final', referencia: '', modoDisparo: 'bloco' },

@@ -174,6 +174,8 @@
       <span class="badge-index">#{{ i + 1 }}</span>
       <input type="text" [(ngModel)]="trecho.nome" class="input-inline-nome">
       <div class="acoes-trecho">
+        <button type="button" (click)="moverTrecho(i, -1, $event)" class="btn-mover" [disabled]="i === 0" [attr.aria-label]="'Mover marcador ' + trecho.nome + ' para cima'" title="Mover para cima">↑</button>
+        <button type="button" (click)="moverTrecho(i, 1, $event)" class="btn-mover" [disabled]="i === trechosForm().length - 1" [attr.aria-label]="'Mover marcador ' + trecho.nome + ' para baixo'" title="Mover para baixo">↓</button>
         <button type="button" (click)="duplicarTrecho(i)" class="btn-duplicar" [attr.aria-label]="'Duplicar marcador ' + trecho.nome" title="Duplicar marcador">Duplicar</button>
         <button type="button" (click)="removerTrecho(i)" class="btn-remover">Remover</button>
       </div>

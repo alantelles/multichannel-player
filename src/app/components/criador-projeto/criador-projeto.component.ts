@@ -127,6 +127,31 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
     });
   }
 
+  moverTrecho(index: number, deslocamento: -1 | 1, event?: Event) {
+    let moveu = false;
+    this.trechosForm.update(lista => {
+      const novoIndex = index + deslocamento;
+      if (index < 0 || index >= lista.length || novoIndex < 0 || novoIndex >= lista.length) {
+        return lista;
+      }
+
+      const novaLista = [...lista];
+      moveItemInArray(novaLista, index, novoIndex);
+      moveu = true;
+      return novaLista;
+    });
+
+    const elemento = event?.currentTarget as HTMLElement | null;
+    const itemMovido = elemento?.closest('.item-trecho');
+    if (moveu && itemMovido) {
+      requestAnimationFrame(() => {
+        if (itemMovido.isConnected) {
+          itemMovido.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      });
+    }
+  }
+
   abrirSeletorProjetos() {
     const dialogRef = this.dialog.open(SelecionarProjetoDialogComponent, {
       width: '90%',

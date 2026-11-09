@@ -145,7 +145,10 @@
     
     .input-inline-nome { background: transparent; border: none; border-bottom: 1px solid #444; color: #fff; font-size: 16px; font-weight: bold; width: 60%; }
     .acoes-trecho { display: flex; align-items: center; gap: 6px; margin-left: auto; }
-    .btn-duplicar, .btn-remover { min-height: 32px; padding: 5px 9px; border-radius: 4px; cursor: pointer; font: inherit; font-size: 12px; font-weight: 700; }
+    .btn-mover, .btn-duplicar, .btn-remover { min-height: 32px; padding: 5px 9px; border-radius: 4px; cursor: pointer; font: inherit; font-size: 12px; font-weight: 700; }
+    .btn-mover { min-width: 32px; background: #2a2a32; border: 1px solid #444; color: #e8eee8; font-size: 16px; line-height: 1; }
+    .btn-mover:hover:not(:disabled) { background: #383840; }
+    .btn-mover:disabled { opacity: 0.4; cursor: not-allowed; }
     .btn-duplicar { background: #2a2a32; border: 1px solid #444; color: #ffca28; }
     .btn-duplicar:hover { background: #383840; }
     .btn-remover { background: #351f20; border: 1px solid #743c3c; color: #ff7961; }
