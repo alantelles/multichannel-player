@@ -15,6 +15,11 @@ vi.mock('tone', () => {
     mute = false;
     connect = vi.fn();
   }
+  class AnalyserMock {
+    getValue = vi.fn(() => [new Float32Array(2048), new Float32Array(2048)]);
+    connect = vi.fn();
+    constructor(readonly options: Record<string, number | string>) {}
+  }
   class EQ3Mock {
     low = { rampTo: vi.fn() };
     mid = { rampTo: vi.fn() };
@@ -40,6 +45,7 @@ vi.mock('tone', () => {
 
   return {
     Volume: VolumeMock,
+    Analyser: AnalyserMock,
     EQ3: EQ3Mock,
     Gain: GainMock,
     Limiter: LimiterMock,
@@ -106,6 +112,11 @@ describe('MixerComponent', () => {
     expect(fixture.nativeElement.querySelector('.master-eq')).toBeNull();
     expect(firstStrip.classList.contains('master-strip')).toBe(true);
     expect(masterSlider.getAttribute('aria-label')).toBe('Volume master em decibéis');
+    expect(fixture.nativeElement.querySelector('.master-meter-track[role="meter"]')?.getAttribute('aria-label'))
+      .toBe('Pico de saída master em dBFS');
+    expect(fixture.nativeElement.querySelector('.master-meter-track[role="meter"]')?.getAttribute('aria-valuemax'))
+      .toBe('0');
+    expect(fixture.nativeElement.querySelector('.master-meter')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('.master-strip .pan-slider')).toBeNull();
     const panSlider = fixture.nativeElement.querySelector('.channel-strip:not(.master-strip) .pan-slider') as HTMLInputElement;
     expect(panSlider).not.toBeNull();

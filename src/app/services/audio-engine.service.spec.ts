@@ -42,6 +42,12 @@ vi.mock('tone', () => {
     connect = vi.fn();
     dispose = vi.fn();
   }
+  class AnalyserMock {
+    getValue = vi.fn(() => [new Float32Array(2048), new Float32Array(2048)]);
+    connect = vi.fn();
+    dispose = vi.fn();
+    constructor(readonly options: Record<string, number | string>) {}
+  }
   class EQ3Mock {
     low = { rampTo: vi.fn() };
     mid = { rampTo: vi.fn() };
@@ -59,6 +65,7 @@ vi.mock('tone', () => {
     threshold = { rampTo: vi.fn() };
     connect = vi.fn();
     disconnect = vi.fn();
+    constructor(readonly thresholdDb: number) {}
   }
   class CompressorMock {
     threshold = { rampTo: vi.fn() };
@@ -80,6 +87,7 @@ vi.mock('tone', () => {
     Destination: {},
     Player: PlayerMock,
     Volume: VolumeMock,
+    Analyser: AnalyserMock,
     EQ3: EQ3Mock,
     Gain: GainMock,
     Limiter: LimiterMock,
@@ -175,6 +183,64 @@ describe('AudioEngineService', () => {
     expect(Tone.getContext().lookAhead).toBe(0.25);
   });
 
+  it('routes master output through a meter and limits reads to ten per second', () => {
+    const nodes = service as unknown as {
+      masterBus: InstanceType<typeof Tone.Volume>;
+      masterOutputLimiter: InstanceType<typeof Tone.Limiter> & { thresholdDb: number };
+      masterMeter: InstanceType<typeof Tone.Analyser> & { getValue: ReturnType<typeof vi.fn> };
+      atualizarLeituraMeterMaster: (timestamp: number) => void;
+    };
+    vi.useFakeTimers();
+    try {
+      const waveform = (left: number, right: number) => [
+        Float32Array.from([left, 0, 0]),
+        Float32Array.from([right, 0, 0]),
+      ];
+      nodes.masterMeter.getValue.mockReturnValue(waveform(0.1, -0.25));
+
+      expect(nodes.masterBus.connect).toHaveBeenCalledWith(nodes.masterOutputLimiter);
+      expect(nodes.masterOutputLimiter.thresholdDb).toBe(-0.5);
+      expect(nodes.masterOutputLimiter.connect).toHaveBeenCalledWith(nodes.masterMeter);
+      expect(nodes.masterMeter.connect).toHaveBeenCalledWith(Tone.Destination);
+
+      nodes.atualizarLeituraMeterMaster(0);
+      expect(service.masterMeterLevelDb()).toBeCloseTo(-12.04, 1);
+      expect(nodes.masterMeter.getValue).toHaveBeenCalledOnce();
+
+      nodes.masterMeter.getValue.mockReturnValue(waveform(0.5, 0.1));
+      nodes.atualizarLeituraMeterMaster(99);
+      expect(nodes.masterMeter.getValue).toHaveBeenCalledTimes(2);
+      expect(service.masterMeterLevelDb()).toBeCloseTo(-12.04, 1);
+      nodes.atualizarLeituraMeterMaster(100);
+      expect(service.masterMeterLevelDb()).toBeCloseTo(-6.02, 1);
+      expect(service.masterMeterPeakDb()).toBeCloseTo(-6.02, 1);
+
+      nodes.masterMeter.getValue.mockReturnValue(waveform(0.1778, 0.1));
+      nodes.atualizarLeituraMeterMaster(200);
+      expect(service.masterMeterPeakDb()).toBeCloseTo(-6.02, 1);
+      service.isPlaying.set(true);
+      vi.advanceTimersByTime(2999);
+      expect(service.masterMeterPeakDb()).toBeCloseTo(-6.02, 1);
+      vi.advanceTimersByTime(1);
+      expect(service.masterMeterLevelDb()).toBeCloseTo(-15, 1);
+      expect(service.masterMeterPeakDb()).toBeCloseTo(-15, 1);
+      expect(service.masterMeterLevelPercent()).toBeCloseTo(75, 0);
+
+      nodes.masterMeter.getValue.mockReturnValue(waveform(1, -0.9));
+      nodes.atualizarLeituraMeterMaster(300);
+      expect(service.masterMeterLevelDb()).toBe(0);
+      expect(service.masterMeterOverZero()).toBe(false);
+      expect(service.masterMeterLevelPercent()).toBe(100);
+
+      nodes.masterMeter.getValue.mockReturnValue(waveform(1.1, 0.2));
+      nodes.atualizarLeituraMeterMaster(400);
+      expect(service.masterMeterLevelDb()).toBe(0);
+      expect(service.masterMeterOverZero()).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('initializes Tone once and applies the current BPM', async () => {
     service.bpmAtual.set(96);
 
@@ -240,11 +306,18 @@ describe('AudioEngineService', () => {
       { id: 'second', nome: 'Segunda', arquivo: 'second.mp3' }
     ] }));
 
-    const masterBus = (service as unknown as { masterBus: InstanceType<typeof Tone.Volume> }).masterBus;
+    const nodes = service as unknown as {
+      masterBus: InstanceType<typeof Tone.Volume>;
+      masterOutputLimiter: InstanceType<typeof Tone.Limiter>;
+      masterMeter: InstanceType<typeof Tone.Analyser>;
+    };
+    const masterBus = nodes.masterBus;
     const masterEq = (service as unknown as { masterEq: InstanceType<typeof Tone.EQ3> }).masterEq;
 
     expect(masterBus.connect).toHaveBeenCalledOnce();
-    expect(masterBus.connect).toHaveBeenCalledWith(Tone.Destination);
+    expect(masterBus.connect).toHaveBeenCalledWith(nodes.masterOutputLimiter);
+    expect(nodes.masterOutputLimiter.connect).toHaveBeenCalledWith(nodes.masterMeter);
+    expect(nodes.masterMeter.connect).toHaveBeenCalledWith(Tone.Destination);
     expect(masterEq.connect).toHaveBeenCalledWith(masterBus);
     expect(service.canais()).toHaveLength(2);
     service.canais().forEach(channel => {

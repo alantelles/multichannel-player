@@ -94,6 +94,12 @@ export class AudioEngineService {
   
   public canais = signal<CanalAudio[]>([]);
   public masterVolume = signal<number>(0);
+  public masterMeterLevelDb = signal<number>(-60);
+  public masterMeterPeakDb = signal<number>(-60);
+  public masterMeterOverZero = signal<boolean>(false);
+  public readonly masterMeterLevelPercent = computed(() =>
+    Math.max(0, Math.min(100, ((this.masterMeterLevelDb() + 60) / 60) * 100))
+  );
   public masterMuted = signal<boolean>(false);
   public masterEffectsBypassed = signal<boolean>(false);
   public masterEqEnabled = signal<boolean>(false);
@@ -116,6 +122,13 @@ export class AudioEngineService {
     knee: 0,
   });
   private readonly masterBus = new Tone.Volume(0);
+  private readonly masterOutputLimiter = new Tone.Limiter(-0.5);
+  private readonly masterMeter = new Tone.Analyser({ type: 'waveform', size: 2048, channels: 2, smoothing: 0 });
+  private lastMasterMeterReadAt = Number.NEGATIVE_INFINITY;
+  private masterMeterPeakHoldUntil = 0;
+  private masterMeterPeakHoldTimer: ReturnType<typeof setTimeout> | null = null;
+  private masterMeterPendingPeakDb = -60;
+  private masterMeterPendingOverZero = false;
   private loopId!: any;
   private offset?: number;
   public sampleRate = signal<number>(Tone.context.sampleRate);
@@ -200,7 +213,9 @@ export class AudioEngineService {
 
   constructor() {
     this.masterEq.connect(this.masterBus);
-    this.masterBus.connect(Tone.Destination);
+    this.masterBus.connect(this.masterOutputLimiter);
+    this.masterOutputLimiter.connect(this.masterMeter);
+    this.masterMeter.connect(Tone.Destination);
     this.usarEfeitosMasterSalvos();
     effect(() => {
       const config = this.latencySettings.activeConfig();
@@ -289,8 +304,9 @@ export class AudioEngineService {
 // No AudioEngineService:
 
   private iniciarRelogioUI() {
-    const renderizarFrame = () => {
+    const renderizarFrame = (timestamp: number) => {
       if (!this.isPlaying()) return;
+      this.atualizarLeituraMeterMaster(timestamp);
 
       // 1. Calcula os segundos decorridos no bloco (versão original estável)
       const tempoDecorrido = Tone.Transport.seconds - this.tempoInicioCicloTransport;
@@ -332,6 +348,40 @@ export class AudioEngineService {
     };
 
     requestAnimationFrame(renderizarFrame);
+  }
+  private atualizarLeituraMeterMaster(timestamp: number): void {
+    const leitura = this.masterMeter.getValue();
+    const canais = Array.isArray(leitura) ? leitura : [leitura];
+    const picoAmplitude = Math.max(0, ...canais.flatMap(canal =>
+      Array.from(canal, amostra => Math.abs(amostra)).filter(Number.isFinite)
+    ));
+    const ultrapassouZeroDb = picoAmplitude > 1;
+    const nivelDb = picoAmplitude > 0
+      ? Math.max(-60, Math.min(0, 20 * Math.log10(picoAmplitude)))
+      : -60;
+    this.masterMeterPendingPeakDb = Math.max(this.masterMeterPendingPeakDb, nivelDb);
+    this.masterMeterPendingOverZero ||= ultrapassouZeroDb;
+
+    if (timestamp - this.lastMasterMeterReadAt < 100) return;
+    this.lastMasterMeterReadAt = timestamp;
+    const nivelPublicadoDb = this.masterMeterPendingPeakDb;
+    this.masterMeterOverZero.set(this.masterMeterPendingOverZero);
+    this.masterMeterPendingPeakDb = -60;
+    this.masterMeterPendingOverZero = false;
+    this.masterMeterLevelDb.set(nivelPublicadoDb);
+
+    if (nivelPublicadoDb > this.masterMeterPeakDb()) {
+      this.masterMeterPeakDb.set(nivelPublicadoDb);
+      this.masterMeterPeakHoldUntil = timestamp + 3000;
+      if (this.masterMeterPeakHoldTimer !== null) clearTimeout(this.masterMeterPeakHoldTimer);
+      this.masterMeterPeakHoldTimer = setTimeout(() => {
+        this.masterMeterPeakDb.set(this.isPlaying() ? this.masterMeterLevelDb() : -60);
+        this.masterMeterPeakHoldUntil = 0;
+        this.masterMeterPeakHoldTimer = null;
+      }, 3000);
+    } else if (timestamp >= this.masterMeterPeakHoldUntil) {
+      this.masterMeterPeakDb.set(nivelPublicadoDb);
+    }
   }
   // 🎯 CHAME ESTE MÉTODO no 'if (this.isPlaying())' do seu togglePlay() para limpar tudo
   private pararRelogioUI() {
