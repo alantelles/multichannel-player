@@ -263,8 +263,8 @@
     margin-bottom: 10px;
 
     > div { min-width: 0; }
-    label { min-height: 26px; font-size: 10px; line-height: 1.2; }
-    input, select { min-height: 34px; padding: 5px; font-size: 13px; }
+    label { min-height: 20px; margin-bottom: 1px; font-size: 11px; line-height: 1.2; }
+    input, select { min-height: 34px; padding: 5px; font-size: 14px; }
   }
 
   .item-trecho .campos-trecho-grid .grupo-param-numerico {
