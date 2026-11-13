@@ -1,3 +1,4 @@
+import { AudioEngineService } from './../../services/audio-engine.service';
 import { Component, inject } from '@angular/core';
 import { NgOptimizedImage } from '@angular/common';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -11,6 +12,9 @@ import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 export class SobreDialogComponent {
   private readonly dialogRef = inject(MatDialogRef<SobreDialogComponent>);
 
+  constructor(
+    readonly audio: AudioEngineService,
+  ) {}
   fechar(): void {
     this.dialogRef.close();
   }
