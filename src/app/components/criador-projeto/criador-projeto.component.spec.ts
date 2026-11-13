@@ -11,6 +11,8 @@ const toneTransport = vi.hoisted(() => ({
   timeSignature: 4,
   seconds: 0,
   scheduleRepeat: vi.fn(),
+  scheduleOnce: vi.fn(() => 1),
+  clear: vi.fn(),
   start: vi.fn(),
   pause: vi.fn(),
   stop: vi.fn(),
@@ -25,10 +27,15 @@ const tonePlayer = vi.hoisted(() => vi.fn(function () {
     toDestination: vi.fn(function (this: unknown) { return this; }),
   };
 }));
+const toneTime = vi.hoisted(() => vi.fn((position: string | number) => ({
+  toSeconds: () => typeof position === 'number' ? position : Number.parseFloat(position) * 2,
+  quantize: () => 0,
+})));
 
 vi.mock('tone', () => ({
   Transport: toneTransport,
   Player: tonePlayer,
+  Time: toneTime,
   start: vi.fn().mockResolvedValue(undefined),
   loaded: vi.fn().mockResolvedValue(undefined),
 }));
@@ -82,7 +89,25 @@ describe('CriadorProjetoComponent', () => {
     expect(fileRepository.getFileUrl).toHaveBeenCalledTimes(1);
     expect(fileRepository.getFileUrl).toHaveBeenCalledWith('ensaio', 'click.wav');
     expect(tonePlayer).toHaveBeenCalledWith({ url: 'blob:audio', autostart: false, volume: -6 });
-    expect(tonePlayer.mock.results[0].value.start).toHaveBeenCalledWith(undefined, 0);
+    expect(tonePlayer.mock.results[0].value.start).toHaveBeenCalledWith(undefined, 0, undefined);
+    expect(component.isPlaying()).toBe(true);
+  });
+
+  it('previews the referenced marker from its configured start for its configured duration', async () => {
+    fileRepository.getFileUrl.mockResolvedValue({ url: 'blob:audio', fromCache: true });
+    component.pastaBase.set('ensaio');
+    component.offset.set(250);
+    component.canais.set([{ id: 'click', nome: 'Click', arquivo: 'click.wav', volume: 0 }]);
+    component.trechosForm.set([
+      { nome: 'Intro', compassoInicio: 8, compassosDuracao: 2, maxPlays: 0, nextMarker: '', referencia: '', modoDisparo: 'bloco' },
+      { nome: 'Intro curta', compassoInicio: 0, compassosDuracao: 1, maxPlays: 0, nextMarker: '', referencia: 'intro', modoDisparo: 'bloco' },
+    ]);
+    toneTransport.seconds = 0;
+
+    await component.reproduzirTrecho(1);
+
+    expect(tonePlayer.mock.results[0].value.start).toHaveBeenCalledWith(undefined, 16.25, 4);
+    expect(toneTransport.scheduleOnce).toHaveBeenCalledWith(expect.any(Function), 20);
     expect(component.isPlaying()).toBe(true);
   });
 

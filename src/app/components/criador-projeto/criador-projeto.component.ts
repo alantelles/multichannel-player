@@ -73,6 +73,7 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
 
   private mixPlayers: Tone.Player[] = [];
   private audioUrls: string[] = [];
+  private paradaPreviewAgendada: number | null = null;
   isPlaying = signal<boolean>(false);
   carregandoPreview = signal<boolean>(false);
   statusPreview = signal<string>('');
@@ -453,6 +454,40 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
       return;
     }
 
+    await this.iniciarMix();
+  }
+
+  async reproduzirTrecho(index: number) {
+    if (this.carregandoPreview()) return;
+
+    const trecho = this.trechosForm()[index];
+    if (!trecho) return;
+
+    const trechoFonte = trecho.referencia
+      ? this.trechosForm().find(item => computarId(item.nome) === trecho.referencia)
+      : trecho;
+    if (!trechoFonte) {
+      this.statusPreview.set(`A referência do trecho "${trecho.nome}" não foi encontrada.`);
+      return;
+    }
+
+    const inicioSegundos = Tone.Time(`${trechoFonte.compassoInicio}m`).toSeconds();
+    const duracaoSegundos = Tone.Time(`${trechoFonte.compassosDuracao}m`).toSeconds();
+    if (!Number.isFinite(inicioSegundos) || !Number.isFinite(duracaoSegundos) || duracaoSegundos <= 0) {
+      this.statusPreview.set('Configure um início e uma duração válidos para o trecho.');
+      return;
+    }
+
+    this.pararPlayerCompleto();
+    Tone.Transport.seconds = inicioSegundos;
+    await this.iniciarMix(
+      Math.max(0, inicioSegundos + this.offset() / 1000),
+      duracaoSegundos,
+      trecho.nome,
+    );
+  }
+
+  private async iniciarMix(inicioAudio?: number, duracaoSegundos?: number, nomeTrecho?: string) {
     if (this.carregandoPreview()) return;
 
     const canaisAtivos = this.canais().filter(canal => !canal.muted && canal.arquivo.trim());
@@ -489,11 +524,22 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
 
       await Tone.loaded();
       Tone.Transport.start();
-      this.mixPlayers.forEach(player => player.start(undefined, Tone.Transport.seconds));
+      const offsetReproducao = inicioAudio ?? Tone.Transport.seconds;
+      this.mixPlayers.forEach(player => player.start(undefined, offsetReproducao, duracaoSegundos));
       this.isPlaying.set(true);
       this.statusPreview.set(resultados.some(resultado => resultado.status === 'rejected')
         ? 'Prévia parcial: não foi possível carregar todas as trilhas.'
-        : 'Mix das trilhas em reprodução.');
+        : nomeTrecho
+          ? `Trecho "${nomeTrecho}" em reprodução.`
+          : 'Mix das trilhas em reprodução.');
+
+      if (duracaoSegundos !== undefined) {
+        this.paradaPreviewAgendada = Tone.Transport.scheduleOnce(() => {
+          this.paradaPreviewAgendada = null;
+          this.pararPlayerCompleto();
+          this.statusPreview.set(`Prévia do trecho "${nomeTrecho}" concluída.`);
+        }, Tone.Transport.seconds + duracaoSegundos);
+      }
     } catch (error) {
       console.error('Erro ao carregar o mix de trilhas:', error);
       this.limparMixCanais();
@@ -504,6 +550,10 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
   }
 
   pararPlayerCompleto() {
+    if (this.paradaPreviewAgendada !== null) {
+      Tone.Transport.clear(this.paradaPreviewAgendada);
+      this.paradaPreviewAgendada = null;
+    }
     Tone.Transport.pause();
     this.mixPlayers.forEach(player => player.stop());
     this.isPlaying.set(false);
