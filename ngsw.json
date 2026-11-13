@@ -1,6 +1,6 @@
 {
   "configVersion": 1,
-  "timestamp": 1794533967606,
+  "timestamp": 1794585579966,
   "index": "/multichannel-player/index.html",
   "assetGroups": [
     {
@@ -11,17 +11,16 @@
         "ignoreVary": true
       },
       "urls": [
-        "/multichannel-player/chunk-BGKHubnd.js",
-        "/multichannel-player/chunk-Bu1mF6Zc.js",
-        "/multichannel-player/chunk-CGk2EqoP.js",
-        "/multichannel-player/chunk-CrKvKHWm.js",
-        "/multichannel-player/chunk-CzhD7ru2.js",
-        "/multichannel-player/chunk-DvAivtyk.js",
-        "/multichannel-player/chunk-bZo2kMNW.js",
-        "/multichannel-player/chunk-vTt4_GW_.js",
+        "/multichannel-player/chunk-B4yN-rvu.js",
+        "/multichannel-player/chunk-B53Qf5qR.js",
+        "/multichannel-player/chunk-Cjv9yzKP.js",
+        "/multichannel-player/chunk-CptsHwtI.js",
+        "/multichannel-player/chunk-DnGnXpmd.js",
+        "/multichannel-player/chunk-eiVj7UiO.js",
+        "/multichannel-player/chunk-l_t0KfEV.js",
         "/multichannel-player/favicon.ico",
         "/multichannel-player/index.html",
-        "/multichannel-player/main-OQHGFLND.js",
+        "/multichannel-player/main-EBGLSBUG.js",
         "/multichannel-player/manifest.webmanifest",
         "/multichannel-player/styles-SNR4LNH6.css"
       ],
@@ -42,21 +41,22 @@
         "/multichannel-player/icons/icon-384x384.png",
         "/multichannel-player/icons/icon-512x512.png",
         "/multichannel-player/icons/icon-72x72.png",
-        "/multichannel-player/icons/icon-96x96.png"
+        "/multichannel-player/icons/icon-96x96.png",
+        "/multichannel-player/vamp-logo-about.jpeg",
+        "/multichannel-player/vamp-logo-smaller.png"
       ],
       "patterns": []
     }
   ],
   "dataGroups": [],
   "hashTable": {
-    "/multichannel-player/chunk-BGKHubnd.js": "783e516ce14e2406d7010863570993e760356408",
-    "/multichannel-player/chunk-Bu1mF6Zc.js": "eab3157d85cc3199b15d411c7e1dc9b3012a85b4",
-    "/multichannel-player/chunk-CGk2EqoP.js": "a4cd239af466f821b236b5693005a0dd1289015e",
-    "/multichannel-player/chunk-CrKvKHWm.js": "4eb2a3374652bf6c0623b6a646f9ca040813aef3",
-    "/multichannel-player/chunk-CzhD7ru2.js": "b9039f73c41ff08e8e69cbe68b5613d7c075ecb1",
-    "/multichannel-player/chunk-DvAivtyk.js": "bcd5b36f896ee3306dcacba83ac6813a07dca7e3",
-    "/multichannel-player/chunk-bZo2kMNW.js": "09c3c233eed9903321a02901195b8786ea5e9d8c",
-    "/multichannel-player/chunk-vTt4_GW_.js": "06437ef17f0db99fdf51932078bb154cd4757cbc",
+    "/multichannel-player/chunk-B4yN-rvu.js": "4ab3182d52e32235f3dd7bc1cb9e4f5a33d1c35d",
+    "/multichannel-player/chunk-B53Qf5qR.js": "3e46e5baad334fe3259af002d26ba2e0c7421974",
+    "/multichannel-player/chunk-Cjv9yzKP.js": "9dbd1c0dd56f4ed61fe578d444a868bfa314b3e0",
+    "/multichannel-player/chunk-CptsHwtI.js": "42837a1519cd684519197886cd7822e0e98acb87",
+    "/multichannel-player/chunk-DnGnXpmd.js": "3b8e4b39b7a0418ea994c8a7676ea78f453ecaa5",
+    "/multichannel-player/chunk-eiVj7UiO.js": "521c7b186dd7b0ec110377e6e64f12d3258bdace",
+    "/multichannel-player/chunk-l_t0KfEV.js": "47379425b238c61fe91030dffbaeb8f7a54c8e98",
     "/multichannel-player/favicon.ico": "9c39f434fe1261f68c5e3eefdf734630d99c5670",
     "/multichannel-player/icons/icon-128x128.png": "f912963bdc6d5a38d8f1dd0afbaab2ce8d657acb",
     "/multichannel-player/icons/icon-144x144.png": "b155fd5f2fd5d2ea7760721063003c4cd95fd783",
@@ -66,10 +66,12 @@
     "/multichannel-player/icons/icon-512x512.png": "1de182f76f7329dfa8f9fcdd1fdcdd695bea6a99",
     "/multichannel-player/icons/icon-72x72.png": "aa88a6096bd973be7f6d7a5489bfa6bc2463f8c4",
     "/multichannel-player/icons/icon-96x96.png": "7fb8f59c30ce2ff12c700321a0b39e14b3dc8f95",
-    "/multichannel-player/index.html": "e718ce925d1a34f47142403614b5d2113f8536a4",
-    "/multichannel-player/main-OQHGFLND.js": "4b0891a5042e18e17b93f677ff8bfe2a5c076489",
+    "/multichannel-player/index.html": "e575809fba538e812773fadf52328ef8668382f8",
+    "/multichannel-player/main-EBGLSBUG.js": "ad682bafaa2b3f48dae45c3c02dbe0b835150760",
     "/multichannel-player/manifest.webmanifest": "43841d0a599ea8e9ac222ab13fab6340249faaa2",
-    "/multichannel-player/styles-SNR4LNH6.css": "8d4ab6c318e9986f324d4ef46c85aa310a6c9881"
+    "/multichannel-player/styles-SNR4LNH6.css": "8d4ab6c318e9986f324d4ef46c85aa310a6c9881",
+    "/multichannel-player/vamp-logo-about.jpeg": "a70597cf3b94f04b4963545dfcc07090c0549553",
+    "/multichannel-player/vamp-logo-smaller.png": "492cd4400f1fa8e118a6a46da1b604730c01f8a8"
   },
   "navigationUrls": [
     {
