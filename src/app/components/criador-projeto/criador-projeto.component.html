@@ -63,12 +63,8 @@
         </div>
       </div>
 
-      <h3>2. Áudio Guia da Mesa</h3>
-      <div class="upload-guia">
-        <input type="file" (change)="onAudioGuiaSelecionado($event)" accept="audio/*">
-      </div>
-
-      <div class="player-guia-control" *ngIf="arquivoSelecionado()">
+      <h3>2. Prévia do Mix das Trilhas</h3>
+      <div class="player-guia-control">
         <div class="display-compasso">
           <span class="label">COMPASSO ATUAL</span>
           <span class="numero">{{ compassoAbsoluto() }}</span>
@@ -76,14 +72,15 @@
         </div>
 
         <div class="controles-timeline">
-          <button (click)="mudarPosicao(-4)" class="btn-step">« -4</button>
-          <button (click)="mudarPosicao(-1)" class="btn-step">‹ -1</button>
-          <button (click)="togglePlay()" class="btn-play" [class.playing]="isPlaying()">
-            {{ isPlaying() ? 'PAUSAR' : 'TOCAR GUIA' }}
+          <button (click)="mudarPosicao(-4)" class="btn-step" [disabled]="carregandoPreview()">« -4</button>
+          <button (click)="mudarPosicao(-1)" class="btn-step" [disabled]="carregandoPreview()">‹ -1</button>
+          <button (click)="togglePlay()" class="btn-play" [class.playing]="isPlaying()" [disabled]="carregandoPreview() || !pastaBase() || !canais().some(canal => !canal.muted && canal.arquivo.trim())">
+            {{ carregandoPreview() ? 'CARREGANDO...' : isPlaying() ? 'PAUSAR MIX' : 'TOCAR MIX' }}
           </button>
-          <button (click)="mudarPosicao(1)" class="btn-step">+1 ›</button>
-          <button (click)="mudarPosicao(4)" class="btn-step">+4 »</button>
+          <button (click)="mudarPosicao(1)" class="btn-step" [disabled]="carregandoPreview()">+1 ›</button>
+          <button (click)="mudarPosicao(4)" class="btn-step" [disabled]="carregandoPreview()">+4 »</button>
         </div>
+        <small *ngIf="statusPreview()" role="status">{{ statusPreview() }}</small>
       </div>
     </section>
 
