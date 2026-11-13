@@ -66,6 +66,22 @@
   transition: color 140ms ease, background-color 140ms ease;
 }
 
+.about-button {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  padding: 0 13px;
+  color: #c4cec7;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 140ms ease, background-color 140ms ease;
+}
+
 .page-inversion-toggle {
   display: inline-flex;
   min-height: 38px;
@@ -84,6 +100,7 @@
 
 .main-navigation a:hover,
 .main-navigation a.active,
+.about-button:hover,
 .page-inversion-toggle:hover {
   color: #14200f;
   background: #c9ef74;
@@ -91,6 +108,7 @@
 
 .brand:focus-visible,
 .main-navigation a:focus-visible,
+.about-button:focus-visible,
 .page-inversion-toggle:focus-visible,
 .menu-toggle:focus-visible {
   outline: 2px solid #c9ef74;
