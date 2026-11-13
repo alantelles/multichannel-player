@@ -1,6 +1,8 @@
 <div class="app-container" [class.is-inverted]="paginaInvertida()" (click)="fecharMenuAoClicarFora($event)">
 	<header class="app-header">
-		<a class="brand" routerLink="/" (click)="fecharMenu()">Multichannel Player</a>
+		<a class="brand" routerLink="/" (click)="fecharMenu()">
+			<img ngSrc="/vamp-logo-smaller.png" width="171" height="50" alt="Vamp" priority>
+		</a>
 
 		<button
 			class="menu-toggle"

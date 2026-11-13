@@ -1,11 +1,12 @@
 import { Component, signal } from '@angular/core';
 import { OverlayContainer } from '@angular/cdk/overlay';
+import { NgOptimizedImage } from '@angular/common';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterLink, RouterLinkActive, RouterOutlet, MatSnackBarModule],
+  imports: [NgOptimizedImage, RouterLink, RouterLinkActive, RouterOutlet, MatSnackBarModule],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
