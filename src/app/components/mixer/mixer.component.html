@@ -144,6 +144,25 @@
                       style="accent-color: #ffb74d;"
                       class="strip-slider master-slider" />
                   </div>
+                  <div class="master-meter">
+                    <output class="master-meter-value">
+                      {{ audio.masterMeterPeakDb() <= -60 ? '-inf' : audio.masterMeterPeakDb().toFixed(1) }}
+                    </output>
+                    <div
+                      class="master-meter-track"
+                      role="meter"
+                      aria-label="Pico de saída master em dBFS"
+                      aria-valuemin="-60"
+                      aria-valuemax="0"
+                      [attr.aria-valuenow]="audio.masterMeterLevelDb()">
+                      <span
+                        class="master-meter-fill"
+                        [class.is-warning]="audio.masterMeterLevelDb() >= -10 && !audio.masterMeterOverZero()"
+                        [class.is-clipping]="audio.masterMeterOverZero()"
+                        [style.height.%]="audio.masterMeterLevelPercent()"></span>
+                    </div>
+                    <span class="master-meter-unit">dBFS</span>
+                  </div>
                 </div>
               </div>
 

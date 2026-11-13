@@ -1,0 +1,28 @@
+<section class="effect-rack maximizer-rack" aria-labelledby="maximizer-title">
+  <div class="effect-header">
+    <h3 id="maximizer-title">Maximizer</h3>
+    <button
+      class="effect-toggle"
+      [class.is-active]="audio.masterMaximizerEnabled()"
+      type="button"
+      [attr.aria-pressed]="audio.masterMaximizerEnabled()"
+      [attr.aria-label]="audio.masterMaximizerEnabled() ? 'Desativar maximizer' : 'Ativar maximizer'"
+      (click)="audio.alternarMaximizerMaster()">
+      {{ audio.masterMaximizerEnabled() ? 'ON' : 'OFF' }}
+    </button>
+  </div>
+
+  <label class="maximizer-control">
+    <span>Threshold <strong>{{ audio.masterMaximizerThreshold() }} dBFS</strong></span>
+    <input type="range" min="-25" max="0" step="0.5"
+      [value]="audio.masterMaximizerThreshold()"
+      [attr.aria-valuetext]="audio.masterMaximizerThreshold() + ' dBFS'"
+      aria-label="Threshold do limiter master em dBFS"
+      (input)="atualizarThreshold($event)" />
+  </label>
+  <div class="effect-actions" role="group" aria-label="Ações do maximizer">
+    <button type="button" (click)="resetar()">Reset</button>
+    <button type="button" (click)="usarSalvo()">Usar salvo</button>
+  </div>
+  <p class="action-message" aria-live="polite">{{ actionMessage() }}</p>
+</section>

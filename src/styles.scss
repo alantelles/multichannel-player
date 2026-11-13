@@ -63,3 +63,58 @@ html, body {
 .task-snackbar-error .mdc-snackbar__surface {
   background-color: #7f1d1d !important;
 }
+
+.master-meter {
+  display: flex;
+  flex: 0 0 30px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 200px;
+  color: #d3d8d2;
+  font-size: 9px;
+}
+
+.master-meter-track {
+  display: flex;
+  align-items: flex-end;
+  width: 9px;
+  height: 100%;
+  overflow: hidden;
+  background: #171a18;
+  border: 1px solid #535a54;
+}
+
+.master-meter-fill {
+  display: block;
+  width: 100%;
+  background: #86c96b;
+  transition: height 80ms linear;
+}
+
+.master-meter-fill.is-warning {
+  background: #eac64f;
+}
+
+.master-meter-fill.is-clipping {
+  background: #ef7455;
+}
+
+.master-meter-value {
+  min-width: 30px;
+  color: #f0f2ed;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.master-meter-unit {
+  writing-mode: vertical-rl;
+}
+
+@media screen and (max-width: 1200px) and (orientation: portrait) {
+  .master-meter {
+    flex-basis: 30px;
+    height: 100px;
+  }
+}

@@ -20,6 +20,37 @@
   font-weight: 600;
 }
 
+.effect-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.effect-actions button {
+  min-height: 30px;
+  padding: 4px 6px;
+  color: #ecece8;
+  background: #3a3b3a;
+  border: 1px solid #686b68;
+  border-radius: 2px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.effect-actions button:hover {
+  background: #4a4c49;
+}
+
+.action-message {
+  min-height: 14px;
+  margin: 4px 0 0;
+  color: #c9ef74;
+  font-size: 10px;
+}
+
 .effect-toggle {
   min-width: 46px;
   height: 24px;
