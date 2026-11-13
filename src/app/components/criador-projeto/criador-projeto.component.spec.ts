@@ -109,6 +109,13 @@ describe('CriadorProjetoComponent', () => {
     expect(tonePlayer.mock.results[0].value.start).toHaveBeenCalledWith(undefined, 16.25, 4);
     expect(toneTransport.scheduleOnce).toHaveBeenCalledWith(expect.any(Function), 20);
     expect(component.isPlaying()).toBe(true);
+    expect(component.trechoPreviewAtivo()).toBe(1);
+
+    await component.reproduzirTrecho(1);
+
+    expect(component.isPlaying()).toBe(false);
+    expect(component.trechoPreviewAtivo()).toBeNull();
+    expect(toneTransport.pause).toHaveBeenCalled();
   });
 
   it('moves a marker up or down by one position and ignores list boundaries', () => {

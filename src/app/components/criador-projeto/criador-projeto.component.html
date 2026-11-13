@@ -171,7 +171,7 @@
       <span class="badge-index">#{{ i + 1 }}</span>
       <input type="text" [(ngModel)]="trecho.nome" class="input-inline-nome">
       <div class="acoes-trecho">
-        <button type="button" (click)="reproduzirTrecho(i)" class="btn-preview" [disabled]="carregandoPreview() || !pastaBase() || !canais().some(canal => !canal.muted && canal.arquivo.trim())" [attr.aria-label]="'Reproduzir trecho ' + trecho.nome" title="Reproduzir este trecho">▶</button>
+        <button type="button" (click)="reproduzirTrecho(i)" class="btn-preview" [disabled]="carregandoPreview() || !pastaBase() || !canais().some(canal => !canal.muted && canal.arquivo.trim())" [attr.aria-label]="(isPlaying() && trechoPreviewAtivo() === i ? 'Pausar trecho ' : 'Reproduzir trecho ') + trecho.nome" [title]="isPlaying() && trechoPreviewAtivo() === i ? 'Pausar este trecho' : 'Reproduzir este trecho'">{{ isPlaying() && trechoPreviewAtivo() === i ? '⏸' : '▶' }}</button>
         <button type="button" (click)="moverTrecho(i, -1, $event)" class="btn-mover" [disabled]="i === 0" [attr.aria-label]="'Mover marcador ' + trecho.nome + ' para cima'" title="Mover para cima">↑</button>
         <button type="button" (click)="moverTrecho(i, 1, $event)" class="btn-mover" [disabled]="i === trechosForm().length - 1" [attr.aria-label]="'Mover marcador ' + trecho.nome + ' para baixo'" title="Mover para baixo">↓</button>
         <button type="button" (click)="duplicarTrecho(i)" class="btn-duplicar" [attr.aria-label]="'Duplicar marcador ' + trecho.nome" title="Duplicar marcador">Duplicar</button>

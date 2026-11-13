@@ -74,6 +74,7 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
   private mixPlayers: Tone.Player[] = [];
   private audioUrls: string[] = [];
   private paradaPreviewAgendada: number | null = null;
+  trechoPreviewAtivo = signal<number | null>(null);
   isPlaying = signal<boolean>(false);
   carregandoPreview = signal<boolean>(false);
   statusPreview = signal<string>('');
@@ -463,6 +464,12 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
     const trecho = this.trechosForm()[index];
     if (!trecho) return;
 
+    if (this.isPlaying() && this.trechoPreviewAtivo() === index) {
+      this.pararPlayerCompleto();
+      this.statusPreview.set(`Prévia do trecho "${trecho.nome}" pausada.`);
+      return;
+    }
+
     const trechoFonte = trecho.referencia
       ? this.trechosForm().find(item => computarId(item.nome) === trecho.referencia)
       : trecho;
@@ -484,10 +491,11 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
       Math.max(0, inicioSegundos + this.offset() / 1000),
       duracaoSegundos,
       trecho.nome,
+      index,
     );
   }
 
-  private async iniciarMix(inicioAudio?: number, duracaoSegundos?: number, nomeTrecho?: string) {
+  private async iniciarMix(inicioAudio?: number, duracaoSegundos?: number, nomeTrecho?: string, indiceTrecho?: number) {
     if (this.carregandoPreview()) return;
 
     const canaisAtivos = this.canais().filter(canal => !canal.muted && canal.arquivo.trim());
@@ -527,6 +535,7 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
       const offsetReproducao = inicioAudio ?? Tone.Transport.seconds;
       this.mixPlayers.forEach(player => player.start(undefined, offsetReproducao, duracaoSegundos));
       this.isPlaying.set(true);
+      this.trechoPreviewAtivo.set(indiceTrecho ?? null);
       this.statusPreview.set(resultados.some(resultado => resultado.status === 'rejected')
         ? 'Prévia parcial: não foi possível carregar todas as trilhas.'
         : nomeTrecho
@@ -557,6 +566,7 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
     Tone.Transport.pause();
     this.mixPlayers.forEach(player => player.stop());
     this.isPlaying.set(false);
+    this.trechoPreviewAtivo.set(null);
   }
 
   mudarPosicao(quantidadeCompassos: number) {
