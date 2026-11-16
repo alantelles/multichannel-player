@@ -1,6 +1,8 @@
 {
-  "name": "multichannel-player",
-  "short_name": "multichannel-player",
+  "name": "VAMP - Virtual Arranger Multitrack Player",
+  "short_name": "VAMP",
+  "theme_color": "#111a18",
+  "background_color": "#111a18",
   "display": "standalone",
   "scope": "./",
   "start_url": "./",
