@@ -71,10 +71,13 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
   offset = signal<number>(0);
   fullSong = signal<boolean>(false);
 
-  // Estado do Áudio Guia
-  arquivoSelecionado = signal<File | null>(null);
-  player: Tone.Player | null = null;
+  private mixPlayers: Tone.Player[] = [];
+  private audioUrls: string[] = [];
+  private paradaPreviewAgendada: number | null = null;
+  trechoPreviewAtivo = signal<number | null>(null);
   isPlaying = signal<boolean>(false);
+  carregandoPreview = signal<boolean>(false);
+  statusPreview = signal<string>('');
   posicaoAtual = signal<string>('0:0:0');
   
   // Sinais de Formulários Separados por Blocos Estilizados
@@ -374,25 +377,6 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
     }
   }
 
-  async onAudioGuiaSelecionado(event: Event) {
-    const input = event.target as HTMLInputElement;
-    if (input.files && input.files.length > 0) {
-      this.arquivoSelecionado.set(input.files[0]);
-      if (this.player) this.player.dispose();
-
-      const url = URL.createObjectURL(input.files[0]);
-      this.player = new Tone.Player({
-        url: url,
-        autostart: false,
-        onload: () => console.log('Áudio guia carregado!')
-      }).toDestination();
-
-      (this.player as any).onended = () => {
-        Tone.Draw.schedule(() => this.pararPlayerCompleto(), Tone.now());
-      };
-    }
-  }
-
   adicionarCanalEmBranco() {
     this.canais.update(lista => [
       ...lista,
@@ -465,22 +449,124 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
     this.canais.update(lista => lista.filter((_, i) => i !== index));
   }
 
-  togglePlay() {
-    if (!this.player) return;
+  async togglePlay() {
     if (this.isPlaying()) {
       this.pararPlayerCompleto();
-    } else {
-      Tone.start();
+      return;
+    }
+
+    await this.iniciarMix();
+  }
+
+  async reproduzirTrecho(index: number) {
+    if (this.carregandoPreview()) return;
+
+    const trecho = this.trechosForm()[index];
+    if (!trecho) return;
+
+    if (this.isPlaying() && this.trechoPreviewAtivo() === index) {
+      this.pararPlayerCompleto();
+      this.statusPreview.set(`Prévia do trecho "${trecho.nome}" pausada.`);
+      return;
+    }
+
+    const trechoFonte = trecho.referencia
+      ? this.trechosForm().find(item => computarId(item.nome) === trecho.referencia)
+      : trecho;
+    if (!trechoFonte) {
+      this.statusPreview.set(`A referência do trecho "${trecho.nome}" não foi encontrada.`);
+      return;
+    }
+
+    const inicioSegundos = Tone.Time(`${trechoFonte.compassoInicio}m`).toSeconds();
+    const duracaoSegundos = Tone.Time(`${trechoFonte.compassosDuracao}m`).toSeconds();
+    if (!Number.isFinite(inicioSegundos) || !Number.isFinite(duracaoSegundos) || duracaoSegundos <= 0) {
+      this.statusPreview.set('Configure um início e uma duração válidos para o trecho.');
+      return;
+    }
+
+    this.pararPlayerCompleto();
+    Tone.Transport.seconds = inicioSegundos;
+    await this.iniciarMix(
+      Math.max(0, inicioSegundos + this.offset() / 1000),
+      duracaoSegundos,
+      trecho.nome,
+      index,
+    );
+  }
+
+  private async iniciarMix(inicioAudio?: number, duracaoSegundos?: number, nomeTrecho?: string, indiceTrecho?: number) {
+    if (this.carregandoPreview()) return;
+
+    const canaisAtivos = this.canais().filter(canal => !canal.muted && canal.arquivo.trim());
+    if (!this.pastaBase().trim() || canaisAtivos.length === 0) {
+      this.statusPreview.set('Adicione ao menos uma trilha de áudio não mutada.');
+      return;
+    }
+
+    this.carregandoPreview.set(true);
+    this.statusPreview.set('Carregando trilhas para a prévia...');
+
+    try {
+      await Tone.start();
+      this.limparMixCanais();
+
+      const resultados = await Promise.allSettled(canaisAtivos.map(async canal => ({
+        canal,
+        arquivo: await this.fileRepository.getFileUrl(this.pastaBase().trim(), canal.arquivo.trim()),
+      })));
+      const faixasDisponiveis = resultados.flatMap(resultado =>
+        resultado.status === 'fulfilled' ? [resultado.value] : []
+      );
+
+      this.audioUrls = faixasDisponiveis.map(faixa => faixa.arquivo.url);
+      this.mixPlayers = faixasDisponiveis.map(({ canal, arquivo }) => new Tone.Player({
+        url: arquivo.url,
+        autostart: false,
+        volume: canal.volume ?? 0,
+      }).toDestination());
+
+      if (this.mixPlayers.length === 0) {
+        throw new Error('Nenhuma trilha pôde ser carregada.');
+      }
+
+      await Tone.loaded();
       Tone.Transport.start();
-      this.player.start(undefined, Tone.Transport.seconds);
+      const offsetReproducao = inicioAudio ?? Tone.Transport.seconds;
+      this.mixPlayers.forEach(player => player.start(undefined, offsetReproducao, duracaoSegundos));
       this.isPlaying.set(true);
+      this.trechoPreviewAtivo.set(indiceTrecho ?? null);
+      this.statusPreview.set(resultados.some(resultado => resultado.status === 'rejected')
+        ? 'Prévia parcial: não foi possível carregar todas as trilhas.'
+        : nomeTrecho
+          ? `Trecho "${nomeTrecho}" em reprodução.`
+          : 'Mix das trilhas em reprodução.');
+
+      if (duracaoSegundos !== undefined) {
+        this.paradaPreviewAgendada = Tone.Transport.scheduleOnce(() => {
+          this.paradaPreviewAgendada = null;
+          this.pararPlayerCompleto();
+          this.statusPreview.set(`Prévia do trecho "${nomeTrecho}" concluída.`);
+        }, Tone.Transport.seconds + duracaoSegundos);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar o mix de trilhas:', error);
+      this.limparMixCanais();
+      this.statusPreview.set('Não foi possível carregar as trilhas para a prévia.');
+    } finally {
+      this.carregandoPreview.set(false);
     }
   }
 
   pararPlayerCompleto() {
+    if (this.paradaPreviewAgendada !== null) {
+      Tone.Transport.clear(this.paradaPreviewAgendada);
+      this.paradaPreviewAgendada = null;
+    }
     Tone.Transport.pause();
-    if (this.player) this.player.stop();
+    this.mixPlayers.forEach(player => player.stop());
     this.isPlaying.set(false);
+    this.trechoPreviewAtivo.set(null);
   }
 
   mudarPosicao(quantidadeCompassos: number) {
@@ -499,10 +585,19 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
     Tone.Transport.seconds = novoTempoEmSegundos;
     this.posicaoAtual.set(Tone.Transport.position.toString());
 
-    if (this.isPlaying() && this.player) {
-      this.player.stop();
-      this.player.start(undefined, Tone.Transport.seconds);
+    if (this.isPlaying()) {
+      this.mixPlayers.forEach(player => {
+        player.stop();
+        player.start(undefined, Tone.Transport.seconds);
+      });
     }
+  }
+
+  private limparMixCanais() {
+    this.mixPlayers.forEach(player => player.dispose());
+    this.mixPlayers = [];
+    this.audioUrls.forEach(url => URL.revokeObjectURL(url));
+    this.audioUrls = [];
   }
 
   adicionarTrecho() {
@@ -587,6 +682,6 @@ export class CriadorProjetoComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     Tone.Transport.stop();
     Tone.Transport.cancel();
-    if (this.player) this.player.dispose();
+    this.limparMixCanais();
   }
 }

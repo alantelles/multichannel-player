@@ -1,0 +1,74 @@
+:host {
+  display: block;
+  color: #ecece8;
+  font-family: 'Aptos', 'Trebuchet MS', sans-serif;
+}
+
+.about-dialog {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 20px;
+  background: #000;
+}
+
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+h2[mat-dialog-title] {
+  margin: 0;
+  color: #f0f0eb;
+  font-size: 19px;
+  line-height: 1.2;
+}
+
+[mat-dialog-content] {
+  max-height: none;
+  margin: 16px 0 0;
+  padding: 0;
+}
+
+.about-logo {
+  display: block;
+  width: 100%;
+  max-width: 300px;
+  height: auto;
+  margin: 0 auto 18px;
+}
+
+p {
+  margin: 0;
+  color: #c4cec7;
+  line-height: 1.5;
+}
+
+.close-button {
+  box-sizing: border-box;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  place-items: center;
+  padding: 0;
+  color: #c8cbc7;
+  background: transparent;
+  border: 1px solid #555955;
+  border-radius: 4px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.close-button:hover {
+  color: #f0f0eb;
+  background: #3a3b3a;
+}
+
+.close-button:focus-visible {
+  outline: 2px solid #c9ef74;
+  outline-offset: 3px;
+}

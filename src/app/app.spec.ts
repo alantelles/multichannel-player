@@ -1,13 +1,17 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { MatDialog } from '@angular/material/dialog';
 import { App } from './app';
+import { SobreDialogComponent } from './components/sobre-dialog/sobre-dialog.component';
 
 describe('App', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [App],
       providers: [provideRouter([])],
-    }).compileComponents();
+    })
+      .overrideProvider(MatDialog, { useValue: { open: vi.fn() } })
+      .compileComponents();
   });
 
   it('should create the app', () => {
@@ -23,6 +27,20 @@ describe('App', () => {
     const links = Array.from(compiled.querySelectorAll('nav a')).map(link => link.textContent?.trim());
 
     expect(links).toEqual(['Mixer', 'Criar projeto', 'Admin de projetos', 'Configurações']);
+  });
+
+  it('opens the about dialog from navigation', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const button = compiled.querySelector<HTMLButtonElement>('.about-button');
+
+    button?.click();
+
+    expect(TestBed.inject(MatDialog).open).toHaveBeenCalledWith(
+      SobreDialogComponent,
+      expect.objectContaining({ ariaLabelledBy: 'about-title' }),
+    );
   });
 
   it('should toggle inverted page mode from navigation', async () => {
