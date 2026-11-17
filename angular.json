@@ -89,7 +89,8 @@
             }
           },
           "options": {
-            "outputPath": "dist/multichannel-player/browser"
+            "outputPath": "dist/multichannel-player/browser",
+            "baseHref": "/multichannel-player/"
           }
         }
       }

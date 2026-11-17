@@ -1,0 +1,47 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Evita conflitos de deploys simultâneos
+concurrency:
+  group: 'pages'
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Angular app
+        run: npx ng build --configuration production --base-href /multichannel-player/
+
+      - name: Prepare SPA routing (404.html & .nojekyll)
+        run: |
+          cp dist/multichannel-player/browser/index.html dist/multichannel-player/browser/404.html
+          touch dist/multichannel-player/browser/.nojekyll
+
+      - name: Deploy to gh-pages branch
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: dist/multichannel-player/browser
+          branch: gh-pages
+          commit-message: 'Deploy via GitHub Actions [skip ci]: ${{ github.sha }}'
