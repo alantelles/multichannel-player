@@ -89,9 +89,13 @@ html, body {
 .master-meter-fill {
   display: block;
   width: 100%;
-  height: var(--meter-level, 0%);
+  height: 100%;
   background: #86c96b;
-  transition: height 80ms linear;
+  // transform é composto pela GPU: sem reflow/layout a cada atualização do medidor
+  transform: scaleY(var(--meter-scale, 0));
+  transform-origin: bottom;
+  transition: transform 80ms linear;
+  will-change: transform;
 }
 
 .master-meter-fill.is-warning {
@@ -130,9 +134,10 @@ html, body {
   }
 
   .master-meter-fill {
-    width: var(--meter-level, 0%);
+    width: 100%;
     height: 100%;
-    transition: width 80ms linear;
+    transform: scaleX(var(--meter-scale, 0));
+    transform-origin: left;
   }
 
   .master-meter-unit {

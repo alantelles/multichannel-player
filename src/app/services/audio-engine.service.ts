@@ -347,14 +347,22 @@ export class AudioEngineService {
       this.animacaoId = requestAnimationFrame(renderizarFrame);
     };
 
-    requestAnimationFrame(renderizarFrame);
+    // Garante um único laço ativo (ex.: stop→play rápido dentro do mesmo frame)
+    if (this.animacaoId) cancelAnimationFrame(this.animacaoId);
+    this.animacaoId = requestAnimationFrame(renderizarFrame);
   }
   private atualizarLeituraMeterMaster(timestamp: number): void {
     const leitura = this.masterMeter.getValue();
     const canais = Array.isArray(leitura) ? leitura : [leitura];
-    const picoAmplitude = Math.max(0, ...canais.flatMap(canal =>
-      Array.from(canal, amostra => Math.abs(amostra)).filter(Number.isFinite)
-    ));
+    // Loop direto sobre os Float32Array: nenhuma alocação por frame (evita pausas de GC).
+    // NaN falha na comparação e Infinity é descartado explicitamente.
+    let picoAmplitude = 0;
+    for (const canal of canais) {
+      for (let i = 0; i < canal.length; i++) {
+        const amplitude = Math.abs(canal[i]);
+        if (amplitude > picoAmplitude && amplitude !== Infinity) picoAmplitude = amplitude;
+      }
+    }
     const ultrapassouZeroDb = picoAmplitude > 1;
     const nivelDb = picoAmplitude > 0
       ? Math.max(-60, Math.min(0, 20 * Math.log10(picoAmplitude)))
@@ -384,10 +392,19 @@ export class AudioEngineService {
     }
   }
   // 🎯 CHAME ESTE MÉTODO no 'if (this.isPlaying())' do seu togglePlay() para limpar tudo
+  private limparPeakHoldMeter(): void {
+    if (this.masterMeterPeakHoldTimer !== null) {
+      clearTimeout(this.masterMeterPeakHoldTimer);
+      this.masterMeterPeakHoldTimer = null;
+    }
+    this.masterMeterPeakHoldUntil = 0;
+  }
   private pararRelogioUI() {
     if (this.animacaoId) {
       cancelAnimationFrame(this.animacaoId);
+      this.animacaoId = 0;
     }
+    this.limparPeakHoldMeter();
     this.segundosDecorridosNoBloco.set(0);
     this.compassoAtualNoBloco.set(0);
     this.beatAtualNoBloco.set(0);
@@ -425,6 +442,7 @@ export class AudioEngineService {
       const novosCanais = await Promise.all(projeto.canais.map(async canal => {
         const retrievalResult = await this.fileRepository.getFileUrl(projeto.pastaBase, canal.arquivo);
         const urlCompleta = retrievalResult.url;
+        this.urlsDeAudioPendentes.push(urlCompleta);
         // 1. Cria os nós de áudio para este canal
         const player = new Tone.Player({ url: urlCompleta, autostart: false });
         const volumeNode = new Tone.Volume(0); // 0dB = Volume original
@@ -456,6 +474,8 @@ export class AudioEngineService {
       // Aguarda o download e decodificação em lote dos MP3s na RAM
 
       await Tone.loaded();
+      // Buffers já decodificados: os blobs comprimidos não são mais necessários
+      this.revogarUrlsDeAudio();
       // 🎯 AGORA SIM: Se não houver markers no JSON, calculamos dinamicamente baseados na maior pista
       const temMarkersValidos = projeto.markers && Array.isArray(projeto.markers) && projeto.markers.length > 0;
 
@@ -623,10 +643,11 @@ export class AudioEngineService {
 
     // 3. Para o Transport e cancela o laço do requestAnimationFrame (UI)
     Tone.Transport.stop();
-    if (this.animacaoId > 0) {
+    if (this.animacaoId) {
       cancelAnimationFrame(this.animacaoId);
-      this.animacaoId = -1;
+      this.animacaoId = 0;
     }
+    this.limparPeakHoldMeter();
 
     // 4. Reseta os Signals para o estado inicial de stop
     this.isPlaying.set(false);
@@ -878,23 +899,29 @@ export class AudioEngineService {
   }
 
   private destruirCanaisAtuais() {
-    if (this.loopId) {
-      this.loopId.stop();
-      this.loopId.dispose();
+    // loopId é o id numérico retornado por Transport.scheduleOnce
+    if (this.loopId !== undefined && this.loopId !== null) {
+      Tone.Transport.clear(this.loopId);
       this.loopId = null;
     }
     this.canais().forEach(c => {
       c.player.stop();
-      const playerBuffer = c.player.buffer as any;
-      const urlAntiga = playerBuffer && playerBuffer.url ? playerBuffer.url : null;
-      c.player.dispose(); 
-      if (urlAntiga && urlAntiga.startsWith('blob:')) {
-        URL.revokeObjectURL(urlAntiga);
-      }
+      c.player.dispose();
       c.volumeNode.dispose();
       c.channelNode.dispose();
     });
+    // Caso a carga anterior tenha falhado antes da revogação
+    this.revogarUrlsDeAudio();
     this.canais.set([]);
+  }
+
+  // ToneAudioBuffer não guarda a URL de origem; rastreamos aqui para liberar os blobs.
+  private urlsDeAudioPendentes: string[] = [];
+  private revogarUrlsDeAudio(): void {
+    this.urlsDeAudioPendentes.forEach(url => {
+      if (url.startsWith('blob:')) URL.revokeObjectURL(url);
+    });
+    this.urlsDeAudioPendentes = [];
   }
 
   async togglePlay() {

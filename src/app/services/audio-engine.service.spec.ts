@@ -708,18 +708,35 @@ describe('AudioEngineService', () => {
     expect(channel.player.start).toHaveBeenCalledWith(12, 0, 4);
   });
 
-  it('disposes previous audio channels and revokes blob URLs when reloading', async () => {
+  it('revokes blob URLs as soon as buffers are decoded', async () => {
+    const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+
+    await service.carregarProjetoPorJSON(projectJson());
+
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:track.mp3');
+    expect(revokeObjectURL).toHaveBeenCalledOnce();
+  });
+
+  it('disposes previous audio channels when reloading', async () => {
     await service.carregarProjetoPorJSON(projectJson());
     const previousChannel = service.canais()[0];
-    const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
 
     await service.carregarProjetoPorJSON(projectJson({ canais: [] }));
 
     expect(previousChannel.player.dispose).toHaveBeenCalledOnce();
     expect(previousChannel.volumeNode.dispose).toHaveBeenCalledOnce();
     expect(previousChannel.channelNode.dispose).toHaveBeenCalledOnce();
-    expect(revokeObjectURL).toHaveBeenCalledWith('blob:track.mp3');
     expect(service.canais()).toEqual([]);
+  });
+
+  it('clears a pending scheduled loop by id when reloading', async () => {
+    await service.carregarProjetoPorJSON(projectJson());
+    service['loopId'] = 42;
+
+    await service.carregarProjetoPorJSON(projectJson());
+
+    expect(toneMocks.transport.clear).toHaveBeenCalledWith(42);
+    expect(service.isFullyLoaded()).toBe(true);
   });
 
   function createChannel(): CanalAudio {

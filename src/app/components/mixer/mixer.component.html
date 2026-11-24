@@ -155,7 +155,7 @@
                         class="master-meter-fill"
                         [class.is-warning]="audio.masterMeterLevelDb() >= -10 && !audio.masterMeterOverZero()"
                         [class.is-clipping]="audio.masterMeterOverZero()"
-                        [style.--meter-level]="audio.masterMeterLevelPercent() + '%'"></span>
+                        [style.--meter-scale]="audio.masterMeterLevelPercent() / 100"></span>
                     </div>
                     <span class="master-meter-unit">dBFS</span>
                   </div>
