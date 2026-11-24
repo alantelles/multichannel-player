@@ -586,12 +586,15 @@
 
 @include mobile-vertical {
   .master-strip .fader-indicators {
-    flex-direction: row;
-    height: 100px;
+    flex-direction: column;
+    align-items: stretch;
+    height: auto;
   }
 
-  .master-strip .fader {
-    height: 100%;
+  .master-strip .fader-indicators .fader {
+    flex: 0 0 auto;
+    width: 100%;
+    height: auto;
   }
 
 }

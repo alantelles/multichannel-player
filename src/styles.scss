@@ -89,6 +89,7 @@ html, body {
 .master-meter-fill {
   display: block;
   width: 100%;
+  height: var(--meter-level, 0%);
   background: #86c96b;
   transition: height 80ms linear;
 }
@@ -114,7 +115,27 @@ html, body {
 
 @media screen and (max-width: 1200px) and (orientation: portrait) {
   .master-meter {
-    flex-basis: 30px;
-    height: 100px;
+    flex: 0 0 auto;
+    flex-direction: row;
+    width: 100%;
+    height: auto;
+    gap: 8px;
+  }
+
+  .master-meter-track {
+    flex: 1 1 auto;
+    align-items: stretch;
+    width: auto;
+    height: 9px;
+  }
+
+  .master-meter-fill {
+    width: var(--meter-level, 0%);
+    height: 100%;
+    transition: width 80ms linear;
+  }
+
+  .master-meter-unit {
+    writing-mode: horizontal-tb;
   }
 }
